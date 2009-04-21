@@ -14,6 +14,7 @@
 		MSG_MISSING_ARGUMENTS,
 		MSG_PORT_INTEGER,
 		MSG_COOKIE_STRING,
+		MSG_ERROR_SERVER_THREAD,
 	} msgs;
 
 
@@ -24,13 +25,14 @@
 			"ERROR: missing arguments\n",
 			"ERROR: 'port' argument must be an integer [1;65535]\n",
 			"ERROR: 'cookie' argument must be a string\n",
+			"ERROR: cannot start server thread\n",
 	};
 
 
 	//Prototypes
 	//==========
 	void showHelp(int msg_id);
-	int open_port(int port);
+	void showMessage(int msg_id);
 
 
 #endif /* MAIN_H_ */
