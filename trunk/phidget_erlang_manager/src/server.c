@@ -4,19 +4,12 @@
  *  Created on: 2009-04-21
  *      Author: Jean-Lou Dupont
  */
-
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 
+
 #include "../includes/server.h"
-#include "../includes/logger.h"
-#include "../includes/queuer.h"
-#include "../includes/manager.h"  //for PhidgetManagerMessage type
-
-#include "erl_interface.h"
-#include "ei.h"
-
 
 /**
  * Erlang Server Thread
