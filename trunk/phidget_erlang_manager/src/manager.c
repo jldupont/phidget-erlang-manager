@@ -28,7 +28,7 @@ CPhidgetManagerHandle manager_create(void *MessageQueuer) {
 	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, MessageQueuer);
 	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, MessageQueuer);
 
-	doLog(LOG_DEBUG, "Opening Phidget Manager", NULL);
+	doLog(LOG_DEBUG, "Opening Phidget Manager");
 	CPhidgetManager_open(phidm);
 
 	return phidm;
@@ -40,7 +40,7 @@ CPhidgetManagerHandle manager_create(void *MessageQueuer) {
  */
 void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, void *MessageQueuer) {
 
-	doLog(LOG_INFO, "Pushing message", NULL);
+	doLog(LOG_INFO, "Pushing message");
 
 	PhidgetManagerMessage *msg;
 
@@ -60,7 +60,7 @@ void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, voi
 int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
-	doLog(LOG_INFO, "Device attached [%u]", (void *) pd->serial);
+	doLogInteger(LOG_INFO, "Device attached [%u]", pd->serial);
 
 	pd = manager_create_device(phid);
 	manager_push_message(MESSAGE_ATTACH, pd, MessageQueuer);
@@ -74,7 +74,7 @@ int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 int manager_gotDetach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
-	doLog(LOG_INFO, "Device detached [%d]", (void *) pd->serial);
+	doLogInteger(LOG_INFO, "Device detached [%d]", pd->serial);
 
 	pd = manager_create_device(phid);
 	manager_push_message(MESSAGE_DETACH, pd, MessageQueuer);
@@ -91,7 +91,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	PhidgetDevice *pd;
 	const char *type, *name, *label;
 
-	doLog(LOG_DEBUG, "Creating Device", NULL);
+	doLog(LOG_DEBUG, "Creating Device");
 	pd = malloc(sizeof(PhidgetDevice));
 
 	CPhidget_getSerialNumber(phid, &pd->serial);
@@ -115,7 +115,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	strncpy( pd->name,  name,  sz_name  );
 	strncpy( pd->label, label, sz_label );
 
-	doLog(LOG_DEBUG, "Finished creating Device, type[%s]", (void *)pd->type);
+	doLogString(LOG_DEBUG, "Finished creating Device, type[%s]", pd->type);
 
 	return pd;
 }//[/manager_create_device]
@@ -126,14 +126,14 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
  */
 void manager_destroy_device(PhidgetDevice *pd) {
 
-	doLog(LOG_DEBUG, "Destroying device", NULL);
+	doLog(LOG_DEBUG, "Destroying device");
 
 	free( pd->type );
 	free( pd->name );
 	free( pd->label );
 	free( pd );
 
-	doLog(LOG_DEBUG, "Finished destroying device", NULL);
+	doLog(LOG_DEBUG, "Finished destroying device");
 
 }//[/manager_destroy_device]
 

@@ -10,24 +10,21 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-
-#include "erl_interface.h"
-#include "ei.h"
 
 #include "../includes/logger.h"
 #include "../includes/main.h"
 #include "../includes/manager.h"
 #include "../includes/queuer.h"
+#include "../includes/server.h"
 
 // ================================================
 
 
 int main(int argc, char **argv) {
 
-	int port=-1;
+	int port=0;
 	char *cookie;  int _cookie=0;
-	pthread_t mThread, eThread;
+	pthread_t sThread;
 
 	// Extract command-line parameters
 	if (argc<3) {
@@ -51,28 +48,26 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	printf("port: %u", port);
+
 	// Launch daemon
 
-	//mThread = pthread_create(&mThread, NULL, manager_thread, (void *)NULL);
+	// pass along some parameters to the server thread
+	server_params params;
+	params.port = port;
+	params.cookie = cookie;
 
-	//pthread_join( mThread, NULL );
-
-	CPhidgetManagerHandle phidm;
+	int result = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
+	if (result) {
+		showMessage( MSG_ERROR_SERVER_THREAD );
+		return 1;
+	}
 
 	queuer_init();
+	CPhidgetManagerHandle phidm;
 	phidm = manager_create( (void*) queuer_queue );
 
-	PhidgetManagerMessage *msg;
-
-	//main loop
-	while(1) {
-		sleep(5);
-		msg = queuer_dequeue();
-		if (msg!=NULL) {
-			doLog(LOG_DEBUG, "got message", NULL);
-			queuer_release(msg);
-		}
-	}
+	pthread_join( sThread, NULL );
 
 	return 0;
 
@@ -101,32 +96,13 @@ void showHelp(int msg_id) {
 }//[/showHelp]
 
 
-
-
 /**
- * Opens the local socket port
+ * Show message
  */
-int open_port(int port) {
+void showMessage(int msg_id) {
 
-  int listen_fd;
-  struct sockaddr_in addr;
-  int on = 1;
+	printf( "%s", messages[msg_id] );
 
-  if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    return (-1);
+}// showMessage
 
-  setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-
-  memset((void*) &addr, 0, (size_t) sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(port);
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  if (bind(listen_fd, (struct sockaddr*) &addr, sizeof(addr)) < 0)
-    return (-1);
-
-  listen(listen_fd, 5);
-
-  return listen_fd;
-}//[/open_port]
 

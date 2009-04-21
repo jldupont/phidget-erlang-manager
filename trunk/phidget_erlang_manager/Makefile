@@ -7,9 +7,9 @@ CC=gcc
 
 
 INCLUDES := /usr/include
-LIBS := -lerl_interface -lphidget21
+LIBS := -lerl_interface -lphidget21 -lei -lsocket
 
-phidget_erl_manager := src/main.c src/manager.c src/logger.c src/queuer.c
+phidget_erl_manager := src/main.c src/manager.c src/logger.c src/queuer.c src/server.c
 
 all: phidget_erl_manager.o
 
