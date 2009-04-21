@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -15,6 +16,7 @@
 #include "ei.h"
 
 #include "../includes/main.h"
+#include "../includes/manager.h"
 
 // ================================================
 
@@ -23,6 +25,7 @@ int main(int argc, char **argv) {
 
 	int port=-1;
 	char *cookie;  int _cookie=0;
+	pthread_t mThread, eThread;
 
 	// Extract command-line parameters
 	if (argc<3) {
@@ -48,6 +51,20 @@ int main(int argc, char **argv) {
 
 	// Launch daemon
 
+	//mThread = pthread_create(&mThread, NULL, manager_thread, (void *)NULL);
+
+	//pthread_join( mThread, NULL );
+
+	CPhidgetManagerHandle phidm;
+
+	phidm = manager_create();
+
+	//main loop
+	while(1) {
+		sleep(5);
+	}
+
+	return 0;
 
 }//[/main]
 

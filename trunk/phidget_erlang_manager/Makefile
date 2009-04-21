@@ -7,15 +7,18 @@ CC=gcc
 
 
 INCLUDES := /usr/include
-LIBS := erl_interface
+LIBS := -lerl_interface -lphidget21
 
-phidget_erl_manager := src/main.c
+phidget_erl_manager := src/main.c src/manager.c src/logger.c
 
 all: phidget_erl_manager.o
 
 phidget_erl_manager.o: 
-	$(CC) -o phidget_erl_manager.o -I$(INCLUDES) -L$(LIBS) $(phidget_erl_manager)
+	$(CC) -o phidget_erl_manager.o -I$(INCLUDES) $(LIBS) $(phidget_erl_manager)
 
 clean: 
-	-rm *.a *~ *.so *.o
+	-rm *.a 
+	-rm *~ 
+	-rm *.so 
+	-rm *.o
 
