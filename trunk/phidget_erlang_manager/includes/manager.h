@@ -28,7 +28,7 @@
 	typedef struct _PhidgetManagerMessage {
 
 		int type;
-		PhidgetDevice pd;
+		PhidgetDevice *pd;
 
 	} PhidgetManagerMessage;
 
@@ -43,11 +43,15 @@
 
 	// PROTOTYPES
 	// ==========
-	CPhidgetManagerHandle manager_create(void);
-	int manager_gotAttach(CPhidgetHandle phid, void *ptr);
-	int manager_gotDetach(CPhidgetHandle phid, void *ptr);
+	CPhidgetManagerHandle manager_create(void *MessageQueuer);
+	int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer);
+	int manager_gotDetach(CPhidgetHandle phid, void *MessageQueuer);
+
 	PhidgetDevice *manager_create_device(CPhidgetHandle phid);
 	void manager_destroy_device(PhidgetDevice *pd);
-	void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
+
+	void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, void *MessageQueuer);
+	PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
+	void manager_destroy_message(PhidgetManagerMessage *msg);
 
 #endif /* MANAGER_THREAD_H_ */

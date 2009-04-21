@@ -19,16 +19,14 @@
 /**
  * Phidget Manager controller thread
  */
-CPhidgetManagerHandle manager_create(void) {
+CPhidgetManagerHandle manager_create(void *MessageQueuer) {
 
 	CPhidgetManagerHandle phidm;
 
-	doLog(LOG_DEBUG, "Starting Manager Thread", NULL);
-
 	// open up the Phidget Manager
 	CPhidgetManager_create(&phidm);
-	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, NULL);
-	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, NULL);
+	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, MessageQueuer);
+	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, MessageQueuer);
 
 	doLog(LOG_DEBUG, "Opening Phidget Manager", NULL);
 	CPhidgetManager_open(phidm);
@@ -40,12 +38,18 @@ CPhidgetManagerHandle manager_create(void) {
 /**
  * Pushes a message on the communication queue
  */
-void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd) {
+void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, void *MessageQueuer) {
 
 	doLog(LOG_INFO, "Pushing message", NULL);
 
-	//cleanup
-	manager_destroy_device(pd);
+	PhidgetManagerMessage *msg;
+
+	msg = manager_create_message(type, pd);
+
+	// for clarity
+	void (*mq)( PhidgetManagerMessage *) = (void (*)(PhidgetManagerMessage *)) MessageQueuer;
+
+	(*mq)( msg );
 
 }//[/manager_push_message]
 
@@ -53,13 +57,13 @@ void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd) {
 /**
  * Attach Event handler
  */
-int manager_gotAttach(CPhidgetHandle phid, void *ptr) {
+int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
-	doLog(LOG_INFO, "Device attached [%d]", (void *) pd->serial);
+	doLog(LOG_INFO, "Device attached [%u]", (void *) pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_ATTACH, pd);
+	manager_push_message(MESSAGE_ATTACH, pd, MessageQueuer);
 
 	return 0;
 }//[/manager_gotAttach]
@@ -67,13 +71,13 @@ int manager_gotAttach(CPhidgetHandle phid, void *ptr) {
 /**
  * Detach Event Handler
  */
-int manager_gotDetach(CPhidgetHandle phid, void *ptr) {
+int manager_gotDetach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
 	doLog(LOG_INFO, "Device detached [%d]", (void *) pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_DETACH, pd);
+	manager_push_message(MESSAGE_DETACH, pd, MessageQueuer);
 
 	return 0;
 }//[/manager_gotDetach]
@@ -130,3 +134,35 @@ void manager_destroy_device(PhidgetDevice *pd) {
 	doLog(LOG_DEBUG, "Finished destroying device", NULL);
 
 }//[/manager_destroy_device]
+
+
+
+/**
+ * Creates a message
+ */
+PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd) {
+
+	PhidgetManagerMessage *msg;
+
+	msg = malloc(sizeof( PhidgetManagerMessage ));
+
+	msg->type = type;
+	msg->pd = pd;
+
+	return msg;
+}//[/manager_create_message]
+
+
+
+/**
+ * Destroys a message
+ */
+void manager_destroy_message(PhidgetManagerMessage *msg) {
+
+	// not much to do except destroying the device
+	manager_destroy_device( msg->pd );
+
+	free(msg);
+
+}//[/manager_destroy_message]
+

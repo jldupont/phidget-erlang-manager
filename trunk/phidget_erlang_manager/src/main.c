@@ -17,6 +17,7 @@
 
 #include "../includes/main.h"
 #include "../includes/manager.h"
+#include "../includes/queuer.h"
 
 // ================================================
 
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
 
 	CPhidgetManagerHandle phidm;
 
-	phidm = manager_create();
+	phidm = manager_create( (void*) MessageQueuer );
 
 	//main loop
 	while(1) {
@@ -67,7 +68,6 @@ int main(int argc, char **argv) {
 	return 0;
 
 }//[/main]
-
 
 
 
