@@ -101,9 +101,11 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	CPhidget_getDeviceLabel(phid, (const char **)&label);
 
 	//perform copies
-	size_t sz_type  = strlen( type )  +1;
-	size_t sz_name  = strlen( name )  +1;
-	size_t sz_label = strlen( label ) +1;
+	size_t sz_char = sizeof(char);
+
+	size_t sz_type  = strlen( type )  + sz_char;
+	size_t sz_name  = strlen( name )  + sz_char;
+	size_t sz_label = strlen( label ) + sz_char;
 
 	pd->type  = malloc( sz_type  * sizeof(char) );
 	pd->name  = malloc( sz_name  * sizeof(char) );

@@ -5,9 +5,9 @@
  *      Author: Jean-Lou Dupont
  */
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <list.h>
 
 #include "../includes/queuer.h"
 #include "../includes/logger.h"
@@ -16,16 +16,9 @@
 //GLOBALS
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-struct message_list_struct {
-	PhidgetManagerMessage *msg;
-	struct list_head list;
-};
-
-// Message List
+// Message Queue
 // ------------
-struct message_list_struct \
-	messages;
-
+queue MessageQueue;
 
 
 // =======================================================================
@@ -37,7 +30,8 @@ struct message_list_struct \
  */
 void queuer_init(void) {
 
-	INIT_LIST_HEAD( &messages.list );
+	MessageQueue.head = NULL;
+	MessageQueue.tail = NULL;
 
 }// init
 
@@ -47,21 +41,36 @@ void queuer_init(void) {
  */
 void queuer_queue(PhidgetManagerMessage *msg) {
 
-	struct message_list_struct tmp;
+	node *tmp=NULL;
 
-	doLog(LOG_DEBUG,"MessageQueuer: BEGIN",NULL);
+	doLog(LOG_DEBUG,"queuer_queue: BEGIN",NULL);
 
 	pthread_mutex_lock( &queue_mutex );
 
-		tmp = malloc(sizeof(struct message_list_struct));
+		tmp = (node *) malloc(sizeof(node));
 		tmp->msg = msg;
-		list_add( &(tmp->list), &(messages.list) );
+
+		//perform the ''put'' operation {
+			//no next yet...
+			tmp->next=NULL;
+
+			//insert pointer to element first
+			if (MessageQueue.tail!=NULL)
+				(MessageQueue.tail)->next=tmp;
+
+			// insert element
+			MessageQueue.tail = tmp;
+
+			//was the queue empty?
+			if (MessageQueue.head==NULL)
+				MessageQueue.head=tmp;
+		//}
 
 	pthread_mutex_unlock( &queue_mutex );
 
 	//DEBUG: manager_destroy_message( msg );
 
-	doLog(LOG_DEBUG,"MessageQueuer: END",NULL);
+	doLog(LOG_DEBUG,"queuer_queue: END",NULL);
 }//[/queuer_queue]
 
 
@@ -71,15 +80,28 @@ void queuer_queue(PhidgetManagerMessage *msg) {
  */
 PhidgetManagerMessage *queuer_dequeue(void) {
 
+	doLog(LOG_DEBUG,"queuer_dequeue: BEGIN",NULL);
+
+	PhidgetManagerMessage *msg=NULL;
+
 	pthread_mutex_lock( &queue_mutex );
 
-		if (list_empty( &(messages.list) ) == 1) {
-			return NULL;
+		// perform the ``get`` operation {
+		node *tmp = NULL;
+		tmp = MessageQueue.head;
+		if (tmp!=NULL) {
+			MessageQueue.head = MessageQueue.head->next;
+			msg = tmp->msg;
+			free(tmp);
+			doLog(LOG_DEBUG,"queuer_dequeue: MESSAGE PRESENT",NULL);
 		}
-
+		//}
 
 	pthread_mutex_unlock( &queue_mutex );
 
+	doLog(LOG_DEBUG,"queuer_dequeue: END",NULL);
+
+	return msg;
 }//[/queuer_dequeue]
 
 
@@ -92,6 +114,8 @@ PhidgetManagerMessage *queuer_dequeue(void) {
  *
  */
 void queuer_release(PhidgetManagerMessage *msg) {
+
+	doLog(LOG_DEBUG,"queuer_release",NULL);
 
 	manager_destroy_message( msg );
 
