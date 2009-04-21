@@ -6,15 +6,19 @@ CROSSCOMPILE?=n
 CC=gcc
 
 
-INCLUDES := /usr/include
-LIBS := -lerl_interface -lphidget21 -lei -lsocket
+INCLUDES := -I/usr/include
+LIBS := -L/usr/lib/happycoders -lerl_interface -lei -lphidget21 -lsocket -lnsl
 
-phidget_erl_manager := src/main.c src/manager.c src/logger.c src/queuer.c src/server.c
+phidget_erl_manager :=	src/main.c     \
+						src/manager.c  \
+						src/logger.c   \
+						src/queuer.c   \
+						src/server.c
 
 all: phidget_erl_manager.o
 
 phidget_erl_manager.o: 
-	$(CC) -o phidget_erl_manager.o -I$(INCLUDES) $(LIBS) $(phidget_erl_manager)
+	$(CC) -o phidget_erl_manager.o $(INCLUDES) $(LIBS) $(phidget_erl_manager)
 
 clean: 
 	-rm *.a 

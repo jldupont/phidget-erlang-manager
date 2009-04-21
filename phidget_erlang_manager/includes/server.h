@@ -8,6 +8,13 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
+#include "erl_interface.h"
+#include "ei.h"
+
+#include "../includes/logger.h"
+#include "../includes/queuer.h"
+#include "../includes/manager.h"  //for PhidgetManagerMessage type
+
 	typedef struct {
 
 		int port;
