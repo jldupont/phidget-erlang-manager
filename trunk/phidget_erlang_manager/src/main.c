@@ -6,8 +6,10 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 
 #include "erl_interface.h"
 #include "ei.h"
@@ -50,6 +52,8 @@ int main(int argc, char **argv) {
 }//[/main]
 
 
+
+
 /*
  * Displays on stdout a help message
  */
@@ -69,3 +73,34 @@ void showHelp(int msg_id) {
 	printf( "%s", messages[msg_id] );
 
 }//[/showHelp]
+
+
+
+
+/**
+ * Opens the local socket port
+ */
+int open_port(int port) {
+
+  int listen_fd;
+  struct sockaddr_in addr;
+  int on = 1;
+
+  if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    return (-1);
+
+  setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
+  memset((void*) &addr, 0, (size_t) sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  if (bind(listen_fd, (struct sockaddr*) &addr, sizeof(addr)) < 0)
+    return (-1);
+
+  listen(listen_fd, 5);
+
+  return listen_fd;
+}//[/open_port]
+
