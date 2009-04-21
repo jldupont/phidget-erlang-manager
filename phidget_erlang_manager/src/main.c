@@ -58,7 +58,8 @@ int main(int argc, char **argv) {
 
 	CPhidgetManagerHandle phidm;
 
-	phidm = manager_create( (void*) MessageQueuer );
+	queuer_init();
+	phidm = manager_create( (void*) queuer_queue );
 
 	//main loop
 	while(1) {

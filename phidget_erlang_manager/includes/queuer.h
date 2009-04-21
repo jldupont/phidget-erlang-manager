@@ -13,8 +13,10 @@
 
 	// Prototypes
 	// ==========
-	void MessageQueuer(PhidgetManagerMessage *msg);
-	PhidgetManagerMessage *MessageDequeue(void);
+	void queuer_init(void);
+	void queuer_queue(PhidgetManagerMessage *msg);
+	PhidgetManagerMessage *queuer_dequeue(void);
+	void queuer_release(PhidgetManagerMessage *msg);
 
 
 
