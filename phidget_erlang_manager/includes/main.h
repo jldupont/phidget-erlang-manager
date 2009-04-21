@@ -30,7 +30,7 @@
 	//Prototypes
 	//==========
 	void showHelp(int msg_id);
-
+	int open_port(int port);
 
 
 #endif /* MAIN_H_ */
