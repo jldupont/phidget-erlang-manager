@@ -9,7 +9,7 @@ CC=gcc
 INCLUDES := /usr/include
 LIBS := -lerl_interface -lphidget21
 
-phidget_erl_manager := src/main.c src/manager.c src/logger.c
+phidget_erl_manager := src/main.c src/manager.c src/logger.c src/queuer.c
 
 all: phidget_erl_manager.o
 
