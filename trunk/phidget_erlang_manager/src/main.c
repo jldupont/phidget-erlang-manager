@@ -15,6 +15,7 @@
 #include "erl_interface.h"
 #include "ei.h"
 
+#include "../includes/logger.h"
 #include "../includes/main.h"
 #include "../includes/manager.h"
 #include "../includes/queuer.h"
@@ -61,9 +62,16 @@ int main(int argc, char **argv) {
 	queuer_init();
 	phidm = manager_create( (void*) queuer_queue );
 
+	PhidgetManagerMessage *msg;
+
 	//main loop
 	while(1) {
 		sleep(5);
+		msg = queuer_dequeue();
+		if (msg!=NULL) {
+			doLog(LOG_DEBUG, "got message", NULL);
+			queuer_release(msg);
+		}
 	}
 
 	return 0;

@@ -11,6 +11,16 @@
 #include "../includes/manager.h"
 
 
+	typedef struct node {
+		PhidgetManagerMessage *msg;
+		struct node *next;
+	} node;
+
+	typedef struct _queue {
+		node *head, *tail;
+	} queue;
+
+
 	// Prototypes
 	// ==========
 	void queuer_init(void);
