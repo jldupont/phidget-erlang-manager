@@ -42,14 +42,12 @@ DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
 	int command = __daemon_translate_command(cmd);
 	DaemonErrorCode command_result;
 
-	pid_t pid = getpid();
-
 	switch(command) {
 	case COMMAND_STOP:
-		command_result = __daemon_handle_stop(name, pid);
+		command_result = __daemon_handle_stop(name);
 		break;
 	case COMMAND_START:
-		command_result = __daemon_handle_start(name, pid);
+		command_result = __daemon_handle_start(name);
 		break;
 	default:
 		return DAEMON_CODE_INVALID_COMMAND;
@@ -131,8 +129,7 @@ DaemonErrorCode __daemon_handle_start(char *name) {
 
 	result = __daemon_write_pid_file(name);
 
-
-	return DAEMON_CODE_OK;
+	return result;
 }// START
 
 /**
@@ -142,10 +139,27 @@ DaemonErrorCode __daemon_write_pid_file(char *name) {
 
 	char *filename;
 	pid_t pid = getpid();
+	FILE *file;
+	char write_buffer[32];
 
 	filename = __daemon_construct_pid_filename(name);
 
+	file = fopen(filename, "w");
+	if (NULL==file) {
+		return DAEMON_CODE_WRITING_PID_FILE;
+	}
 
+	free(filename);
+
+	snprintf(write_buffer, 31, "%u", pid);
+
+	if (EOF==fputs((const char *)write_buffer, file)) {
+		fclose(file);
+		return DAEMON_CODE_WRITING_PID_FILE;
+	}
+	fclose(file);
+
+	return DAEMON_CODE_OK;
 }// __daemon_write_pid_file
 
 
@@ -201,7 +215,7 @@ DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
 	file = fopen( filename, "r" );
 
 	char *result = \
-		fgets(read_buffer, sizeof(buffer)*sizeof(char), file );
+		fgets(read_buffer, sizeof(read_buffer)*sizeof(char), file );
 
 	fclose( file );
 	free(filename);
@@ -228,7 +242,7 @@ DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
  */
 char *__daemon_construct_pid_filename(char *name) {
 
-	char *filename = calloc(1024*sizeof(char));
+	char *filename = malloc(1024*sizeof(char));
 
 	snprintf(filename, 1024*sizeof(char), "/var/run/%s", name);
 
@@ -271,7 +285,7 @@ DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 	file = fopen( filename, "r" );
 
 	char *result = \
-		fgets(read_buffer, sizeof(buffer)*sizeof(char), file );
+		fgets(read_buffer, sizeof(read_buffer)*sizeof(char), file );
 
 	fclose( file );
 

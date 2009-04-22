@@ -12,10 +12,12 @@
 
 // PRIVATE
 pthread_t		__signal_thread;
-int				__caughtSignal = -1;
+int				__caught_signal = -1;
 pthread_mutex_t __signals_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// PRIVATE PROTOTYPES
 void *__signals_handler_thread(void* arg);
+
 
 /**
  * Init the module
@@ -32,7 +34,7 @@ void signals_init(void) {
 	pthread_sigmask( SIG_BLOCK, &signal_set, NULL );
 
 	/* create the signal handling thread */
-	pthread_create( &__signal_thread, NULL, __signal_handler_thread, NULL );
+	pthread_create( &__signal_thread, NULL, __signals_handler_thread, NULL );
 
 }// signal_init
 
@@ -80,19 +82,19 @@ void *__signals_handler_thread(void* arg) {
 
 			case SIGQUIT:
 			  pthread_mutex_lock(&__signals_mutex);
-			  __caughtSignal = SIGQUIT;
+			  __caught_signal = SIGQUIT;
 			  pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			 case SIGINT:
 			  pthread_mutex_lock(&__signals_mutex);
-			  __caughtSignal = SIGINT;
+			  __caught_signal = SIGINT;
 			  pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			default:
 			  pthread_mutex_lock(&__signals_mutex);
-			  __caughtSignal = 0;
+			  __caught_signal = 0;
 			  pthread_mutex_unlock(&__signals_mutex);
 			  break;
 			}
