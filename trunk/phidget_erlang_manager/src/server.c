@@ -29,17 +29,10 @@ void *server_thread(void *params) {
 	// connect to the Erlang subsystem
 	ei_cnode node;
 
-	//erl_init(NULL, 0);
-
 	if (ei_connect_init(&node, "phidget_manager", parameters->cookie, 0) < 0) {
 		doLog(LOG_ERR, "cannot connect to the Erlang subsystem");
 		return NULL;
 	}
-
-//	if (erl_connect_init(1, parameters->cookie, 0) == -1) {
-//		doLog(LOG_ERR, "cannot connect to the Erlang subsystem");
-//		return NULL;
-//	}
 
 	// publish our server port through Erlang EPMD
 	if (ei_publish(&node, parameters->port) == -1) {
