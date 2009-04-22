@@ -44,7 +44,7 @@ void queuer_queue(PhidgetManagerMessage *msg) {
 
 	node *tmp=NULL;
 
-	DEBUG_LOG(LOG_DEBUG,"queuer_queue: BEGIN");
+	//DEBUG_LOG(LOG_DEBUG,"queuer_queue: BEGIN");
 
 	pthread_mutex_lock( &queue_mutex );
 
@@ -69,9 +69,8 @@ void queuer_queue(PhidgetManagerMessage *msg) {
 
 	pthread_mutex_unlock( &queue_mutex );
 
-	//DEBUG: manager_destroy_message( msg );
+	//DEBUG_LOG(LOG_DEBUG,"queuer_queue: END");
 
-	DEBUG_LOG(LOG_DEBUG,"queuer_queue: END");
 }//[/queuer_queue]
 
 
@@ -81,7 +80,7 @@ void queuer_queue(PhidgetManagerMessage *msg) {
  */
 PhidgetManagerMessage *queuer_dequeue(void) {
 
-	DEBUG_LOG(LOG_DEBUG,"queuer_dequeue: BEGIN");
+	//DEBUG_LOG(LOG_DEBUG,"queuer_dequeue: BEGIN");
 
 	PhidgetManagerMessage *msg=NULL;
 
@@ -100,7 +99,7 @@ PhidgetManagerMessage *queuer_dequeue(void) {
 
 	pthread_mutex_unlock( &queue_mutex );
 
-	DEBUG_LOG(LOG_DEBUG,"queuer_dequeue: END");
+	//DEBUG_LOG(LOG_DEBUG,"queuer_dequeue: END");
 
 	return msg;
 }//[/queuer_dequeue]

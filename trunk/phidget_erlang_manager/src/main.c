@@ -89,6 +89,12 @@ int main(int argc, char **argv) {
 	//  DAEMON
 	// *!*!*!*!
 	DaemonErrorCode code = daemon_handle_command("phidgetmanager", command);
+
+	// should we exit right now?
+	if (DAEMON_CODE_EXITING == code) {
+		return 1;
+	}
+
 	if (DAEMON_CODE_OK != code) {
 		handleDaemonErrorCode( code );
 		return 1;
@@ -110,6 +116,7 @@ int main(int argc, char **argv) {
 	phidm = manager_create( (void*) queuer_queue );
 
 	pthread_join( sThread, NULL );
+
 	doLog(LOG_INFO, "server thread exited");
 
 	return 0;
@@ -270,6 +277,7 @@ int codeToMsg(DaemonErrorCode code) {
 	case DAEMON_CODE_KILL_FAILED:			return MSG_KILL_FAILED;
 	case DAEMON_CODE_DAEMON_EXIST:			return MSG_DAEMON_EXIST;
 	case DAEMON_CODE_WRITING_PID_FILE:		return MSG_WRITING_PID_FILE;
+	case DAEMON_CODE_EXITING:				return MSG_OK; //shouldn't need to use this.
 	}
 
 	return MSG_CODE_NOT_FOUND;

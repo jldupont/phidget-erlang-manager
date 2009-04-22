@@ -116,9 +116,11 @@ DaemonErrorCode __daemon_handle_stop(char *name) {
 		return DAEMON_CODE_KILL_FAILED;
 	}
 
+	doLog(LOG_INFO, "daemon stopped, pid[%u]", pid);
+
 	DEBUG_MSG("DEBUG: __daemon_handle_stop: END\n");
 
-	return DAEMON_CODE_OK;
+	return DAEMON_CODE_EXITING;
 } // STOP
 
 /**
@@ -342,6 +344,7 @@ DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 	}
 
 	snprintf(filename, sizeof(filename)*sizeof(char), "/proc/%u/cmdline", pid);
+	DEBUG_LOG(LOG_DEBUG, "process cmdline filename [%s]", filename);
 
 	file = fopen( filename, "r" );
 	if (NULL==file) {
