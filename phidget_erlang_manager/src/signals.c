@@ -8,6 +8,7 @@
  */
 
 #include "../includes/signals.h"
+#include "../includes/helpers.h"
 
 
 // PRIVATE
@@ -24,6 +25,8 @@ void *__signals_handler_thread(void* arg);
  */
 void signals_init(void) {
 
+	DEBUG_MSG("DEBUG: signals_init: BEGIN\n");
+
 	// Confine all process signals
 	//  to one thread: easier management
 
@@ -35,6 +38,8 @@ void signals_init(void) {
 
 	/* create the signal handling thread */
 	pthread_create( &__signal_thread, NULL, __signals_handler_thread, NULL );
+
+	DEBUG_MSG("DEBUG: signals_init: END\n");
 
 }// signal_init
 
