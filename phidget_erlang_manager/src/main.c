@@ -6,6 +6,7 @@
  */
 
 #include <getopt.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,9 +38,15 @@ typedef enum _CMDLINE_ERRORS {
 } CmdLineError;
 
 // PRIVATE
-int getOptionsAndCommand(int argc, char **argv, int *port, char *cookie, char *command);
-int validatePortCookie(int *port, char *cookie);
+int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char **command);
+int validatePortCookie(int port, char *cookie);
 void handleDaemonErrorCode(DaemonErrorCode code);
+int codeToMsg(DaemonErrorCode code);
+void showHelp(int msg_id);
+void showMessage(int msg_id);
+void showMessageEx(int msg_id, ...);
+
+
 
 // ================================================
 
@@ -52,16 +59,14 @@ int main(int argc, char **argv) {
 	pthread_t sThread;
 
 
-	// Extract command-line parameters
-	if (argc<3) {
-		showHelp( MSG_MISSING_ARGUMENTS );
-		return 1;
-	}
-
 	result = getOptionsAndCommand(argc, argv, &port, &cookie, &command);
 	if (0!=result) {
 		return 1;
 	}
+
+	printf("DEBUG: port    [%u]\n", port);
+	printf("DEBUG: cookie  [%s]\n", cookie);
+	printf("DEBUG: command [%s]\n", command);
 
 	result = validatePortCookie(port, cookie);
 	if (0!=result) {
@@ -82,8 +87,8 @@ int main(int argc, char **argv) {
 	params.port = port;
 	params.cookie = cookie;
 
-	int result = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
-	if (result) {
+	int result2 = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
+	if (result2) {
 		showMessage( MSG_ERROR_SERVER_THREAD );
 		return 1;
 	}
@@ -139,34 +144,54 @@ void showMessage(int msg_id) {
 
 }// showMessage
 
-void showMessageString(int msg_id, char *string) {
-	printf( messages[msg_id], string );
-}
+void showMessageEx(int msg_id, ...) {
+
+	int _MAX_SIZE = 1024;
+	int n;
+
+	char *msg_format = messages[msg_id];
+	char *msg_args;
+
+	// if we fail for that small buffer,
+	//  then the system as a much bigger problem ;-)
+	msg_args = malloc( _MAX_SIZE * sizeof(char) );
+	va_list ap;
+
+	va_start(ap, msg_id);
+		n = vsnprintf(msg_args, _MAX_SIZE, msg_format, ap);
+	va_end(ap);
+
+	printf( "%s", msg_args );
+}// showMessageEx
+
+
 /**
  * Retrieves the options and the command
  *  from the command line
  *
  */
-int getOptionsAndCommand(int argc, char **argv, int *port, char *cookie, char *command) {
+int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char **command) {
 
 	//worst case
-	port = NULL;
-	cookie = NULL;
-	command = NULL;
+	*port = 0;
+	*cookie = NULL;
+	*command = NULL;
 
-	char _current_option = '';
+	int c;
+	char _current_option = ' ';
 	int  _options_scanning=0;
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "pc:")) != -1)
+	while ((c = getopt (argc, argv, "p:c:")) != -1)
 	   switch (c)	{
 	   case 'p':
-		   char *_port = optarg;
-		   *port = atoi( _port );
+		   if (NULL!=optarg)
+			   *port = atoi( optarg );
 		   break;
 	   case 'c':
-		   cookie = optarg;
+		   if (NULL!=optarg)
+			   *cookie = optarg;
 		   break;
 	   case '?':
 		   _options_scanning = -1; //error
@@ -178,15 +203,15 @@ int getOptionsAndCommand(int argc, char **argv, int *port, char *cookie, char *c
 
 	if (0!=_options_scanning) {
 		if (('p' == _current_option) || ('c' == _current_option)) {
-			showMessageString( MSG_MISSING_OPTION_ARGUMENT, _current_option);
+			showMessageEx( MSG_MISSING_OPTION_ARGUMENT, _current_option);
 		} else {
-			showMessage( MSG_INVALID_OPTION );
+			showMessageEx( MSG_INVALID_OPTION, _current_option );
 		}
 		return 1;
 	}
 
 	if ((optind > 0) && (optind<argc)) {
-		command = argv[optind];
+		*command = argv[optind];
 	} else {
 		showMessage( MSG_INVALID_COMMAND );
 		return 1;
@@ -199,15 +224,15 @@ int getOptionsAndCommand(int argc, char **argv, int *port, char *cookie, char *c
 /**
  * Crude validation of parameters
  */
-int validatePortCookie(int *port, char *cookie) {
+int validatePortCookie(int port, char *cookie) {
 
-	if (*port == 0) {
+	if (0 == port) {
 		showHelp( MSG_PORT_INTEGER );
 		return 1;
 	}
 
 	// validate (somewhat) cookie parameter
-	if (NULL!=cookie) {
+	if (NULL==cookie) {
 		showHelp( MSG_COOKIE_STRING );
 		return 1;
 	}
@@ -220,4 +245,29 @@ int validatePortCookie(int *port, char *cookie) {
  */
 void handleDaemonErrorCode(DaemonErrorCode code) {
 
-}
+	int msg_id = codeToMsg( code );
+	showMessage( msg_id );
+
+}// handleDaemonErrorCode
+
+/**
+ * TODO handle this mapping more elegantly...
+ */
+int codeToMsg(DaemonErrorCode code) {
+
+	switch(code) {
+	case DAEMON_CODE_OK: 					return MSG_OK;
+	case DAEMON_CODE_NO_PID_FILE:			return MSG_NO_PID_FILE;
+	case DAEMON_CODE_INVALID_NAME:  		return MSG_INVALID_NAME;
+	case DAEMON_CODE_READING_PID_FILE:		return MSG_READING_PID_FILE;
+	case DAEMON_CODE_INVALID_PID:			return MSG_INVALID_PID;
+	case DAEMON_CODE_READING_PROC_CMDLINE:	return MSG_READING_PROC_CMDLINE;
+	case DAEMON_CODE_PROC_CMDLINE_NOMATCH:	return MSG_CMDLINE_NOMATCH;
+	case DAEMON_CODE_INVALID_COMMAND:		return MSG_INVALID_COMMAND;
+	case DAEMON_CODE_KILL_FAILED:			return MSG_KILL_FAILED;
+	case DAEMON_CODE_DAEMON_EXIST:			return MSG_DAEMON_EXIST;
+	case DAEMON_CODE_WRITING_PID_FILE:		return MSG_WRITING_PID_FILE;
+	}
+
+	return MSG_CODE_NOT_FOUND;
+}// codeToMsg
