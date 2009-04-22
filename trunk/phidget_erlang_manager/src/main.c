@@ -10,13 +10,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sys/types.h>
+
 
 #include "../includes/logger.h"
 #include "../includes/main.h"
 #include "../includes/manager.h"
 #include "../includes/queuer.h"
 #include "../includes/server.h"
+#include "../includes/signals.h"
+
+
 
 // ================================================
 
@@ -26,6 +31,7 @@ int main(int argc, char **argv) {
 	int port=0;
 	char *cookie;  int _cookie=0;
 	pthread_t sThread;
+
 
 	// Extract command-line parameters
 	if (argc<3) {
@@ -51,7 +57,14 @@ int main(int argc, char **argv) {
 
 	printf("port: %u", port);
 
-	// Launch daemon
+
+	// Daemon //
+	// ====== //
+
+
+
+
+
 
 	// pass along some parameters to the server thread
 	server_params params;
@@ -105,5 +118,4 @@ void showMessage(int msg_id) {
 	printf( "%s", messages[msg_id] );
 
 }// showMessage
-
 
