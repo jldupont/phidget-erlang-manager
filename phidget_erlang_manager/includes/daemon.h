@@ -21,6 +21,7 @@
 	// Error codes
 	typedef enum {
 
+		DAEMON_CODE_EXITING              = -11,
 		DAEMON_CODE_WRITING_PID_FILE     = -10,
 		DAEMON_CODE_DAEMON_EXIST         = -9,
 		DAEMON_CODE_KILL_FAILED          = -8,
