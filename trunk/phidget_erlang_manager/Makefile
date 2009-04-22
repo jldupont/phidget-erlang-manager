@@ -8,7 +8,7 @@ CC=gcc
 
 LIBS := -L/usr/lib/happycoders -lsocket -lnsl -pthread -lphidget21 -lei
 
-phidget_erl_manager :=	src/main.c     \
+phidgetmanager :=	src/main.c     \
 						src/manager.c  \
 						src/logger.c   \
 						src/queuer.c   \
@@ -16,11 +16,11 @@ phidget_erl_manager :=	src/main.c     \
 						src/signals.c  \
 						src/daemon.c
 
-all: phidget_erl_manager
+all: phidgetmanager
 
-phidget_erl_manager: 
-	$(CC) -Wall $(phidget_erl_manager) $(LIBS) -o phidget_erl_manager   
+phidgetmanager: 
+	$(CC) -Wall $(phidget_erl_manager) $(LIBS) -o phidgetmanager 
 
 clean: 
-	-rm phidget_erl_manager
+	-rm phidgetmanager
 

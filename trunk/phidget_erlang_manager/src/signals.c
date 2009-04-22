@@ -80,6 +80,12 @@ void *__signals_handler_thread(void* arg) {
 
 			switch( sig ) {
 
+			case SIGTERM:
+			  pthread_mutex_lock(&__signals_mutex);
+			  __caught_signal = SIGTERM;
+			  pthread_mutex_unlock(&__signals_mutex);
+			  break;
+
 			case SIGQUIT:
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = SIGQUIT;
