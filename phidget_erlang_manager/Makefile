@@ -19,7 +19,7 @@ phidgetmanager :=		src/main.c     \
 all: phidgetmanager
 
 phidgetmanager: 
-	$(CC) -Wall $(phidgetmanager) $(LIBS) -o phidgetmanager 
+	$(CC) -D_DEBUG -Wall $(phidgetmanager) $(LIBS) -o phidgetmanager 
 
 clean: 
 	-rm phidgetmanager
