@@ -56,6 +56,13 @@ DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
 	return command_result;
 }// daemon_handle_command
 
+/**
+ * Returns 0 if the command is valid
+ */
+int daemon_validate_command(char *command) {
+
+	return __daemon_translate_command(command) != COMMAND_INVALID;
+}
 
 // --------------------------------------------------------
 //

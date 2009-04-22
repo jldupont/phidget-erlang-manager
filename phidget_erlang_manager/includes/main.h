@@ -15,6 +15,9 @@
 		MSG_PORT_INTEGER,
 		MSG_COOKIE_STRING,
 		MSG_ERROR_SERVER_THREAD,
+		MSG_INVALID_OPTION,
+		MSG_MISSING_OPTION_ARGUMENT,
+		MSG_INVALID_COMMAND,
 	} msgs;
 
 
@@ -26,6 +29,9 @@
 			"ERROR: 'port' argument must be an integer [1;65535]\n",
 			"ERROR: 'cookie' argument must be a string\n",
 			"ERROR: cannot start server thread\n",
+			"ERROR: invalid option [%s]",
+			"ERROR: missing argument for option [%s]",
+			"ERROR: invalid command",
 	};
 
 
@@ -33,6 +39,7 @@
 	//==========
 	void showHelp(int msg_id);
 	void showMessage(int msg_id);
+	void showMessageString(int msg_id, char *string);
 
 
 
