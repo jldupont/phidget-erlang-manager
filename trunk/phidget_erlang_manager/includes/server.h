@@ -8,7 +8,20 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
-#include "erl_interface.h"
+#ifndef _REENTRANT
+#define _REENTRANT
+#endif
+#define PTHREADS
+
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+//include "erl_interface.h"
 #include "ei.h"
 
 #include "../includes/logger.h"
