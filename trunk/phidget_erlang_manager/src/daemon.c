@@ -61,7 +61,9 @@ DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
  */
 int daemon_validate_command(char *command) {
 
-	return __daemon_translate_command(command) != COMMAND_INVALID;
+	int result = __daemon_translate_command(command);
+
+	return !(result != COMMAND_INVALID);
 }
 
 // --------------------------------------------------------
