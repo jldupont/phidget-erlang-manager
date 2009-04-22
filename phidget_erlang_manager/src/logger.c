@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "../includes/logger.h"
 
-char *_LOGGER_IDENTITY = "phidget_erl_manager";
+char *_LOGGER_IDENTITY = "phidgetmanager";
 
 /**
  * Crude logging function

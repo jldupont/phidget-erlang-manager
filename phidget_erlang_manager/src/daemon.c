@@ -153,7 +153,7 @@ DaemonErrorCode __daemon_handle_start(char *name) {
 
 	result = __daemon_write_pid_file(name);
 
-	DEBUG_MSG("DEBUG: __daemon_handle_start: END\n");
+	doLog(LOG_INFO, "daemon started" );
 
 	return result;
 }// START

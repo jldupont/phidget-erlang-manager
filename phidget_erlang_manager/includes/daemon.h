@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "logger.h"
 
 	// Error codes
 	typedef enum {
