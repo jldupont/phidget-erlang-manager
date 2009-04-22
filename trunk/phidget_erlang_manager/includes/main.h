@@ -52,7 +52,7 @@
 			//daemon related
 			"ERROR: PID file not found\n",
 			"ERROR: invalid daemon name\n",
-			"ERROR: reading PID file\n",
+			"ERROR: reading PID file; is the daemon really running?\n",
 			"ERROR: invalid PID\n",
 			"ERROR: reading /proc/$pid/cmdline\n",
 			"ERROR: cannot find daemon through 'procfs'\n",

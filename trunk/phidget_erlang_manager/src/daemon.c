@@ -230,6 +230,13 @@ int __daemon_translate_command(char *cmd) {
 	return COMMAND_INVALID;
 }// __daemon_translate_command
 
+/**
+ * Returns 1 if TRUE
+ */
+int daemon_is_start_command(char *command) {
+
+	return __daemon_translate_command(command) == COMMAND_START;
+}
 
 /**
  * Retrieves the PID from the filesystem /var/run/$name

@@ -69,15 +69,18 @@ int main(int argc, char **argv) {
 	DEBUG_MSG("DEBUG: cookie  [%s]\n", cookie);
 	DEBUG_MSG("DEBUG: command [%s]\n", command);
 
-	result = validatePortCookie(port, cookie);
-	if (0!=result) {
-		return 1;
-	}
-
 	result = daemon_validate_command(command);
 	if (0!=result) {
 		showMessage( MSG_INVALID_COMMAND );
 		return 1;
+	}
+
+	// if we have a ``start`` command, we need parameters:
+	if (daemon_is_start_command(command)) {
+		result = validatePortCookie(port, cookie);
+		if (0!=result) {
+			return 1;
+		}
 	}
 
 	// before any threads are started...
@@ -106,8 +109,8 @@ int main(int argc, char **argv) {
 	CPhidgetManagerHandle phidm;
 	phidm = manager_create( (void*) queuer_queue );
 
-
 	pthread_join( sThread, NULL );
+	doLog(LOG_INFO, "server thread exited");
 
 	return 0;
 
