@@ -11,8 +11,10 @@
 
 #ifdef _DEBUG
 #define DEBUG_MSG(...) printf(__VA_ARGS__)
+#define DEBUG_LOG(...) doLog(__VA_ARGS__)
 #else
 #define DEBUG_MSG(...)
+#define DEBUG_LOG(...)
 #endif
 
 

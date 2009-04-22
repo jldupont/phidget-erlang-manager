@@ -11,6 +11,7 @@
 
 #include <phidget21.h>
 
+#include "../includes/helpers.h"
 #include "../includes/logger.h"
 #include "../includes/manager.h"
 
@@ -40,7 +41,7 @@ CPhidgetManagerHandle manager_create(void *MessageQueuer) {
  */
 void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, void *MessageQueuer) {
 
-	doLog(LOG_INFO, "Pushing message");
+	DEBUG_LOG(LOG_INFO, "Pushing message");
 
 	PhidgetManagerMessage *msg;
 
@@ -60,7 +61,7 @@ void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, voi
 int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
-	doLogInteger(LOG_INFO, "Device attached [%u]", pd->serial);
+	doLog(LOG_DEBUG, "Device attached [%u]", pd->serial);
 
 	pd = manager_create_device(phid);
 	manager_push_message(MESSAGE_ATTACH, pd, MessageQueuer);
@@ -74,7 +75,7 @@ int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 int manager_gotDetach(CPhidgetHandle phid, void *MessageQueuer) {
 	PhidgetDevice *pd;
 
-	doLogInteger(LOG_INFO, "Device detached [%d]", pd->serial);
+	doLog(LOG_INFO, "Device detached [%d]", pd->serial);
 
 	pd = manager_create_device(phid);
 	manager_push_message(MESSAGE_DETACH, pd, MessageQueuer);
@@ -91,7 +92,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	PhidgetDevice *pd;
 	const char *type, *name, *label;
 
-	doLog(LOG_DEBUG, "Creating Device");
+	DEBUG_LOG(LOG_DEBUG, "Creating Device");
 	pd = malloc(sizeof(PhidgetDevice));
 
 	CPhidget_getSerialNumber(phid, &pd->serial);
@@ -115,7 +116,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	strncpy( pd->name,  name,  sz_name  );
 	strncpy( pd->label, label, sz_label );
 
-	doLogString(LOG_DEBUG, "Finished creating Device, type[%s]", pd->type);
+	DEBUG_LOG(LOG_DEBUG, "Finished creating Device, type[%s]", pd->type);
 
 	return pd;
 }//[/manager_create_device]
@@ -126,14 +127,14 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
  */
 void manager_destroy_device(PhidgetDevice *pd) {
 
-	doLog(LOG_DEBUG, "Destroying device");
+	DEBUG_LOG(LOG_DEBUG, "Destroying device");
 
 	free( pd->type );
 	free( pd->name );
 	free( pd->label );
 	free( pd );
 
-	doLog(LOG_DEBUG, "Finished destroying device");
+	DEBUG_LOG(LOG_DEBUG, "Finished destroying device");
 
 }//[/manager_destroy_device]
 
