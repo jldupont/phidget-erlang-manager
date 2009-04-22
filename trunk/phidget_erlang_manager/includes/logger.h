@@ -12,7 +12,7 @@
 
 	// Prototypes
 	// ==========
-	void doLog(int priority, char *message);
+	void doLog(int priority, char *message, ...);
 	void doLogInteger(int priority, char *message, int param);
 	void doLogString(int priority, char *message, char *param);
 
