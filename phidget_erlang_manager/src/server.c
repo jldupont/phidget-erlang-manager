@@ -4,11 +4,6 @@
  *  Created on: 2009-04-21
  *      Author: Jean-Lou Dupont
  */
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-
-
 #include "../includes/server.h"
 
 /**
@@ -32,15 +27,22 @@ void *server_thread(void *params) {
 	}
 
 	// connect to the Erlang subsystem
-	erl_init(NULL, 0);
+	ei_cnode node;
 
-	if (erl_connect_init(1, parameters->cookie, 0) == -1) {
+	//erl_init(NULL, 0);
+
+	if (ei_connect_init(&node, "phidget_manager", parameters->cookie, 0) < 0) {
 		doLog(LOG_ERR, "cannot connect to the Erlang subsystem");
 		return NULL;
 	}
 
+//	if (erl_connect_init(1, parameters->cookie, 0) == -1) {
+//		doLog(LOG_ERR, "cannot connect to the Erlang subsystem");
+//		return NULL;
+//	}
+
 	// publish our server port through Erlang EPMD
-	if (erl_publish(parameters->port) == -1) {
+	if (ei_publish(&node, parameters->port) == -1) {
 		doLog(LOG_ERR, "cannot publish server port with Erlang EPMD");
 		return NULL;
 	}

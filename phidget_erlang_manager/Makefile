@@ -6,8 +6,10 @@ CROSSCOMPILE?=n
 CC=gcc
 
 
-INCLUDES := -I/usr/include
-LIBS := -L/usr/lib/happycoders -lerl_interface -lei -lphidget21 -lsocket -lnsl
+# -L/usr/lib/erlang/lib/erl_interface-3.5.7/lib  \
+
+#LIBS := -L/usr/lib/happycoders -lsocket -lnsl -pthread -lphidget21 -lei
+LIBS := -L/usr/lib/happycoders -lsocket -lnsl -pthread -lphidget21 -lei
 
 phidget_erl_manager :=	src/main.c     \
 						src/manager.c  \
@@ -15,14 +17,11 @@ phidget_erl_manager :=	src/main.c     \
 						src/queuer.c   \
 						src/server.c
 
-all: phidget_erl_manager.o
+all: phidget_erl_manager
 
-phidget_erl_manager.o: 
-	$(CC) -o phidget_erl_manager.o $(INCLUDES) $(LIBS) $(phidget_erl_manager)
+phidget_erl_manager: 
+	$(CC) -v -Wall $(phidget_erl_manager) $(LIBS) -o phidget_erl_manager   
 
 clean: 
-	-rm *.a 
-	-rm *~ 
-	-rm *.so 
-	-rm *.o
+	-rm phidget_erl_manager
 
