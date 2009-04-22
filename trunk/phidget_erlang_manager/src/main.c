@@ -81,7 +81,15 @@ int main(int argc, char **argv) {
 	}
 
 	// before any threads are started...
-	//signals_init();
+	signals_init();
+
+	//  DAEMON
+	// *!*!*!*!
+	DaemonErrorCode code = daemon_handle_command("phidgetmanager", command);
+	if (DAEMON_CODE_OK != code) {
+		handleDaemonErrorCode( code );
+		return 1;
+	}
 
 	// pass along some parameters to the server thread
 	server_params params;
@@ -98,13 +106,6 @@ int main(int argc, char **argv) {
 	CPhidgetManagerHandle phidm;
 	phidm = manager_create( (void*) queuer_queue );
 
-	//  DAEMON
-	// *!*!*!*!
-	DaemonErrorCode code = daemon_handle_command("phidgetmanager", command);
-	if (DAEMON_CODE_OK != code) {
-		handleDaemonErrorCode( code );
-		return 1;
-	}
 
 	pthread_join( sThread, NULL );
 
