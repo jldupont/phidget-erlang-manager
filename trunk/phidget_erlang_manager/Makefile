@@ -12,7 +12,9 @@ phidget_erl_manager :=	src/main.c     \
 						src/manager.c  \
 						src/logger.c   \
 						src/queuer.c   \
-						src/server.c
+						src/server.c   \
+						src/signals.c  \
+						src/daemon.c
 
 all: phidget_erl_manager
 

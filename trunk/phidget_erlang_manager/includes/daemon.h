@@ -11,6 +11,8 @@
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -19,6 +21,9 @@
 	// Error codes
 	typedef enum {
 
+		DAEMON_CODE_DAEMON_EXIST         = -9,
+		DAEMON_CODE_KILL_FAILED          = -8,
+		DAEMON_CODE_INVALID_COMMAND      = -7,
 		DAEMON_CODE_PROC_CMDLINE_NOMATCH = -6,
 		DAEMON_CODE_READING_PROC_CMDLINE = -5,
 		DAEMON_CODE_INVALID_PID          = -4,
@@ -32,7 +37,7 @@
 
 
 	// PROTOTYPES - API
-	DaemonErrorCode daemon_get_pid_from_file(char *name);
+	DaemonErrorCode daemon_handle_command(char *name, char *cmd);
 
 
 #endif /* DAEMON_H_ */

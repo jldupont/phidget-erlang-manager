@@ -1,4 +1,7 @@
 Dependencies
 ============
 
-* libsocket  (on Ubuntu, the package happycoders-libsocket)
+* libsocket   (on Ubuntu, the package happycoders-libsocket)
+* Phidget21   (available through http://www.phidgets.com/  )
+* Erlang OTP  (available through http://www.erlang.org/    )
+
