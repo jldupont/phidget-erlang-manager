@@ -8,6 +8,7 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+
 	// List of Messages
 	// ================
 	enum _msgs {
@@ -38,7 +39,7 @@
 
 	// Messages table
 	// ==============
-	char *messages[] = {
+	char *main_messages[] = {
 			"OK",
 			"ERROR: missing arguments\n",
 			"ERROR: 'port' argument must be an integer [1;65535]\n",

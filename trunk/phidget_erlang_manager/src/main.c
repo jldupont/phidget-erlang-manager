@@ -16,6 +16,7 @@
 #include <sys/types.h>
 
 
+#include "../includes/helpers.h"
 #include "../includes/logger.h"
 #include "../includes/main.h"
 #include "../includes/manager.h"
@@ -64,9 +65,9 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	printf("DEBUG: port    [%u]\n", port);
-	printf("DEBUG: cookie  [%s]\n", cookie);
-	printf("DEBUG: command [%s]\n", command);
+	DEBUG_MSG("DEBUG: port    [%u]\n", port);
+	DEBUG_MSG("DEBUG: cookie  [%s]\n", cookie);
+	DEBUG_MSG("DEBUG: command [%s]\n", command);
 
 	result = validatePortCookie(port, cookie);
 	if (0!=result) {
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
 	}
 
 	// before any threads are started...
-	signals_init();
+	//signals_init();
 
 	// pass along some parameters to the server thread
 	server_params params;
@@ -105,8 +106,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-
-
 	pthread_join( sThread, NULL );
 
 	return 0;
@@ -130,7 +129,7 @@ void showHelp(int msg_id) {
 
 	printf( "%s", msg );
 
-	printf( "%s", messages[msg_id] );
+	printf( "%s", main_messages[msg_id] );
 
 }//[/showHelp]
 
@@ -140,7 +139,7 @@ void showHelp(int msg_id) {
  */
 void showMessage(int msg_id) {
 
-	printf( "%s", messages[msg_id] );
+	printf( "%s", main_messages[msg_id] );
 
 }// showMessage
 
@@ -149,7 +148,7 @@ void showMessageEx(int msg_id, ...) {
 	int _MAX_SIZE = 1024;
 	int n;
 
-	char *msg_format = messages[msg_id];
+	char *msg_format = main_messages[msg_id];
 	char *msg_args;
 
 	// if we fail for that small buffer,

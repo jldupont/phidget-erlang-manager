@@ -6,6 +6,7 @@
  */
 
 #include "../includes/daemon.h"
+#include "../includes/helpers.h"
 
 #define COMMAND_INVALID -1
 #define COMMAND_STOP     0
@@ -39,6 +40,8 @@ char *__daemon_construct_pid_filename(char *name);
  */
 DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
 
+	DEBUG_MSG("DEBUG: daemon_handle_command: BEGIN\n");
+
 	int command = __daemon_translate_command(cmd);
 	DaemonErrorCode command_result;
 
@@ -52,6 +55,8 @@ DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
 	default:
 		return DAEMON_CODE_INVALID_COMMAND;
 	}
+
+	DEBUG_MSG("DEBUG: daemon_handle_command: END\n");
 
 	return command_result;
 }// daemon_handle_command
@@ -82,6 +87,8 @@ int daemon_validate_command(char *command) {
  */
 DaemonErrorCode __daemon_handle_stop(char *name) {
 
+	DEBUG_MSG("DEBUG: __daemon_handle_stop: BEGIN\n");
+
 	DaemonErrorCode result;
 	pid_t pid;
 
@@ -90,6 +97,10 @@ DaemonErrorCode __daemon_handle_stop(char *name) {
 	if (DAEMON_CODE_OK != result) {
 		return result;
 	}
+
+	// whatever happens, we need to get rid
+	//  of stale PID file
+	__daemon_delete_pid_file(name);
 
 	// COMPARE with the command-line that should
 	//  have started the daemon
@@ -105,7 +116,8 @@ DaemonErrorCode __daemon_handle_stop(char *name) {
 		return DAEMON_CODE_KILL_FAILED;
 	}
 
-	__daemon_delete_pid_file(name);
+	DEBUG_MSG("DEBUG: __daemon_handle_stop: END\n");
+
 	return DAEMON_CODE_OK;
 } // STOP
 
@@ -115,6 +127,8 @@ DaemonErrorCode __daemon_handle_stop(char *name) {
  *  The daemon must not already exist (!)
  */
 DaemonErrorCode __daemon_handle_start(char *name) {
+
+	DEBUG_MSG("DEBUG: __daemon_handle_start: BEGIN\n");
 
 	DaemonErrorCode result;
 	pid_t pid;
@@ -133,10 +147,13 @@ DaemonErrorCode __daemon_handle_start(char *name) {
 		__daemon_delete_pid_file(name);
 	}
 
+	DEBUG_MSG("DEBUG: __daemon_handle_start: BEFORE daemon()\n");
 	// DEMON START
 	daemon(0,0);
 
 	result = __daemon_write_pid_file(name);
+
+	DEBUG_MSG("DEBUG: __daemon_handle_start: END\n");
 
 	return result;
 }// START
@@ -145,6 +162,8 @@ DaemonErrorCode __daemon_handle_start(char *name) {
  * Writes the PID file for the current daemon
  */
 DaemonErrorCode __daemon_write_pid_file(char *name) {
+
+	DEBUG_MSG("DEBUG: __daemon_write_pid_file: BEGIN\n");
 
 	char *filename;
 	pid_t pid = getpid();
@@ -168,17 +187,24 @@ DaemonErrorCode __daemon_write_pid_file(char *name) {
 	}
 	fclose(file);
 
+	DEBUG_MSG("DEBUG: __daemon_write_pid_file: END\n");
+
 	return DAEMON_CODE_OK;
 }// __daemon_write_pid_file
 
 
 void __daemon_delete_pid_file(char *name) {
+
+	DEBUG_MSG("DEBUG: __daemon_delete_pid_file: BEGIN\n");
+
 	char *filename;
 
 	filename = __daemon_construct_pid_filename(name);
 
 	remove(filename);
 	free(filename);
+
+	DEBUG_MSG("DEBUG: __daemon_delete_pid_file: END\n");
 
 }// __daemon_delete_pid_file
 
@@ -198,7 +224,7 @@ int __daemon_translate_command(char *cmd) {
 	}
 
 	if (0==strncasecmp(cmd, "stop", sizeof("stop"))) {
-		return COMMAND_START;
+		return COMMAND_STOP;
 	}
 
 	return COMMAND_INVALID;
@@ -211,34 +237,47 @@ int __daemon_translate_command(char *cmd) {
  */
 DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
 
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: BEGIN\n");
+
 	char *filename;
-	char read_buffer[16];
+	char read_buffer[32];
 	FILE *file;
 
-	if (name==NULL) {
+	if (NULL==name) {
 		return DAEMON_CODE_INVALID_NAME;
 	}
 
 	filename = __daemon_construct_pid_filename(name);
 
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: OPENING file\n");
 	file = fopen( filename, "r" );
+	if (NULL==file) {
+		return DAEMON_CODE_READING_PID_FILE;
+	}
 
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: READING file\n");
 	char *result = \
 		fgets(read_buffer, sizeof(read_buffer)*sizeof(char), file );
 
 	fclose( file );
+
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: FREEing filename\n");
 	free(filename);
 
-	if (result==read_buffer) {
-		return DAEMON_CODE_OK;
+	if (result!=read_buffer) {
+		return DAEMON_CODE_READING_PID_FILE;
 	}
 
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: CONVERTING pid\n");
 	pid_t _pid = (pid_t) atoi( read_buffer );
 	if (0==_pid) {
 		return DAEMON_CODE_INVALID_PID;
 	}
 
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: RETURNING pid[%u]\n", _pid);
 	*pid = _pid;
+
+	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: END\n");
 
 	return DAEMON_CODE_OK;
 }// daemon_get_pid_from_file
@@ -251,9 +290,13 @@ DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
  */
 char *__daemon_construct_pid_filename(char *name) {
 
+	DEBUG_MSG("DEBUG: __daemon_construct_pid_filename: BEGIN\n");
+
 	char *filename = malloc(1024*sizeof(char));
 
 	snprintf(filename, 1024*sizeof(char), "/var/run/%s", name);
+
+	DEBUG_MSG("DEBUG: __daemon_construct_pid_filename: END\n");
 
 	return filename;
 }//__daemon_construct_pid_filename
@@ -274,6 +317,8 @@ char *__daemon_construct_pid_filename(char *name) {
  */
 DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 
+	DEBUG_MSG("DEBUG: __daemon_verify_match: BEGIN\n");
+
 	char filename[1024];
 	char read_buffer[1024];
 	FILE *file;
@@ -281,17 +326,20 @@ DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 	regex_t * myregex = calloc(1, sizeof(regex_t));
 
 
-	if (name==NULL) {
+	if (NULL==name) {
 		return DAEMON_CODE_INVALID_NAME;
 	}
 
-	if (pid==0) {
+	if (0==pid) {
 		return DAEMON_CODE_INVALID_PID;
 	}
 
 	snprintf(filename, sizeof(filename)*sizeof(char), "/proc/%u/cmdline", pid);
 
 	file = fopen( filename, "r" );
+	if (NULL==file) {
+		return DAEMON_CODE_READING_PROC_CMDLINE;
+	}
 
 	char *result = \
 		fgets(read_buffer, sizeof(read_buffer)*sizeof(char), file );
@@ -315,6 +363,8 @@ DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 	if (0!=rc) {
 		return DAEMON_CODE_PROC_CMDLINE_NOMATCH;
 	}
+
+	DEBUG_MSG("DEBUG: __daemon_verify_match: END\n");
 
 	return DAEMON_CODE_OK;
 }// daemon_verify_match

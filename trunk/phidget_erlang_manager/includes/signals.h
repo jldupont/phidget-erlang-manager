@@ -8,9 +8,9 @@
 #ifndef SIGNALS_H_
 #define SIGNALS_H_
 
+#include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-
 
 		//PROTOTYPES//
 		//==========//
