@@ -20,7 +20,8 @@
 #include "../includes/logger.h"
 #include "../includes/main.h"
 #include "../includes/manager.h"
-#include "../includes/queuer.h"
+//#include "../includes/queuer.h"
+#include "../includes/queue.h"
 #include "../includes/server.h"
 #include "../includes/signals.h"
 #include "../includes/daemon.h"
@@ -95,10 +96,19 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	// the command was most probably a ``start``
+	//  but there was an error...
 	if (DAEMON_CODE_OK != code) {
 		handleDaemonErrorCode( code );
 		return 1;
 	}
+
+
+
+	// *!*!*!*!* START SUCCESSFUL !@!@!@@!@!!@!!
+	// =========================================
+
+
 
 	// pass along some parameters to the server thread
 	server_params params;
@@ -111,7 +121,12 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	queuer_init();
+
+	// --------------------------------
+	queue *client_to_server_queue;
+
+	client_to_server_queue = queue_create();
+
 	CPhidgetManagerHandle phidm;
 	phidm = manager_create( (void*) queuer_queue );
 
