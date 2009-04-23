@@ -11,10 +11,10 @@ LIBS := -L/usr/lib/happycoders -lsocket -lnsl -pthread -lphidget21 -lei
 phidgetmanager :=		src/main.c     \
 						src/manager.c  \
 						src/logger.c   \
-						src/queuer.c   \
 						src/server.c   \
 						src/signals.c  \
 						src/daemon.c   \
+						src/queue.c    \
 						src/qpipe.c    \
 						src/qport.c    
 

@@ -8,6 +8,8 @@
 #ifndef HELPERS_H_
 #define HELPERS_H_
 
+#include "logger.h"
+
 #ifndef NULL
 #define NULL (void *) 0
 #endif

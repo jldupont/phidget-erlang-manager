@@ -15,13 +15,13 @@
 
 	typedef struct _queue_node {
 		void *msg;
-		struct queue_node *next;
+		struct _queue_node *next;
 	} queue_node;
 
 
-	typedef struct _queue {
-		pthread_mutex_t mutex;
-		node *head, *tail;
+	typedef struct {
+		pthread_mutex_t *mutex;
+		queue_node *head, *tail;
 	} queue;
 
 

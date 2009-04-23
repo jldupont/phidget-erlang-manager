@@ -147,6 +147,7 @@ DaemonErrorCode __daemon_handle_start(char *name) {
 
 		//get rid of stale PID file
 		__daemon_delete_pid_file(name);
+		DEBUG_MSG("DEBUG: __daemon_handle_start: got rid of stale PID file\n");
 	}
 
 	DEBUG_MSG("DEBUG: __daemon_handle_start: BEFORE daemon()\n");

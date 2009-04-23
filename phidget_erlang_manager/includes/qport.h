@@ -8,9 +8,13 @@
 #ifndef QPORT_H_
 #define QPORT_H_
 
+#include <sys/types.h>
 #include "qpipe.h"
 
-#define QPORT_0	0
+#define QPORT_CLIENT 0
+#define QPORT_SERVER 1
+
+#define QPORT_0  0
 #define QPORT_1  1
 
 
