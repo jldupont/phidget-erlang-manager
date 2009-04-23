@@ -21,12 +21,15 @@ queue *queue_create(void) {
 
 	// if this malloc fails,
 	//  there are much bigger problems that loom
+	pthread_mutex_t *mutex = malloc( sizeof(pthread_mutex_t) );
 	queue *q = malloc( sizeof(queue) );
-	if (NULL != q) {
+	if ((NULL != q) && (NULL!=mutex)){
 
 		q->head  = NULL;
 		q->tail  = NULL;
-		q->mutex = PTHREAD_MUTEX_INITIALIZER;
+
+		pthread_mutex_init( mutex, NULL );
+		q->mutex = mutex;
 	}
 
 	return q;
@@ -50,9 +53,9 @@ int queue_put(queue *q, void *msg) {
 
 	queue_node *tmp=NULL;
 
-	DEBUG_LOG(LOG_DEBUG,"queue_put: BEGIN");
+	//DEBUG_LOG(LOG_DEBUG,"queue_put: BEGIN");
 
-	pthread_mutex_lock( &(q->mutex) );
+	pthread_mutex_lock( q->mutex );
 
 		// if this malloc fails,
 		//  there are much bigger problems that loom
@@ -67,20 +70,20 @@ int queue_put(queue *q, void *msg) {
 			tmp->next=NULL;
 
 			//insert pointer to element first
-			if (q->tail!=NULL)
+			if (NULL!=q->tail)
 				(q->tail)->next=tmp;
 
 			// insert element
 			q->tail = tmp;
 
 			//was the queue empty?
-			if (q->head==NULL)
+			if (NULL==q->head)
 				q->head=tmp;
 		//}
 
-	pthread_mutex_unlock( &(q->mutex) );
+	pthread_mutex_unlock( q->mutex );
 
-	DEBUG_LOG(LOG_DEBUG,"queue_put: END");
+	//DEBUG_LOG(LOG_DEBUG,"queue_put: END");
 
 	return 1;
 }//[/queue_put]
@@ -95,9 +98,9 @@ void *queue_get(queue *q) {
 	queue_node *tmp = NULL;
 	void *msg=NULL;
 
-	DEBUG_LOG(LOG_DEBUG,"queue_get: BEGIN");
+	//DEBUG_LOG(LOG_DEBUG,"queue_get: BEGIN");
 
-	pthread_mutex_lock( &(q->mutex) );
+	pthread_mutex_lock( q->mutex );
 
 		tmp = q->head;
 		if (tmp!=NULL) {
@@ -107,9 +110,9 @@ void *queue_get(queue *q) {
 			doLog(LOG_DEBUG,"queue_get: MESSAGE PRESENT");
 		}
 
-	pthread_mutex_unlock( &(q->mutex) );
+	pthread_mutex_unlock( q->mutex );
 
-	DEBUG_LOG(LOG_DEBUG,"queue_get: END");
+	//DEBUG_LOG(LOG_DEBUG,"queue_get: END");
 
 	return msg;
 }//[/queue_get]
@@ -126,12 +129,12 @@ int queue_peek(queue *q) {
 
 	//DEBUG_LOG(LOG_DEBUG,"queue_peek: BEGIN");
 
-	pthread_mutex_lock( &(q->mutex) );
+	pthread_mutex_lock( q->mutex );
 
 		tmp = q->head;
 		result = (tmp!=NULL);
 
-	pthread_mutex_unlock( &(q->mutex) );
+	pthread_mutex_unlock( q->mutex );
 
 	//DEBUG_LOG(LOG_DEBUG,"queue_peek: END");
 

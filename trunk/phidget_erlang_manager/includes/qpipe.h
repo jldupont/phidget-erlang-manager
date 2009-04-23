@@ -11,6 +11,8 @@
 #ifndef QPIPE_H_
 #define QPIPE_H_
 
+#include <sys/types.h>
+
 #include "queue.h"
 
 	//PUBLIC

@@ -20,14 +20,14 @@
 /**
  * Phidget Manager controller thread
  */
-CPhidgetManagerHandle manager_create(void *MessageQueuer) {
+CPhidgetManagerHandle manager_create(qport_context *qpc) {
 
 	CPhidgetManagerHandle phidm;
 
 	// open up the Phidget Manager
 	CPhidgetManager_create(&phidm);
-	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, MessageQueuer);
-	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, MessageQueuer);
+	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, (void *)qpc);
+	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)qpc);
 
 	doLog(LOG_DEBUG, "Opening Phidget Manager");
 	CPhidgetManager_open(phidm);
@@ -39,7 +39,7 @@ CPhidgetManagerHandle manager_create(void *MessageQueuer) {
 /**
  * Pushes a message on the communication queue
  */
-void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, void *MessageQueuer) {
+void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, qport_context *qpc) {
 
 	DEBUG_LOG(LOG_INFO, "Pushing message");
 
@@ -47,10 +47,7 @@ void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, voi
 
 	msg = manager_create_message(type, pd);
 
-	// for clarity
-	void (*mq)( PhidgetManagerMessage *) = (void (*)(PhidgetManagerMessage *)) MessageQueuer;
-
-	(*mq)( msg );
+	qport_send(qpc, (void *)msg);
 
 }//[/manager_push_message]
 
@@ -58,13 +55,13 @@ void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, voi
 /**
  * Attach Event handler
  */
-int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
+int manager_gotAttach(CPhidgetHandle phid, void *qpc) {
 	PhidgetDevice *pd;
 
 	doLog(LOG_DEBUG, "Device attached [%u]", pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_ATTACH, pd, MessageQueuer);
+	manager_push_message(MESSAGE_ATTACH, pd, (qport_context *) qpc);
 
 	return 0;
 }//[/manager_gotAttach]
@@ -72,13 +69,13 @@ int manager_gotAttach(CPhidgetHandle phid, void *MessageQueuer) {
 /**
  * Detach Event Handler
  */
-int manager_gotDetach(CPhidgetHandle phid, void *MessageQueuer) {
+int manager_gotDetach(CPhidgetHandle phid, void *qpc) {
 	PhidgetDevice *pd;
 
 	doLog(LOG_INFO, "Device detached [%d]", pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_DETACH, pd, MessageQueuer);
+	manager_push_message(MESSAGE_DETACH, pd, (qport_context *) qpc);
 
 	return 0;
 }//[/manager_gotDetach]

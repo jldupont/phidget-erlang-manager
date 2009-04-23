@@ -51,10 +51,10 @@ void *server_thread(void *params) {
 	//main loop
 	while(1) {
 		sleep(5);
-		msg = queuer_dequeue();
+		msg = (PhidgetManagerMessage *) qport_receive(parameters->qpc);
 		if (msg!=NULL) {
 			doLog(LOG_DEBUG, "got message");
-			queuer_release(msg);
+			manager_destroy_message(msg);
 		}
 	}
 

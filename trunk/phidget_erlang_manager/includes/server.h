@@ -25,13 +25,14 @@
 #include "ei.h"
 
 #include "../includes/logger.h"
-#include "../includes/queuer.h"
+#include "../includes/qport.h"
 #include "../includes/manager.h"  //for PhidgetManagerMessage type
 
 	typedef struct {
 
 		int port;
 		char *cookie;
+		qport_context *qpc;
 
 	} server_params;
 

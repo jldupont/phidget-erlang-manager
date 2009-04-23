@@ -21,7 +21,8 @@
 #include "../includes/main.h"
 #include "../includes/manager.h"
 //#include "../includes/queuer.h"
-#include "../includes/queue.h"
+#include "../includes/qpipe.h"
+#include "../includes/qport.h"
 #include "../includes/server.h"
 #include "../includes/signals.h"
 #include "../includes/daemon.h"
@@ -109,26 +110,72 @@ int main(int argc, char **argv) {
 	// =========================================
 
 
+	/*
+	 *  COMMUNICATIONS
+	 *  ==============
+	 *
+	 *  PhidgetManager  < -- > Erlang Cnode
+	 */
 
-	// pass along some parameters to the server thread
+	//{
+	qpipe *queue_pipe;
+
+	queue_pipe = qpipe_create();
+	if (NULL==queue_pipe) {
+		doLog(LOG_ERR, "unable to create qpipe");
+		goto _close;
+	}
+
+	qport_context *qp_phm, *qp_erl;
+
+	qp_phm = qport_init( queue_pipe, QPORT_0 );
+	qp_erl = qport_init( queue_pipe, QPORT_1 );
+
+	if (NULL == qp_phm) {
+		doLog(LOG_ERR, "unable to create manager port");
+		goto _close;
+	}
+
+	if (NULL == qp_erl) {
+		doLog(LOG_ERR, "unable to create server port");
+		goto _close;
+	}
+	//}
+
+
+	//{
 	server_params params;
-	params.port = port;
+
+	params.port   = port;
 	params.cookie = cookie;
+	params.qpc    = qp_erl;
+
 
 	int result2 = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
 	if (result2) {
 		showMessage( MSG_ERROR_SERVER_THREAD );
 		return 1;
 	}
+	//}
 
-
-	// --------------------------------
-	queue *client_to_server_queue;
-
-	client_to_server_queue = queue_create();
 
 	CPhidgetManagerHandle phidm;
-	phidm = manager_create( (void*) queuer_queue );
+	phidm = manager_create( qp_phm );
+
+	// running in the server & manager threads
+	// at this point
+
+	int signal_caught;
+
+_close:
+//====
+
+	do {
+		signal_caught = signals_get_signal();
+	} while(signal_caught!=SIGTERM || signal_caught!=SIGKILL);
+
+	// TODO send kill message to server thread
+
 
 	pthread_join( sThread, NULL );
 
