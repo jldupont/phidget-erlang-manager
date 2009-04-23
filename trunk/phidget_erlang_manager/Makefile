@@ -14,7 +14,9 @@ phidgetmanager :=		src/main.c     \
 						src/queuer.c   \
 						src/server.c   \
 						src/signals.c  \
-						src/daemon.c
+						src/daemon.c   \
+						src/qpipe.c    \
+						src/qport.c    
 
 all: phidgetmanager
 

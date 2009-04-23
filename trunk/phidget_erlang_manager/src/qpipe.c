@@ -56,8 +56,8 @@ qpipe *qpipe_create(void) {
  *
  */
 int qpipe_send_to_server(qpipe *qp, void *msg) {
-	DEBUG_LOG_NULL_PTR(qp,  "qpipe:qpipe_send_to_server [null qp]");
-	DEBUG_LOG_NULL_PTR(msg, "qpipe:qpipe_send_to_server [null msg]");
+	DEBUG_LOG_NULL_PTR(qp,  "qpipe_send_to_server [null qp]");
+	DEBUG_LOG_NULL_PTR(msg, "qpipe_send_to_server [null msg]");
 
 	return queue_put(qp->client_to_server, msg);
 
@@ -68,8 +68,8 @@ int qpipe_send_to_server(qpipe *qp, void *msg) {
  * Sends a message to the Client FROM Server
  */
 int qpipe_send_to_client(qpipe *qp, void *msg) {
-	DEBUG_LOG_NULL_PTR(qp,  "qpipe:qpipe_send_to_client [null qp]");
-	DEBUG_LOG_NULL_PTR(msg, "qpipe:qpipe_send_to_client [null msg]");
+	DEBUG_LOG_NULL_PTR(qp,  "qpipe_send_to_client [null qp]");
+	DEBUG_LOG_NULL_PTR(msg, "qpipe_send_to_client [null msg]");
 
 	return queue_put(qp->server_to_client, msg);
 } // server_receive
@@ -79,7 +79,7 @@ int qpipe_send_to_client(qpipe *qp, void *msg) {
  * Receives a message from the Server
  */
 void *qpipe_receive_from_server(qpipe *qp) {
-	DEBUG_LOG_NULL_PTR(qp,  "qpipe:client_send [null qp]");
+	DEBUG_LOG_NULL_PTR(qp,  "client_send [null qp]");
 
 	return queue_get(qp->client_to_server);
 }// client_send
@@ -89,7 +89,7 @@ void *qpipe_receive_from_server(qpipe *qp) {
  * Receives a message from the Client
  */
 void *qpipe_receive_from_client(qpipe *qp) {
-	DEBUG_LOG_NULL_PTR(qp, "qpipe:qpipe_receive_from_client [null qp]");
+	DEBUG_LOG_NULL_PTR(qp, "qpipe_receive_from_client [null qp]");
 
 	return queue_get(qp->server_to_client);
 }// client_receive
