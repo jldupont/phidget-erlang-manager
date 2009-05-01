@@ -1,0 +1,11 @@
+"""
+scons build file
+
+@author: Jean-Lou Dupont
+"""
+
+Import('env')
+
+pr = env.Program('phidget_erlang_manager', Glob("*.c"), LIBS=['pthread','litm'] )
+Default(pr)
+	
