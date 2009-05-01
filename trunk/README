@@ -1,0 +1,28 @@
+
+@author: Jean-Lou Dupont
+
+
+
+Dependencies
+============
+
+	* libsocket   (on Ubuntu, the package happycoders-libsocket)
+	* Phidget21   (available through http://www.phidgets.com/  )
+	* Erlang OTP  (available through http://www.erlang.org/    )
+
+
+Theory of Operation
+===================
+
+	The daemon starts a ``server`` thread that is responsible for
+	communicating with Erlang clients. The thread polls for 
+	messages.
+	
+
+
+Messages: from ``phidgetmanager`` to Erlang client
+--------------------------------------------------
+
+	- Device attached
+	- Device detached
+		
