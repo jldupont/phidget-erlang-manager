@@ -1,8 +1,8 @@
-/*
- * daemon.h
+/**
+ * @file daemon.h
  *
- *  Created on: 2009-04-22
- *      Author: Jean-Lou Dupont
+ * @date 2009-04-22
+ * @author: Jean-Lou Dupont
  */
 
 #ifndef DAEMON_H_

@@ -16,13 +16,10 @@
 #include <sys/types.h>
 
 
-#include "../includes/helpers.h"
-#include "../includes/logger.h"
-#include "../includes/main.h"
-#include "../includes/manager.h"
-//#include "../includes/queuer.h"
-#include "../includes/qpipe.h"
-#include "../includes/qport.h"
+#include "helpers.h"
+#include "logger.h"
+#include "main.h"
+#include "manager.h"
 #include "../includes/server.h"
 #include "../includes/signals.h"
 #include "../includes/daemon.h"

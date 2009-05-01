@@ -1,8 +1,8 @@
-/*
- * main.h
+/**
+ * @file main.h
  *
- *  Created on: 2009-04-20
- *      Author: Jean-Lou Dupont
+ * @date 2009-04-20
+ * @author: Jean-Lou Dupont
  */
 
 #ifndef MAIN_H_
