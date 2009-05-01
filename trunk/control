@@ -1,0 +1,11 @@
+Package: phidget_erlang_manager
+Version: $version
+Priority: optional
+Architecture: i386
+Depends: python (>= 2.5)
+Section: Other
+Maintainer: Jean-Lou Dupont <jl@jldupont.com>
+Description: Phidget Erlang Manager
+ Linux daemon which enables control of Phidget devices
+ through distributed Erlang nodes.
+ .
