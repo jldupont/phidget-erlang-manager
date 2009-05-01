@@ -1,3 +1,4 @@
 #summary Description of the architecture.
+#labels Featured
 
 = Principles =
