@@ -1,8 +1,8 @@
-/*
- * manager_thread.h
+/**
+ * @file manager_thread.h
  *
- *  Created on: 2009-04-20
- *      Author: Jean-Lou Dupont
+ * @date 2009-04-20
+ * @author Jean-Lou Dupont
  */
 
 #ifndef MANAGER_THREAD_H_

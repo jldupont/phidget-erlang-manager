@@ -1,8 +1,8 @@
-/*
- * server.h
+/**
+ * @file server.h
  *
- *  Created on: 2009-04-21
- *      Author: Jean-Lou Dupont
+ * @date   2009-04-21
+ * @author Jean-Lou Dupont
  */
 
 #ifndef SERVER_H_

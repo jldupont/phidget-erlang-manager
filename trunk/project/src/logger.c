@@ -1,5 +1,5 @@
-/*
- * logger.c
+/**
+ * @file logger.c
  *
  *  Created on: 2009-04-21
  *      Author: Jean-Lou Dupont

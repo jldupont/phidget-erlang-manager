@@ -1,8 +1,8 @@
-/*
- * manager.c
+/**
+ * @file manager.c
  *
- *  Created on: 2009-04-17
- *      Author: Jean-Lou Dupont
+ * @date   2009-04-17
+ * @author Jean-Lou Dupont
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +11,9 @@
 
 #include <phidget21.h>
 
-#include "../includes/helpers.h"
-#include "../includes/logger.h"
-#include "../includes/manager.h"
+#include "helpers.h"
+#include "logger.h"
+#include "manager.h"
 
 
 

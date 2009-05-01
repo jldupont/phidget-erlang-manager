@@ -5,8 +5,8 @@
  * @author Jean-Lou Dupont
  */
 
-#include "../includes/daemon.h"
-#include "../includes/helpers.h"
+#include "daemon.h"
+#include "helpers.h"
 
 #define COMMAND_INVALID -1
 #define COMMAND_STOP     0

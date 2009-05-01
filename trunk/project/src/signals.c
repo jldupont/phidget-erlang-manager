@@ -1,14 +1,14 @@
-/*
- * signals.c
+/**
+ * @file signals.c
  *
  * Signal handling for the whole process
  *
- *  Created on: 2009-04-22
- *      Author: Jean-Lou Dupont
+ *  @date   2009-04-22
+ *  @author Jean-Lou Dupont
  */
 
-#include "../includes/signals.h"
-#include "../includes/helpers.h"
+#include "signals.h"
+#include "helpers.h"
 
 
 // PRIVATE

@@ -1,10 +1,10 @@
-/*
- * server.c
+/**
+ * @file server.c
  *
- *  Created on: 2009-04-21
- *      Author: Jean-Lou Dupont
+ * @date   2009-04-21
+ * @author Jean-Lou Dupont
  */
-#include "../includes/server.h"
+#include "server.h"
 
 /**
  * Erlang Server Thread
