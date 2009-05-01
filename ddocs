@@ -1,2 +1,9 @@
-#!/usr/bin/doxygen doxygen.cfg
+#!/bin/bash
 
+doxygen doxygen.cfg
+
+echo 'Copying doc'
+cp -u ./docs/html/*.html ./docs
+cp -u ./docs/html/*.png ./docs
+cp -u ./docs/html/*.css ./docs
+cp -u ./docs/html/*.gif ./docs

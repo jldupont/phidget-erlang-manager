@@ -1,8 +1,8 @@
-/*
- * daemon.c
+/**
+ * @file daemon.c
  *
- *  Created on: 2009-04-22
- *      Author: Jean-Lou Dupont
+ * @date   2009-04-22
+ * @author Jean-Lou Dupont
  */
 
 #include "../includes/daemon.h"
