@@ -3,39 +3,39 @@
 
 = Principles =
 
-  - Devices are discovered dynamically
-  - The state changes "device attach" and "device detach" are published
-    - A list of _active_ devices is published at a regular interval
+  * Devices are discovered dynamically
+  * The state changes "device attach" and "device detach" are published
+    * A list of _active_ devices is published at a regular interval
       
-  - Each device publishes its state changes
-	- Each device publishes its current state at a regular interval
+  * Each device publishes its state changes
+	* Each device publishes its current state at a regular interval
   
 
 = System Components =
 
 The architecture consists roughly of the major blocks:
 
-  - server:  the Erlang port driver
-  - manager: interface to Phidget21 library
+  * server:  the Erlang port driver
+  * manager: interface to Phidget21 library
   
 == Manager ==
 
-  - Discovers phidget devices
-  - Opens / closes phidget devices dynamically
-  - Generates *phidget_devices* message
+  * Discovers phidget devices
+  * Opens / closes phidget devices dynamically
+  * Generates *phidget_devices* message
   
   
 == Server ==
 
-  - Acts as _server_  for Erlang nodes
-  - Bridges messages to/from _manager_
+  * Acts as _server_  for Erlang nodes
+  * Bridges messages to/from _manager_
 
 
 == Messages ==
 
-  - _phidget_devices_   : list of active devices
-  - _phidget_state_     : list of I/O states of a device
-  - _phidget_set_states : request to set the states of a phidget
+  * _phidget_devices_   : list of active devices
+  * _phidget_state_     : list of I/O states of a device
+  * _phidget_set_states : request to set the states of a phidget
   
 === Format ===
 
