@@ -44,7 +44,7 @@ The architecture consists roughly of the major blocks:
   message_body
   }}}
 
-  *Message _phidget_devices_:*
+  ====Message _phidget_devices_:====
    
   * count
 	  * phidget_serial
@@ -52,7 +52,7 @@ The architecture consists roughly of the major blocks:
 	  * phidget_type
 	  ...
 	  
-  *Message _phidget_states_:*
+  ====Message _phidget_states_====
   
   * phidget_serial
   * count
@@ -60,5 +60,6 @@ The architecture consists roughly of the major blocks:
     * io_state
 
     
-  *io_state*
+  ====io_state====
+  
   
