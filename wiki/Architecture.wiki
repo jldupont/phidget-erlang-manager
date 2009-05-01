@@ -34,9 +34,29 @@ The architecture consists roughly of the major blocks:
 == Messages ==
 
   * _phidget_devices_   : list of active devices
-  * _phidget_state_     : list of I/O states of a device
+  * _phidget_states_    : list of I/O states of a device
   * _phidget_set_states : request to set the states of a phidget
   
 === Format ===
 
+  {{{
+  message_type
+  message_body
+  }}}
+
+  *Message _phidget_devices_:* 
+  * count
+	  * phidget_serial
+	  * phidget_name
+	  * phidget_type
+	  ...
+	  
+  *Message _phidget_states_:*
+  * phidget_serial
+  * count
+    * io_type
+    * io_state
+
+    
+  *io_state*
   
