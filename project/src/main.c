@@ -1,8 +1,8 @@
 /**
- * main.c
+ * @file main.c
  *
- *  Created on: 2009-04-17
- *      Author: Jean-Lou Dupont
+ * @date   2009-04-17
+ * @author Jean-Lou Dupont
  */
 
 #include <getopt.h>
