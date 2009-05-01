@@ -61,5 +61,7 @@ The architecture consists roughly of the major blocks:
 
     
   ====io_state====
-  
-  
+  An _io_ can have the following states:
+  * value  (depends on _io type_ eg. [0,1] for digital _io_)
+  * X      (don't care ie. don't change)
+  * I      (invert / toggle: applicable to digital _io_) 
