@@ -2,3 +2,12 @@
 #labels Featured
 
 = Principles =
+
+  - Devices are discovered dynamically
+  - The state changes "device attach" and "device detach" are published
+    - A list of _active_ devices is published at a regular interval
+      
+  - Each device publishes its state changes
+	- Each device publishes its current state at a regular interval
+  
+  
