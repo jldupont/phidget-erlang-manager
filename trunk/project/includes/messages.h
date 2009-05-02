@@ -45,9 +45,8 @@
 			 *
 			 */
 			typedef struct {
-				int count;
-				phidget_device (*devices)[];
-			} message_phidget_devices;
+				phidget_device device;
+			} message_phidget_device;
 
 
 			/**
@@ -73,7 +72,7 @@
 
 		bus_message_type type;
 		union {
-			message_phidget_devices    pd;
+			message_phidget_device     pd;
 			message_phidget_states     ps;
 			message_phidget_set_states pss;
 		};

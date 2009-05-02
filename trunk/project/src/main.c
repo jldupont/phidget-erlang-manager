@@ -6,7 +6,21 @@
  *
  * @mainpage	Welcome to the Phidget Erlang Manager Documention - version $version
  *
+ * \section		Dependencies
  *
+ *				<b>Mandatory</b>
+ *				- Phidget21 library  (available at http://www.phidgets.com/)
+ *				- litm library       (available at http://litm.googlecode.com/)
+ *				- pthread library    (usually available on most Linux distros)
+ *
+ * 				<b>To build from source:</b>
+ *				- scons
+ *				- python >= 2.5
+ *
+ *
+ * \section Usage Usage
+ *
+ *				phidget_manager [start|stop]
  *
  */
 
@@ -25,9 +39,9 @@
 #include "logger.h"
 #include "main.h"
 #include "manager.h"
-#include "../includes/server.h"
-#include "../includes/signals.h"
-#include "../includes/daemon.h"
+#include "server.h"
+#include "signals.h"
+#include "daemon.h"
 
 
 typedef enum _CMDLINE_ERRORS {
