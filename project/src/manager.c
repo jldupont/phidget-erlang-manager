@@ -3,7 +3,21 @@
  *
  * @date   2009-04-17
  * @author Jean-Lou Dupont
+ *
+ *
+ * \section Theory_Operation Theory of Operation
+ *
+ *			- A Phidget Manager instance is created with the onAttach/onDetach events registered)
+ *				- For each device attach event, the corresponding device is _opened_ and the event handlers registered
+ *
+ *			- One _litm_ message bus connection is created and shared for all devices
+ *
+ * \section Device_Supported Device Supported
+ *
+ * 			For this release, only the *InterfaceKit* device family is supported.
+ *
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
