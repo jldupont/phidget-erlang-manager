@@ -13,4 +13,72 @@
 #define MESSAGES_H_
 
 
+	/**
+	 * Message type field definition
+	 */
+	typedef enum _bus_message_type {
+
+
+
+	} bus_message_type;
+
+
+	/**
+	 * Definition of a _phidget device_
+	 *
+	 * @param serial serial number
+	 * @param name   device name
+	 * @param type   device type
+	 */
+	typedef struct {
+
+		char serial[32];
+		char name[32];
+		char type[32];
+
+	} phidget_device;
+
+			/**
+			 * Definition of message _phidget_devices_
+			 *
+			 * @param count the number of devices listed in the message
+			 *
+			 */
+			typedef struct {
+				int count;
+				phidget_device (*devices)[];
+			} message_phidget_devices;
+
+
+			/**
+			 * Definition of message _phidget_states_
+			 */
+			typedef struct {
+
+			} message_phidget_states;
+
+
+			/**
+			 * Definition message _phidget_set_states_
+			 */
+			typedef struct {
+
+			} message_phidget_set_states;
+
+
+	/**
+	 * Message envelope definition
+	 */
+	typedef struct {
+
+		bus_message_type type;
+		union {
+			message_phidget_devices    pd;
+			message_phidget_states     ps;
+			message_phidget_set_states pss;
+		};
+
+	} bus_message;
+
+
 #endif /* MESSAGES_H_ */

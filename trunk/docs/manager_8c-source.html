@@ -19,11 +19,11 @@
       <li><a href="globals.html"><span>Globals</span></a></li>
     </ul>
   </div>
-<h1>project/src/manager.c</h1><a href="manager_8c.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/*</span>
-<a name="l00002"></a>00002 <span class="comment"> * manager.c</span>
+<h1>project/src/manager.c</h1><a href="manager_8c.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/**</span>
+<a name="l00002"></a>00002 <span class="comment"> * @file manager.c</span>
 <a name="l00003"></a>00003 <span class="comment"> *</span>
-<a name="l00004"></a>00004 <span class="comment"> *  Created on: 2009-04-17</span>
-<a name="l00005"></a>00005 <span class="comment"> *      Author: Jean-Lou Dupont</span>
+<a name="l00004"></a>00004 <span class="comment"> * @date   2009-04-17</span>
+<a name="l00005"></a>00005 <span class="comment"> * @author Jean-Lou Dupont</span>
 <a name="l00006"></a>00006 <span class="comment"> */</span>
 <a name="l00007"></a>00007 <span class="preprocessor">#include &lt;stdio.h&gt;</span>
 <a name="l00008"></a>00008 <span class="preprocessor">#include &lt;stdlib.h&gt;</span>
@@ -32,16 +32,16 @@
 <a name="l00011"></a>00011 
 <a name="l00012"></a>00012 <span class="preprocessor">#include &lt;phidget21.h&gt;</span>
 <a name="l00013"></a>00013 
-<a name="l00014"></a>00014 <span class="preprocessor">#include "../includes/helpers.h"</span>
-<a name="l00015"></a>00015 <span class="preprocessor">#include "../includes/logger.h"</span>
-<a name="l00016"></a>00016 <span class="preprocessor">#include "../includes/manager.h"</span>
+<a name="l00014"></a>00014 <span class="preprocessor">#include "<a class="code" href="helpers_8h.html">helpers.h</a>"</span>
+<a name="l00015"></a>00015 <span class="preprocessor">#include "<a class="code" href="logger_8h.html">logger.h</a>"</span>
+<a name="l00016"></a>00016 <span class="preprocessor">#include "<a class="code" href="manager_8h.html">manager.h</a>"</span>
 <a name="l00017"></a>00017 
 <a name="l00018"></a>00018 
 <a name="l00019"></a>00019 <span class="comment"></span>
 <a name="l00020"></a>00020 <span class="comment">/**</span>
 <a name="l00021"></a>00021 <span class="comment"> * Phidget Manager controller thread</span>
 <a name="l00022"></a>00022 <span class="comment"> */</span>
-<a name="l00023"></a><a class="code" href="manager_8h.html#4b631931877d32faec304ac2657a4f73">00023</a> CPhidgetManagerHandle <a class="code" href="manager_8c.html#4b631931877d32faec304ac2657a4f73">manager_create</a>(<a class="code" href="structqport__context.html">qport_context</a> *qpc) {
+<a name="l00023"></a><a class="code" href="manager_8h.html#4b631931877d32faec304ac2657a4f73">00023</a> CPhidgetManagerHandle <a class="code" href="manager_8c.html#4b631931877d32faec304ac2657a4f73">manager_create</a>(qport_context *qpc) {
 <a name="l00024"></a>00024 
 <a name="l00025"></a>00025         CPhidgetManagerHandle phidm;
 <a name="l00026"></a>00026 
@@ -60,7 +60,7 @@
 <a name="l00039"></a>00039 <span class="comment">/**</span>
 <a name="l00040"></a>00040 <span class="comment"> * Pushes a message on the communication queue</span>
 <a name="l00041"></a>00041 <span class="comment"> */</span>
-<a name="l00042"></a><a class="code" href="manager_8h.html#ddca934ecdba237c1bf92f5d86fa7571">00042</a> <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a> type, <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *pd, <a class="code" href="structqport__context.html">qport_context</a> *qpc) {
+<a name="l00042"></a><a class="code" href="manager_8h.html#ddca934ecdba237c1bf92f5d86fa7571">00042</a> <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a> type, <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *pd, qport_context *qpc) {
 <a name="l00043"></a>00043 
 <a name="l00044"></a>00044         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_INFO, <span class="stringliteral">"Pushing message"</span>);
 <a name="l00045"></a>00045 
@@ -68,7 +68,7 @@
 <a name="l00047"></a>00047 
 <a name="l00048"></a>00048         msg = <a class="code" href="manager_8c.html#e7babb3234d64955679e1c5bbd47038a">manager_create_message</a>(type, pd);
 <a name="l00049"></a>00049 
-<a name="l00050"></a>00050         <a class="code" href="qport_8c.html#1b4a1e288569f7750fbcedf0ddafa153">qport_send</a>(qpc, (<span class="keywordtype">void</span> *)msg);
+<a name="l00050"></a>00050         qport_send(qpc, (<span class="keywordtype">void</span> *)msg);
 <a name="l00051"></a>00051 
 <a name="l00052"></a>00052 }<span class="comment">//[/manager_push_message]</span>
 <a name="l00053"></a>00053 
@@ -82,7 +82,7 @@
 <a name="l00061"></a>00061         <a class="code" href="logger_8c.html#7380c33fa7a012bfb1b5dc892228d0e4">doLog</a>(LOG_DEBUG, <span class="stringliteral">"Device attached [%u]"</span>, pd-&gt;<a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">serial</a>);
 <a name="l00062"></a>00062 
 <a name="l00063"></a>00063         pd = <a class="code" href="manager_8c.html#5fce11ea17722355cff644dde4d90e0b">manager_create_device</a>(phid);
-<a name="l00064"></a>00064         <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">MESSAGE_ATTACH</a>, pd, (<a class="code" href="structqport__context.html">qport_context</a> *) qpc);
+<a name="l00064"></a>00064         <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">MESSAGE_ATTACH</a>, pd, (qport_context *) qpc);
 <a name="l00065"></a>00065 
 <a name="l00066"></a>00066         <span class="keywordflow">return</span> 0;
 <a name="l00067"></a>00067 }<span class="comment">//[/manager_gotAttach]</span>
@@ -96,7 +96,7 @@
 <a name="l00075"></a>00075         <a class="code" href="logger_8c.html#7380c33fa7a012bfb1b5dc892228d0e4">doLog</a>(LOG_INFO, <span class="stringliteral">"Device detached [%d]"</span>, pd-&gt;<a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">serial</a>);
 <a name="l00076"></a>00076 
 <a name="l00077"></a>00077         pd = <a class="code" href="manager_8c.html#5fce11ea17722355cff644dde4d90e0b">manager_create_device</a>(phid);
-<a name="l00078"></a>00078         <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">MESSAGE_DETACH</a>, pd, (<a class="code" href="structqport__context.html">qport_context</a> *) qpc);
+<a name="l00078"></a>00078         <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">MESSAGE_DETACH</a>, pd, (qport_context *) qpc);
 <a name="l00079"></a>00079 
 <a name="l00080"></a>00080         <span class="keywordflow">return</span> 0;
 <a name="l00081"></a>00081 }<span class="comment">//[/manager_gotDetach]</span>
@@ -188,7 +188,7 @@
 <a name="l00167"></a>00167 }<span class="comment">//[/manager_destroy_message]</span>
 <a name="l00168"></a>00168 
 </pre></div></div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 12:52:24 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 20:49:02 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>
