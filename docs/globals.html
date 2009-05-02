@@ -33,6 +33,7 @@
   <div class="tabs">
     <ul>
       <li><a href="#index__"><span>_</span></a></li>
+      <li><a href="#index_b"><span>b</span></a></li>
       <li><a href="#index_c"><span>c</span></a></li>
       <li><a href="#index_d"><span>d</span></a></li>
       <li><a href="#index_g"><span>g</span></a></li>
@@ -40,7 +41,6 @@
       <li><a href="#index_m"><span>m</span></a></li>
       <li><a href="#index_n"><span>n</span></a></li>
       <li><a href="#index_p"><span>p</span></a></li>
-      <li><a href="#index_q"><span>q</span></a></li>
       <li><a href="#index_s"><span>s</span></a></li>
       <li><a href="#index_v"><span>v</span></a></li>
     </ul>
@@ -74,6 +74,8 @@ Here is a list of all functions, variables, defines, enums, and typedefs with li
 : <a class="el" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">signals.c</a>
 <li>__signals_mutex
 : <a class="el" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">signals.c</a>
+<li>_bus_message_type
+: <a class="el" href="messages_8h.html#dd6cd8fb5caaec6e82b386dca7bce77e">messages.h</a>
 <li>_CMDLINE_ERRORS
 : <a class="el" href="main_8c.html#cc3ae4cefa041b0530a774737bd967ef">main.c</a>
 <li>_LOGGER_IDENTITY
@@ -82,6 +84,10 @@ Here is a list of all functions, variables, defines, enums, and typedefs with li
 : <a class="el" href="main_8h.html#775362c7b5edea45d1c077793e680133">main.h</a>
 <li>_PhidgetManagerMessageType
 : <a class="el" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae72">manager.h</a>
+</ul>
+<h3><a class="anchor" name="index_b">- b -</a></h3><ul>
+<li>bus_message_type
+: <a class="el" href="messages_8h.html#7b570e7e51096a50b2b5ef60af3a61e0">messages.h</a>
 </ul>
 <h3><a class="anchor" name="index_c">- c -</a></h3><ul>
 <li>CMDLINE_INVALID_COMMAND
@@ -202,8 +208,6 @@ Here is a list of all functions, variables, defines, enums, and typedefs with li
 : <a class="el" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">manager.h</a>
 <li>MESSAGE_DETACH
 : <a class="el" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">manager.h</a>
-<li>MessageQueue
-: <a class="el" href="queuer_8c.html#08f46fa357a556319527022be413d6eb">queuer.c</a>
 <li>MSG_CMDLINE_NOMATCH
 : <a class="el" href="main_8h.html#775362c7b5edea45d1c077793e6801330d7ba9c2ac6918ffb214ba6afe0c677b">main.h</a>
 <li>MSG_CODE_NOT_FOUND
@@ -257,77 +261,6 @@ Here is a list of all functions, variables, defines, enums, and typedefs with li
 <li>PTHREADS
 : <a class="el" href="server_8h.html#3c2a454c4a71caf93110e4a1d5db7a55">server.h</a>
 </ul>
-<h3><a class="anchor" name="index_q">- q -</a></h3><ul>
-<li>qpipe_create()
-: <a class="el" href="qpipe_8c.html#74c40e825c35ff9c453cf11f7c595e68">qpipe.c</a>
-, <a class="el" href="qpipe_8h.html#74c40e825c35ff9c453cf11f7c595e68">qpipe.h</a>
-<li>qpipe_receive_from_client()
-: <a class="el" href="qpipe_8h.html#173fb3b3a6e7f441fac211a3ed84b9d7">qpipe.h</a>
-, <a class="el" href="qpipe_8c.html#173fb3b3a6e7f441fac211a3ed84b9d7">qpipe.c</a>
-<li>qpipe_receive_from_server()
-: <a class="el" href="qpipe_8c.html#1a71b59398d0afed54e3c55fdebf0807">qpipe.c</a>
-, <a class="el" href="qpipe_8h.html#1a71b59398d0afed54e3c55fdebf0807">qpipe.h</a>
-<li>qpipe_safe_free()
-: <a class="el" href="qpipe_8c.html#9220f6dc039ae48801722aa873fc03f1">qpipe.c</a>
-<li>qpipe_send_to_client()
-: <a class="el" href="qpipe_8c.html#7edf93aae3af3f6ae01a307b5ebb30c8">qpipe.c</a>
-, <a class="el" href="qpipe_8h.html#7edf93aae3af3f6ae01a307b5ebb30c8">qpipe.h</a>
-<li>qpipe_send_to_server()
-: <a class="el" href="qpipe_8c.html#07cc54e361dd57e93801f70fb7da0ba4">qpipe.c</a>
-, <a class="el" href="qpipe_8h.html#07cc54e361dd57e93801f70fb7da0ba4">qpipe.h</a>
-<li>qport
-: <a class="el" href="qport_8h.html#be8350ba532f1aa390d9a31d73e737a3">qport.h</a>
-<li>QPORT_0
-: <a class="el" href="qport_8h.html#9994300a907845e824af436871a12d44">qport.h</a>
-<li>QPORT_1
-: <a class="el" href="qport_8h.html#ff34855720c5eb59e7712b0b1521786e">qport.h</a>
-<li>QPORT_CLIENT
-: <a class="el" href="qport_8h.html#0b472690340374af88fa698935766045">qport.h</a>
-<li>qport_init()
-: <a class="el" href="qport_8c.html#715c8fe762b690a719355d229ad4bcbf">qport.c</a>
-, <a class="el" href="qport_8h.html#715c8fe762b690a719355d229ad4bcbf">qport.h</a>
-<li>qport_receive()
-: <a class="el" href="qport_8c.html#52bbf4b5af513b22d5b092122a6991f6">qport.c</a>
-, <a class="el" href="qport_8h.html#52bbf4b5af513b22d5b092122a6991f6">qport.h</a>
-<li>qport_send()
-: <a class="el" href="qport_8c.html#1b4a1e288569f7750fbcedf0ddafa153">qport.c</a>
-, <a class="el" href="qport_8h.html#1b4a1e288569f7750fbcedf0ddafa153">qport.h</a>
-<li>QPORT_SERVER
-: <a class="el" href="qport_8h.html#903f56faf4c7f9424fa922bd97094917">qport.h</a>
-<li>queue
-: <a class="el" href="queuer_8h.html#e334156b4cde2f884517a660d81450cd">queuer.h</a>
-<li>queue_create()
-: <a class="el" href="queue_8c.html#404f283e7764be86026fda0714b6b7b6">queue.c</a>
-, <a class="el" href="queue_8h.html#404f283e7764be86026fda0714b6b7b6">queue.h</a>
-<li>queue_destroy()
-: <a class="el" href="queue_8h.html#740d8fcab43ff4358053fd70e10238dc">queue.h</a>
-, <a class="el" href="queue_8c.html#21d75708e816b8fc3299ac8e6f7109eb">queue.c</a>
-<li>queue_get()
-: <a class="el" href="queue_8c.html#d27389bec0979099c38222da98b9cade">queue.c</a>
-, <a class="el" href="queue_8h.html#d27389bec0979099c38222da98b9cade">queue.h</a>
-<li>queue_mutex
-: <a class="el" href="queuer_8c.html#cc4be9200c8ec4a2152e10a7c33b3704">queuer.c</a>
-<li>queue_node
-: <a class="el" href="queue_8h.html#55599b6c655d3227e5aa9f11c000059d">queue.h</a>
-<li>queue_peek()
-: <a class="el" href="queue_8c.html#df77941d73a75b551595b7b74b00f62d">queue.c</a>
-, <a class="el" href="queue_8h.html#df77941d73a75b551595b7b74b00f62d">queue.h</a>
-<li>queue_put()
-: <a class="el" href="queue_8h.html#3d346fcf3a730d9e52e0b27359de6256">queue.h</a>
-, <a class="el" href="queue_8c.html#3d346fcf3a730d9e52e0b27359de6256">queue.c</a>
-<li>queuer_dequeue()
-: <a class="el" href="queuer_8c.html#1b76bad392c8a06bbd9ebe4d69c3bc14">queuer.c</a>
-, <a class="el" href="queuer_8h.html#1b76bad392c8a06bbd9ebe4d69c3bc14">queuer.h</a>
-<li>queuer_init()
-: <a class="el" href="queuer_8c.html#07c4447fe5d38d67a4713d81d2034436">queuer.c</a>
-, <a class="el" href="queuer_8h.html#07c4447fe5d38d67a4713d81d2034436">queuer.h</a>
-<li>queuer_queue()
-: <a class="el" href="queuer_8h.html#8ce45dbbe61518eaf58e71f5b4383744">queuer.h</a>
-, <a class="el" href="queuer_8c.html#8ce45dbbe61518eaf58e71f5b4383744">queuer.c</a>
-<li>queuer_release()
-: <a class="el" href="queuer_8c.html#86c1f65a33f5542466e7864219a77c56">queuer.c</a>
-, <a class="el" href="queuer_8h.html#86c1f65a33f5542466e7864219a77c56">queuer.h</a>
-</ul>
 <h3><a class="anchor" name="index_s">- s -</a></h3><ul>
 <li>server_open_port()
 : <a class="el" href="server_8c.html#4a4003ed17c29dc812a5093005377067">server.c</a>
@@ -353,7 +286,7 @@ Here is a list of all functions, variables, defines, enums, and typedefs with li
 : <a class="el" href="main_8c.html#35fcec03d276ef1e24136e07124e8110">main.c</a>
 </ul>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 12:52:51 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 20:49:12 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

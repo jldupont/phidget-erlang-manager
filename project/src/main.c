@@ -3,6 +3,11 @@
  *
  * @date   2009-04-17
  * @author Jean-Lou Dupont
+ *
+ * @mainpage	Welcome to the Phidget Erlang Manager Documention - version $version
+ *
+ *
+ *
  */
 
 #include <getopt.h>
