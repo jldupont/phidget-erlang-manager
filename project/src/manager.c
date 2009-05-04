@@ -10,6 +10,7 @@
  *			- A Phidget Manager instance is created with the onAttach/onDetach events registered)
  *				- For each device attach event, the corresponding device is _opened_ and the event handlers registered
  *
+ *			- Phidget devices status is published on a regular basis
  *			- One _litm_ message bus connection is created and shared for all devices
  *
  * \section Device_Supported Device Supported

@@ -30,8 +30,9 @@
 <tool id="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug.1454299167" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug">
 <option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.mingw.exe.debug.option.optimization.level.698104408" name="Optimization Level" superClass="gnu.c.compiler.mingw.exe.debug.option.optimization.level" valueType="enumerated"/>
 <option id="gnu.c.compiler.mingw.exe.debug.option.debugging.level.1969515046" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-<option id="gnu.c.compiler.option.include.paths.29469561" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+<option id="gnu.c.compiler.option.include.paths.29469561" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/includes}&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/litm/trunk/project/includes}&quot;"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1649748391" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>

@@ -14,7 +14,7 @@
 
 		//PROTOTYPES//
 		//==========//
-	void signals_init(void);
+	void signals_init(litm_connection *conn);
 	int signals_get_signal(void);
 
 

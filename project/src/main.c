@@ -43,6 +43,7 @@
 #include "signals.h"
 #include "daemon.h"
 
+#include "litm.h"
 
 typedef enum _CMDLINE_ERRORS {
 
@@ -99,6 +100,17 @@ int main(int argc, char **argv) {
 		if (0!=result) {
 			return 1;
 		}
+	}
+
+	// open a litm connection for the signals thread
+	litm_connection *conn;
+	litm_code code;
+
+	code = litm_connect( &conn );
+
+	// pass along the connection parameters
+	if (LITM_CODE_OK != code ) {
+
 	}
 
 	// before any threads are started...
