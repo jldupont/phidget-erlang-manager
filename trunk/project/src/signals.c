@@ -23,7 +23,7 @@ void *__signals_handler_thread(void* arg);
 /**
  * Init the module
  */
-void signals_init(void) {
+void signals_init(litm_connection *conn) {
 
 	DEBUG_MSG("DEBUG: signals_init: BEGIN\n");
 
@@ -37,7 +37,7 @@ void signals_init(void) {
 	pthread_sigmask( SIG_BLOCK, &signal_set, NULL );
 
 	/* create the signal handling thread */
-	pthread_create( &__signal_thread, NULL, __signals_handler_thread, NULL );
+	pthread_create( &__signal_thread, NULL, __signals_handler_thread, (void*) conn );
 
 	DEBUG_MSG("DEBUG: signals_init: END\n");
 
@@ -73,7 +73,11 @@ int signals_get_signal(void) {
 /**
  * Signal Handler for the whole process
  */
-void *__signals_handler_thread(void* arg) {
+void *__signals_handler_thread(void* _conn) {
+
+	litm_connection *conn = _conn;
+
+	// TODO subscribe to bus, retry on failure
 
 	sigset_t signal_set;
 	int sig;
@@ -101,6 +105,11 @@ void *__signals_handler_thread(void* arg) {
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = SIGINT;
 			  pthread_mutex_unlock(&__signals_mutex);
+			  break;
+
+			 case SIGVTALRM:
+				 // TODO generate timer message on litm
+
 			  break;
 
 			default:
