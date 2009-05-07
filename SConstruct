@@ -95,17 +95,17 @@ if 'deb' in COMMAND_LINE_TARGETS:
 		replace_params('./project/includes/litm.h', './project/includes/litm.h', {'version':version} )
 		shutil.copy('./project/includes/litm.h', './packages/debian/usr/include/litm.h')
 		
-		print """scons: removing /tmp/litm"""
-		shutil.rmtree('/tmp/litm', ignore_errors=True)
+		print """scons: removing /tmp/phidgetmanager"""
+		shutil.rmtree('/tmp/phidgetmanager', ignore_errors=True)
 
 		print """scons: updating debian 'control' with version[%s]""" % version
 		generate_control(version)
 		
 		print """scons: cloning ./packages/debian to /tmp/litm"""
-		safe_copytree('./packages/debian', '/tmp/litm', skip_dirs=['.svn',], dir_mode=0775, make_dirs=True)
+		safe_copytree('./packages/debian', '/tmp/phidgetmanager', skip_dirs=['.svn',], dir_mode=0775, make_dirs=True)
 		
 		print """scons: adjusting permissions for `dkpg-deb` command-line"""
-		recursive_chmod("/tmp/litm", mode=0775)
+		recursive_chmod("/tmp/phidgetmanager", mode=0775)
 
 
 	except Exception,e:
@@ -127,10 +127,10 @@ if 'release' in COMMAND_LINE_TARGETS:
 	version = read_version()
 	print "scons: RELEASING version %s" % version
 	
-	name = "litm_%s-1_i386.deb" % version
+	name = "phidgetmanager_%s-1_i386.deb" % version
 	path = "/tmp/%s" % name
 	print "scons: renaming debian package: %s" % name
-	shutil.copy('/tmp/litm.deb', path)
+	shutil.copy('/tmp/phidgetmanager.deb', path)
 
 	print "scons: copying [%s] to repo in dists/main/binary-i386" % path
 	shutil.copy(path, "../dists/stable/main/binary-i386")
@@ -139,6 +139,14 @@ if 'release' in COMMAND_LINE_TARGETS:
 	print "scons: running dpkg-scanpackages  [%s]" % debian_path
 	os.system("./do_release")
 	
-
+if 'docs' in COMMAND_LINE_TARGETS:
+	print "scons: generating docs"
+	os.system("doxygen doxygen.config")
+	
+	print "scons: adjusting $version in html docs"
+	version = read_version()
+	
+	path = "./docs/index.html"
+	replace_params( path, path, {'version':version})
 
 
