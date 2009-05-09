@@ -33,7 +33,7 @@ The architecture consists roughly of the major blocks:
 
 == Messages ==
 
-  * _phidget_devices_   : list of active devices
+  * _phidget_device_    : active device announcement
   * _phidget_states_    : list of I/O states of a device
   * _phidget_set_states : request to set the states of a phidget
   
@@ -44,12 +44,11 @@ The architecture consists roughly of the major blocks:
   message_body
   }}}
 
-  ====Message _phidget_devices_:====
+  ====Message _phidget_device_:====
    
-  * count
-	  * phidget_serial
-	  * phidget_name
-	  * phidget_type
+  * phidget_serial
+  * phidget_name
+  * phidget_type
 	  ...
 	  
   ====Message _phidget_states_====
