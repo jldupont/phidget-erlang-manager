@@ -91,18 +91,21 @@ void *__signals_handler_thread(void* _conn) {
 			switch( sig ) {
 
 			case SIGTERM:
+		      DEBUG_LOG(LOG_DEBUG, "received SIGTERM");
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = SIGTERM;
 			  pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			case SIGQUIT:
+		      DEBUG_LOG(LOG_DEBUG, "received SIGQUIT");
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = SIGQUIT;
 			  pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			 case SIGINT:
+			  DEBUG_LOG(LOG_DEBUG, "received SIGINT");
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = SIGINT;
 			  pthread_mutex_unlock(&__signals_mutex);
@@ -110,12 +113,14 @@ void *__signals_handler_thread(void* _conn) {
 
 			 case SIGVTALRM:
 				 // TODO generate timer message on litm
+				 DEBUG_LOG(LOG_DEBUG, "received SIGVLARM");
 				 pthread_mutex_lock(&__signals_mutex);
 				 __caught_signal = SIGVTALRM;
 				 pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			default:
+			  DEBUG_LOG(LOG_DEBUG, "received unsupported signal, sig[%i]", sig);
 			  pthread_mutex_lock(&__signals_mutex);
 			  __caught_signal = 0;
 			  pthread_mutex_unlock(&__signals_mutex);
