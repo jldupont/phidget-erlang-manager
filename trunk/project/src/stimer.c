@@ -12,14 +12,15 @@
 /**
  * Initializes the interval timer for the system
  */
-void stimer_init(void) {
+int stimer_init(void) {
 
 	struct itimerval itimer;
 
-	itimer.it_interval.tv_sec=0;
-	itimer.it_interval.tv_usec=1000*1000;
-	itimer.it_value.tv_sec=0;
-	itimer.it_value.tv_usec=1000*1000;
-	setitimer(ITIMER_VIRTUAL, &itimer, NULL);
+	itimer.it_interval.tv_sec=1;
+	itimer.it_interval.tv_usec=0;//1000*1000;
+	itimer.it_value.tv_sec=1;
+	itimer.it_value.tv_usec=0;//1000*1000;
+	int result = setitimer(ITIMER_VIRTUAL, &itimer, NULL);
 
+	return result;
 }//

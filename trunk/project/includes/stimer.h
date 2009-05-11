@@ -8,7 +8,7 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
-	void stimer_init(void);
+	int stimer_init(void);
 
 
 #endif /* TIMER_H_ */

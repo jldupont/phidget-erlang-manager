@@ -24,6 +24,7 @@
  *
  */
 
+#include <errno.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -144,8 +145,10 @@ int main(int argc, char **argv) {
 	// =========================================
 
 	// before any threads are started...
+	int sresult = stimer_init();
+	doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
 	signals_init( conn );
-	stimer_init();
+
 
 
 
