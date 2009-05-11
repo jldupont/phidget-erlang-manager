@@ -9,7 +9,7 @@
 #define MANAGER_THREAD_H_
 
 #include <phidget21.h>
-#include "qport.h"
+#include "litm.h"
 
 	// Device Information structure
 	// ============================
@@ -44,15 +44,15 @@
 
 	// PROTOTYPES
 	// ==========
-	CPhidgetManagerHandle manager_create(qport_context *qpc);
+	CPhidgetManagerHandle manager_create(litm_connection *conn);
 
-	int manager_gotAttach(CPhidgetHandle phid, void *qpc);
-	int manager_gotDetach(CPhidgetHandle phid, void *qpc);
+	int manager_gotAttach(CPhidgetHandle phid, void *conn);
+	int manager_gotDetach(CPhidgetHandle phid, void *conn);
 
 	PhidgetDevice *manager_create_device(CPhidgetHandle phid);
 	void manager_destroy_device(PhidgetDevice *pd);
 
-	void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, qport_context *qpc);
+	void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn);
 	PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
 	void manager_destroy_message(PhidgetManagerMessage *msg);
 

@@ -9,6 +9,7 @@
 
 #include "signals.h"
 #include "helpers.h"
+#include "litm.h"
 
 
 // PRIVATE
@@ -109,7 +110,7 @@ void *__signals_handler_thread(void* _conn) {
 
 			 case SIGVTALRM:
 				 // TODO generate timer message on litm
-
+				 __caught_signal = SIGVTALRM;
 			  break;
 
 			default:

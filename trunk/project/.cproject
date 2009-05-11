@@ -32,6 +32,7 @@
 <option id="gnu.c.compiler.mingw.exe.debug.option.debugging.level.1969515046" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 <option id="gnu.c.compiler.option.include.paths.29469561" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/includes}&quot;"/>
+<listOptionValue builtIn="false" value="&quot;C:\Program Files\erl5.7\lib\erl_interface-3.6\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/litm/trunk/project/includes}&quot;"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1649748391" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>

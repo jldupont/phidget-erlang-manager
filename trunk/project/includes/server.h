@@ -21,18 +21,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-//include "erl_interface.h"
 #include "ei.h"
 
-#include "../includes/logger.h"
-#include "../includes/qport.h"
-#include "../includes/manager.h"  //for PhidgetManagerMessage type
+#include "logger.h"
+#include "manager.h"  //for PhidgetManagerMessage type
 
 	typedef struct {
 
 		int port;
 		char *cookie;
-		qport_context *qpc;
 
 	} server_params;
 
