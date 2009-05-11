@@ -6,6 +6,6 @@ scons build file
 
 Import('env')
 
-pr = env.Program('phidget_erlang_manager', Glob("*.c"), LIBS=['pthread','litm','phidget21','ei'] )
+pr = env.Program('phidgetmanager', Glob("*.c"), LIBS=['pthread','litm','phidget21','ei'] )
 Default(pr)
 	

@@ -124,6 +124,8 @@ int main(int argc, char **argv) {
 	// *!*!*!*!
 	DaemonErrorCode dcode = daemon_handle_command("phidgetmanager", command);
 
+	doLog(LOG_INFO, "daemon_handle_command: dcode[%i]", dcode );
+
 	// should we exit right now?
 	if (DAEMON_CODE_EXITING == dcode) {
 		return 1;
@@ -131,6 +133,11 @@ int main(int argc, char **argv) {
 
 	// the command was most probably a ``start``
 	//  but there was an error...
+	if (DAEMON_CODE_WRITING_PID_FILE == dcode) {
+		doLog(LOG_ERR, "cannot write to pid file. Maybe you are trying to execute proper rights?");
+		return 1;
+	}
+
 	if (DAEMON_CODE_OK != dcode) {
 		handleDaemonErrorCode( dcode );
 		return 1;
@@ -169,8 +176,8 @@ int main(int argc, char **argv) {
 	//}
 
 
-	CPhidgetManagerHandle phidm;
-	phidm = manager_create( conn );
+	//CPhidgetManagerHandle phidm;
+	//phidm = manager_create( conn );
 
 	// running in the server & manager threads
 	// at this point
@@ -179,6 +186,8 @@ int main(int argc, char **argv) {
 
 _close:
 //====
+
+	doLog(LOG_INFO, "before main loop");
 
 	do {
 		signal_caught = signals_get_signal();
