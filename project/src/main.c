@@ -42,6 +42,7 @@
 #include "server.h"
 #include "signals.h"
 #include "daemon.h"
+#include "stimer.h"
 
 #include "litm.h"
 
@@ -115,7 +116,9 @@ int main(int argc, char **argv) {
 	}
 
 	// before any threads are started...
+	stimer_init();
 	signals_init( conn );
+
 
 	//  DAEMON
 	// *!*!*!*!

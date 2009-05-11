@@ -110,7 +110,9 @@ void *__signals_handler_thread(void* _conn) {
 
 			 case SIGVTALRM:
 				 // TODO generate timer message on litm
+				 pthread_mutex_lock(&__signals_mutex);
 				 __caught_signal = SIGVTALRM;
+				 pthread_mutex_unlock(&__signals_mutex);
 			  break;
 
 			default:
