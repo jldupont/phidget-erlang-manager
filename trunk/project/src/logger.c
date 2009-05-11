@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "../includes/logger.h"
+#include "logger.h"
 
 char *_LOGGER_IDENTITY = "phidgetmanager";
 
