@@ -115,11 +115,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	// before any threads are started...
-	stimer_init();
-	signals_init( conn );
-
-
 	//  DAEMON
 	// *!*!*!*!
 	DaemonErrorCode dcode = daemon_handle_command("phidgetmanager", command);
@@ -147,6 +142,12 @@ int main(int argc, char **argv) {
 
 	// *!*!*!*!* START SUCCESSFUL !@!@!@@!@!!@!!
 	// =========================================
+
+	// before any threads are started...
+	signals_init( conn );
+	stimer_init();
+
+
 
 
 	/*
@@ -194,7 +195,7 @@ _close:
 		if (SIGVTALRM == signal_caught) {
 			doLog(LOG_INFO, "phidgetmanager: received SIGVALRM");
 		}
-	} while(signal_caught!=SIGTERM || signal_caught!=SIGKILL);
+	} while(signal_caught!=SIGTERM && signal_caught!=SIGKILL);
 
 	// TODO send kill message to server thread
 
