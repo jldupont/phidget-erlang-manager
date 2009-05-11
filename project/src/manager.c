@@ -29,20 +29,21 @@
 #include "helpers.h"
 #include "logger.h"
 #include "manager.h"
+#include "litm.h"
 
 
 
 /**
  * Phidget Manager controller thread
  */
-CPhidgetManagerHandle manager_create(qport_context *qpc) {
+CPhidgetManagerHandle manager_create(litm_connection *conn) {
 
 	CPhidgetManagerHandle phidm;
 
 	// open up the Phidget Manager
 	CPhidgetManager_create(&phidm);
-	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, (void *)qpc);
-	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)qpc);
+	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, (void *)conn);
+	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)conn);
 
 	doLog(LOG_DEBUG, "Opening Phidget Manager");
 	CPhidgetManager_open(phidm);
@@ -54,15 +55,10 @@ CPhidgetManagerHandle manager_create(qport_context *qpc) {
 /**
  * Pushes a message on the communication queue
  */
-void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, qport_context *qpc) {
+void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn) {
 
 	DEBUG_LOG(LOG_INFO, "Pushing message");
 
-	PhidgetManagerMessage *msg;
-
-	msg = manager_create_message(type, pd);
-
-	qport_send(qpc, (void *)msg);
 
 }//[/manager_push_message]
 
@@ -76,7 +72,6 @@ int manager_gotAttach(CPhidgetHandle phid, void *qpc) {
 	doLog(LOG_DEBUG, "Device attached [%u]", pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_ATTACH, pd, (qport_context *) qpc);
 
 	return 0;
 }//[/manager_gotAttach]
@@ -90,7 +85,6 @@ int manager_gotDetach(CPhidgetHandle phid, void *qpc) {
 	doLog(LOG_INFO, "Device detached [%d]", pd->serial);
 
 	pd = manager_create_device(phid);
-	manager_push_message(MESSAGE_DETACH, pd, (qport_context *) qpc);
 
 	return 0;
 }//[/manager_gotDetach]

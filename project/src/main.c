@@ -110,25 +110,26 @@ int main(int argc, char **argv) {
 
 	// pass along the connection parameters
 	if (LITM_CODE_OK != code ) {
-
+		showMessage(MSG_LITM_CONNECTION_ERROR);
+		return 1;
 	}
 
 	// before any threads are started...
-	signals_init();
+	signals_init( conn );
 
 	//  DAEMON
 	// *!*!*!*!
-	DaemonErrorCode code = daemon_handle_command("phidgetmanager", command);
+	DaemonErrorCode dcode = daemon_handle_command("phidgetmanager", command);
 
 	// should we exit right now?
-	if (DAEMON_CODE_EXITING == code) {
+	if (DAEMON_CODE_EXITING == dcode) {
 		return 1;
 	}
 
 	// the command was most probably a ``start``
 	//  but there was an error...
-	if (DAEMON_CODE_OK != code) {
-		handleDaemonErrorCode( code );
+	if (DAEMON_CODE_OK != dcode) {
+		handleDaemonErrorCode( dcode );
 		return 1;
 	}
 
@@ -146,29 +147,8 @@ int main(int argc, char **argv) {
 	 */
 
 	//{
-	qpipe *queue_pipe;
 
-	queue_pipe = qpipe_create();
-	if (NULL==queue_pipe) {
-		doLog(LOG_ERR, "unable to create qpipe");
-		goto _close;
-	}
 
-	qport_context *qp_phm, *qp_erl;
-
-	qp_phm = qport_init( queue_pipe, QPORT_0 );
-	qp_erl = qport_init( queue_pipe, QPORT_1 );
-
-	if (NULL == qp_phm) {
-		doLog(LOG_ERR, "unable to create manager port");
-		goto _close;
-	}
-
-	if (NULL == qp_erl) {
-		doLog(LOG_ERR, "unable to create server port");
-		goto _close;
-	}
-	//}
 
 
 	//{
@@ -176,7 +156,6 @@ int main(int argc, char **argv) {
 
 	params.port   = port;
 	params.cookie = cookie;
-	params.qpc    = qp_erl;
 
 
 	int result2 = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
@@ -188,7 +167,7 @@ int main(int argc, char **argv) {
 
 
 	CPhidgetManagerHandle phidm;
-	phidm = manager_create( qp_phm );
+	phidm = manager_create( conn );
 
 	// running in the server & manager threads
 	// at this point
@@ -200,6 +179,9 @@ _close:
 
 	do {
 		signal_caught = signals_get_signal();
+		if (SIGVTALRM == signal_caught) {
+			doLog(LOG_INFO, "phidgetmanager: received SIGVALRM");
+		}
 	} while(signal_caught!=SIGTERM || signal_caught!=SIGKILL);
 
 	// TODO send kill message to server thread

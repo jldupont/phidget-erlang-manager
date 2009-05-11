@@ -21,6 +21,7 @@
 		MSG_MISSING_OPTION_ARGUMENT,
 		MSG_INVALID_COMMAND,
 		MSG_CODE_NOT_FOUND,
+		MSG_LITM_CONNECTION_ERROR,
 
 		// daemon related
 		MSG_NO_PID_FILE,
@@ -49,6 +50,7 @@
 			"ERROR: missing argument for option [%c]\n",
 			"ERROR: invalid command\n",
 			"APPLICATION ERROR: error code not found\n",
+			"ERROR: cannot connect to 'litm'",
 			//daemon related
 			"ERROR: PID file not found\n",
 			"ERROR: invalid daemon name\n",

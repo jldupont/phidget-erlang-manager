@@ -46,16 +46,9 @@ void *server_thread(void *params) {
 	//}
 
 
-	PhidgetManagerMessage *msg;
-
 	//main loop
 	while(1) {
 		sleep(5);
-		msg = (PhidgetManagerMessage *) qport_receive(parameters->qpc);
-		if (msg!=NULL) {
-			doLog(LOG_DEBUG, "got message");
-			manager_destroy_message(msg);
-		}
 	}
 
 
