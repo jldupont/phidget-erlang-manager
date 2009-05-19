@@ -30,23 +30,3 @@ void doLog(int priority, char *message, ...) {
 	closelog();
 
 }
-
-void doLogString(int priority, char *message, char *param) {
-
-	openlog(_LOGGER_IDENTITY, LOG_PID, LOG_LOCAL1);
-
-	syslog(priority, message, param);
-
-	closelog();
-}
-
-
-void doLogInteger(int priority, char *message, int param) {
-
-	openlog(_LOGGER_IDENTITY, LOG_PID, LOG_LOCAL1);
-
-	syslog(priority, message, param);
-
-	closelog();
-
-}// [/doLog]

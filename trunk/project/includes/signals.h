@@ -15,8 +15,7 @@
 
 		//PROTOTYPES//
 		//==========//
-	void signals_init(litm_connection *conn);
-	int signals_get_signal(void);
+	void signals_init(int bus_id);
 
 
 #endif /* SIGNALS_H_ */
