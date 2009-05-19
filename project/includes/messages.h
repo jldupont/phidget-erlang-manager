@@ -16,11 +16,7 @@
 	/**
 	 * Message type field definition
 	 */
-	typedef enum _bus_message_type {
-
-
-
-	} bus_message_type;
+	typedef int bus_message_type;
 
 
 	/**
@@ -70,6 +66,19 @@
 
 	} digital_states;
 
+
+	/**
+	 * Reference to a specific phidget device
+	 */
+	typedef int phidget_device_serial;
+
+			/**
+			 * Definition of shutdown message
+			 */
+			typedef struct {
+
+			} message_shutdown;
+
 			/**
 			 * Definition of timer message
 			 *
@@ -95,6 +104,8 @@
 			 * Definition of message _phidget_states_
 			 */
 			typedef struct {
+				phidget_device device;
+
 				int count;
 				digital_states (*states)[];
 			} message_phidget_digital_states;
@@ -104,6 +115,8 @@
 			 * Definition message _phidget_set_states_
 			 */
 			typedef struct {
+				phidget_device device;
+
 				int count;
 				digital_states (*states)[];
 			} message_phidget_digital_set_states;
@@ -116,17 +129,16 @@
 	 */
 	typedef enum _message_types {
 
-		MESSAGE_PHIDGET_DEVICE = 1,
+		MESSAGE_SHUTDOWN       = 1,
+		MESSAGE_TIMER,
+
+		MESSAGE_PHIDGET_DEVICE,
 		MESSAGE_PHIDGET_DIGITAL_STATES,
 		MESSAGE_PHIDGET_DIGITAL_SET_STATES
 
 	} message_types;
 
 
-	/**
-	 * Reference to a specific phidget device
-	 */
-	typedef int phidget_device_serial;
 
 	/**
 	 * Message envelope definition
@@ -140,10 +152,12 @@
 	typedef struct {
 
 		bus_message_type type;
-		phidget_device_serial serial;
 
 		union message_body {
-			message_phidget_device     pd;
+
+			message_shutdown					ms;
+			message_timer						mt;
+			message_phidget_device				pd;
 			message_phidget_digital_states     ps;
 			message_phidget_digital_set_states pss;
 		};

@@ -145,9 +145,11 @@ int main(int argc, char **argv) {
 	// =========================================
 
 	// before any threads are started...
+	signals_init( conn );
+
 	int sresult = stimer_init();
 	doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
-	signals_init( conn );
+
 
 
 
@@ -194,6 +196,7 @@ _close:
 	doLog(LOG_INFO, "before main loop");
 
 	do {
+		usleep(100*1000);
 		signal_caught = signals_get_signal();
 		if (SIGVTALRM == signal_caught) {
 			doLog(LOG_INFO, "phidgetmanager: received SIGVALRM");
