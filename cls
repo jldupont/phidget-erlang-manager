@@ -1,4 +1,6 @@
 #!/bin/sh
 
 cat /dev/null > /var/log/syslog
+clear
+./slog
 
