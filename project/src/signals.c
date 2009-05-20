@@ -104,9 +104,12 @@ void *__signals_handler_thread(void* params) {
 			break;
 
 		 case SIGVTALRM:
+			 DEBUG_LOG(LOG_DEBUG, "signals: received SIGVTALRM");
+			 break;
+
 		 case SIGALRM:
 			// TODO generate timer message on litm
-			DEBUG_LOG(LOG_DEBUG, "signals: received SIGVLARM");
+			DEBUG_LOG(LOG_DEBUG, "signals: received SIGALRM");
 			break;
 
 		default:

@@ -237,7 +237,7 @@ void manager_destroy_device(PhidgetDevice *pd) {
 	free( pd->label );
 	free( pd );
 
-	DEBUG_LOG(LOG_DEBUG, "Finished destroying device");
+	DEBUG_LOG(LOG_DEBUG, "manager: finished destroying device");
 
 }//[/manager_destroy_device]
 
