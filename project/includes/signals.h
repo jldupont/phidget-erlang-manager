@@ -15,7 +15,7 @@
 
 		//PROTOTYPES//
 		//==========//
-	void signals_init(int bus_id);
+	void signals_init(void);
 
 
 #endif /* SIGNALS_H_ */

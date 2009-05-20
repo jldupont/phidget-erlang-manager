@@ -150,22 +150,6 @@
 
 
 	/**
-	 * Maps message types to
-	 * a human readable form
-	 */
-	const char *messages_text[] = {
-		"**invalid**",
-
-		"shutdown",
-		"timer",
-
-		"phidget_device",
-		"phidget_digital_states",
-		"phidget_digital_set_states"
-
-	};
-
-	/**
 	 * Message envelope definition
 	 *
 	 *

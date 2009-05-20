@@ -105,25 +105,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// open a litm connection for the signals thread
-	litm_connection *conn;
-	litm_code code;
-
-	code = litm_connect_ex_wait( &conn, LITM_ID_MAIN, 0 );
-
-	// pass along the connection parameters
-	if (LITM_CODE_OK != code ) {
-		showMessage(MSG_LITM_CONNECTION_ERROR);
-		return 1;
-	}
-
-
-	code = litm_subscribe( conn, LITM_BUS_SYSTEM );
-	if (LITM_CODE_OK != code ) {
-		showMessage(MSG_LITM_SUBSCRIBE_ERROR);
-		return 1;
-	}
-
 
 	//  DAEMON
 	// *!*!*!*!
@@ -153,8 +134,34 @@ int main(int argc, char **argv) {
 	// *!*!*!*!* START SUCCESSFUL !@!@!@@!@!!@!!
 	// =========================================
 
+
 	// before any threads are started...
-	signals_init( conn );
+	signals_init();
+
+
+	// open a litm connection for the signals thread
+	litm_connection *conn;
+	litm_code code;
+
+	code = litm_connect_ex_wait( &conn, LITM_ID_MAIN, 0 );
+
+	// pass along the connection parameters
+	if (LITM_CODE_OK != code ) {
+		showMessage(MSG_LITM_CONNECTION_ERROR);
+		doLog(LOG_ERR, "main: cannot connect to LITM");
+		return 1;
+	}
+
+
+	code = litm_subscribe( conn, LITM_BUS_SYSTEM );
+	if (LITM_CODE_OK != code ) {
+		showMessage(MSG_LITM_SUBSCRIBE_ERROR);
+		doLog(LOG_ERR, "main: cannot subscribe to LITM");
+		return 1;
+	}
+
+
+
 
 	int sresult = stimer_init();
 	doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
@@ -177,6 +184,7 @@ int main(int argc, char **argv) {
 
 
 	//{
+	/*
 	server_params params;
 
 	params.port   = port;
@@ -188,6 +196,7 @@ int main(int argc, char **argv) {
 		showMessage( MSG_ERROR_SERVER_THREAD );
 		return 1;
 	}
+	*/
 	//}
 
 
@@ -200,7 +209,7 @@ int main(int argc, char **argv) {
 _close:
 //====
 
-	doLog(LOG_INFO, "before main loop");
+	doLog(LOG_INFO, "main: STARTING loop");
 
 	litm_envelope *e;
 	bus_message  *msg;
@@ -211,10 +220,15 @@ _close:
 		code = litm_receive_wait( conn, &e );
 		if (LITM_CODE_OK==code) {
 
+			doLog(LOG_INFO, "main: RX message");
+
 			//we just respond to shutdown here
 			msg = litm_get_message( e );
 			if (NULL!=msg) {
 				type = msg->type;
+
+				litm_release( conn, e );
+
 				if (MESSAGE_SHUTDOWN==type) {
 					break;
 				}
@@ -223,7 +237,9 @@ _close:
 
 	}
 
-	doLog(LOG_INFO, "server thread exited");
+	litm_wait_shutdown();
+
+	doLog(LOG_INFO, "main: END thread");
 
 	return 0;
 

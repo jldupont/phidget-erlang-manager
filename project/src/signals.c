@@ -31,7 +31,7 @@ void *__signals_handler_thread(void* arg);
 /**
  * Init the module
  */
-void signals_init(int bus_id) {
+void signals_init(void) {
 
 	DEBUG_MSG("DEBUG: signals_init: BEGIN\n");
 
@@ -88,29 +88,29 @@ void *__signals_handler_thread(void* params) {
 		switch( sig ) {
 
 		case SIGTERM:
-			DEBUG_LOG(LOG_DEBUG, "received SIGTERM");
+			DEBUG_LOG(LOG_DEBUG, "signals: received SIGTERM");
 			// void_cleaner in utils.c
 			if (NULL!=conn)
-				litm_send_shutdown( conn, LITM_ID_SIGNALS, &shutdown_message, &void_cleaner );
+				litm_send_shutdown( conn, LITM_BUS_SYSTEM, &shutdown_message, &void_cleaner );
 			__exit = 1;
 			break;
 
 		case SIGQUIT:
-			DEBUG_LOG(LOG_DEBUG, "received SIGQUIT");
+			DEBUG_LOG(LOG_DEBUG, "signals: received SIGQUIT");
 			break;
 
 		 case SIGINT:
-			DEBUG_LOG(LOG_DEBUG, "received SIGINT");
+			DEBUG_LOG(LOG_DEBUG, "signals: received SIGINT");
 			break;
 
 		 case SIGVTALRM:
 		 case SIGALRM:
 			// TODO generate timer message on litm
-			DEBUG_LOG(LOG_DEBUG, "received SIGVLARM");
+			DEBUG_LOG(LOG_DEBUG, "signals: received SIGVLARM");
 			break;
 
 		default:
-			DEBUG_LOG(LOG_DEBUG, "received unsupported signal, sig[%i]", sig);
+			DEBUG_LOG(LOG_DEBUG, "signals: unsupported signal, sig[%i]", sig);
 			break;
 		}
 
@@ -119,7 +119,9 @@ void *__signals_handler_thread(void* params) {
 		}
 	}
 
-	litm_wait_shutdown();
+	//litm_wait_shutdown();
+
+	DEBUG_LOG( LOG_INFO, "signals: END thread" );
 
 	return (void*)0;
 }//signal_handler_thread

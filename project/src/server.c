@@ -17,7 +17,7 @@ void *server_thread(void *params) {
 
 	server_params *parameters = (server_params *) params;
 
-	doLogInteger(LOG_DEBUG,"Server Thread Started, port[%u]", parameters->port);
+	doLog(LOG_DEBUG,"Server Thread Started, port[%u]", parameters->port);
 
 	// open server socket
 	listen_socket = server_open_port( parameters->port );
