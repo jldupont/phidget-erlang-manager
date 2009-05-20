@@ -38,15 +38,14 @@ pthread_t manager_thread;
 void *__manager_thread_function(void *params);
 
 
+PhidgetDevice *manager_create_device(CPhidgetHandle phid);
+void manager_destroy_device(PhidgetDevice *pd);
 int manager_gotAttach(CPhidgetHandle phid, void *conn);
 int manager_gotDetach(CPhidgetHandle phid, void *conn);
 
-PhidgetDevice *manager_create_device(CPhidgetHandle phid);
-void manager_destroy_device(PhidgetDevice *pd);
-
-void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn);
-PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
-void manager_destroy_message(PhidgetManagerMessage *msg);
+void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget_device_state state );
+bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state);
+void __manager_clean_message_phidget_device(void *msg);
 
 
 
@@ -55,7 +54,7 @@ void manager_destroy_message(PhidgetManagerMessage *msg);
 
 void manager_init(void) {
 
-	pthread_create(&sThread, NULL, &__manager_thread_function, (void *) NULL);
+	pthread_create(&manager_thread, NULL, &__manager_thread_function, (void *) NULL);
 
 }//
 
@@ -86,9 +85,27 @@ void *__manager_thread_function(void *params) {
 	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, (void *)conn);
 	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)conn);
 
-
-
 	CPhidgetManager_open(phidm);
+
+	litm_envelope *e;
+	bus_message   *msg;
+	bus_message_type type;
+	int __exit = 0;
+
+	while(!__exit) {
+
+		code = litm_receive_nb( conn, &e );
+		if (LITM_CODE_OK==code) {
+			msg  = litm_get_message( e );
+			type = msg->type;
+			if (MESSAGE_SHUTDOWN==type) {
+				__exit = 1;
+			}
+
+			litm_release( conn, e);
+		}
+
+	}//while
 
 
 	doLog(LOG_DEBUG,"manager: END thread");
@@ -98,25 +115,13 @@ void *__manager_thread_function(void *params) {
 
 
 /**
- * Pushes a message on the communication queue
- */
-void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn) {
-
-	DEBUG_LOG(LOG_INFO, "Pushing message");
-
-
-}//[/manager_push_message]
-
-
-/**
  * Attach Event handler
  */
-int manager_gotAttach(CPhidgetHandle phid, void *qpc) {
-	PhidgetDevice *pd;
+int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
-	doLog(LOG_DEBUG, "Device attached [%u]", pd->serial);
+	doLog(LOG_DEBUG, "manager: device attached [%x]", phid);
 
-	pd = manager_create_device(phid);
+	__manager_send_message( conn, phid, PHIDGET_DEVICE_ACTIVE );
 
 	return 0;
 }//[/manager_gotAttach]
@@ -124,16 +129,61 @@ int manager_gotAttach(CPhidgetHandle phid, void *qpc) {
 /**
  * Detach Event Handler
  */
-int manager_gotDetach(CPhidgetHandle phid, void *qpc) {
-	PhidgetDevice *pd;
+int manager_gotDetach(CPhidgetHandle phid, void *conn) {
 
-	doLog(LOG_INFO, "Device detached [%d]", pd->serial);
+	doLog(LOG_INFO, "manager: device detached [%x]", phid);
 
-	pd = manager_create_device(phid);
+	__manager_send_message( conn, phid, PHIDGET_DEVICE_INACTIVE );
 
 	return 0;
 }//[/manager_gotDetach]
 
+
+void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget_device_state state ) {
+
+	litm_code   code;
+	bus_message *msg;
+	PhidgetDevice *pd;
+	pd = manager_create_device(phid);
+
+	msg = __manager_create_message_phidget_device( pd, state );
+
+
+	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
+	if (LITM_CODE_OK!=code)
+		doLog(LOG_ERR, "manager: error sending message through LITM");
+}//
+
+/**
+ * Creates from scratch a 'message_phidget_device' message
+ */
+bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state) {
+
+	bus_message *msg = malloc( sizeof(bus_message) );
+	if (NULL==msg)
+		return NULL;
+
+	msg->type = MESSAGE_PHIDGET_DEVICE;
+	msg->message_body.mpd.device = pd;
+	msg->message_body.mpd.state = state;
+
+	return msg;
+}
+
+
+void __manager_clean_message_phidget_device(void *msg) {
+
+	if (NULL==msg) {
+		doLog(LOG_ERR, "manager: clean_message_phidget_device: NULL pointer");
+		return;
+	}
+
+	bus_message *m = (bus_message *)msg;
+
+	manager_destroy_device(m->message_body.mpd.device);
+	free( m );
+
+}//
 
 /**
  * Creates a device description object
@@ -143,7 +193,9 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	PhidgetDevice *pd;
 	const char *type, *name, *label;
 
-	DEBUG_LOG(LOG_DEBUG, "Creating Device");
+	//DEBUG_LOG(LOG_DEBUG, "manager: creating device");
+
+	// if malloc fails, we have a much bigger problem
 	pd = malloc(sizeof(PhidgetDevice));
 
 	CPhidget_getSerialNumber(phid, &pd->serial);
@@ -167,7 +219,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
 	strncpy( pd->name,  name,  sz_name  );
 	strncpy( pd->label, label, sz_label );
 
-	DEBUG_LOG(LOG_DEBUG, "Finished creating Device, type[%s]", pd->type);
+	DEBUG_LOG(LOG_DEBUG, "manager: created device, type[%s]", pd->type);
 
 	return pd;
 }//[/manager_create_device]
@@ -178,7 +230,7 @@ PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
  */
 void manager_destroy_device(PhidgetDevice *pd) {
 
-	DEBUG_LOG(LOG_DEBUG, "Destroying device");
+	DEBUG_LOG(LOG_DEBUG, "manager: destroying device");
 
 	free( pd->type );
 	free( pd->name );
@@ -189,34 +241,4 @@ void manager_destroy_device(PhidgetDevice *pd) {
 
 }//[/manager_destroy_device]
 
-
-
-/**
- * Creates a message
- */
-PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd) {
-
-	PhidgetManagerMessage *msg;
-
-	msg = malloc(sizeof( PhidgetManagerMessage ));
-
-	msg->type = type;
-	msg->pd = pd;
-
-	return msg;
-}//[/manager_create_message]
-
-
-
-/**
- * Destroys a message
- */
-void manager_destroy_message(PhidgetManagerMessage *msg) {
-
-	// not much to do except destroying the device
-	manager_destroy_device( msg->pd );
-
-	free(msg);
-
-}//[/manager_destroy_message]
 

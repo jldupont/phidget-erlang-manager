@@ -12,6 +12,8 @@
 #ifndef MESSAGES_H_
 #define MESSAGES_H_
 
+#include "manager.h"
+
 #	define LITM_BUS_MESSAGES 1
 #	define LITM_BUS_SYSTEM   2
 
@@ -45,6 +47,16 @@
 		int  version;
 
 	} phidget_device;
+
+	/**
+	 * Device status
+	 */
+	typedef enum {
+
+		PHIDGET_DEVICE_ACTIVE   = 1,
+		PHIDGET_DEVICE_INACTIVE
+
+	} phidget_device_state;
 
 	/**
 	 * Digital State type
@@ -106,7 +118,8 @@
 			 *
 			 */
 			typedef struct {
-				phidget_device device;
+				PhidgetDevice *device;
+				phidget_device_state state;
 			} message_phidget_device;
 
 
@@ -114,7 +127,7 @@
 			 * Definition of message _phidget_states_
 			 */
 			typedef struct {
-				phidget_device device;
+				phidget_device *device;
 
 				int count;
 				digital_states (*states)[];
@@ -125,7 +138,7 @@
 			 * Definition message _phidget_set_states_
 			 */
 			typedef struct {
-				phidget_device device;
+				phidget_device *device;
 
 				int count;
 				digital_states (*states)[];
@@ -166,9 +179,10 @@
 
 			message_shutdown					ms;
 			message_timer						mt;
-			message_phidget_device				pd;
-			message_phidget_digital_states     ps;
-			message_phidget_digital_set_states pss;
+			message_phidget_device				mpd;
+			message_phidget_digital_states      mps;
+			message_phidget_digital_set_states  mpss;
+
 		} message_body;
 
 	} bus_message;

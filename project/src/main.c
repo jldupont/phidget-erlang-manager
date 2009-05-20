@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 
 	messages_init();
 
-
+	manager_init();
 
 	/*
 	 *  COMMUNICATIONS
