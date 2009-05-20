@@ -44,16 +44,6 @@
 
 	// PROTOTYPES
 	// ==========
-	CPhidgetManagerHandle manager_create(litm_connection *conn);
-
-	int manager_gotAttach(CPhidgetHandle phid, void *conn);
-	int manager_gotDetach(CPhidgetHandle phid, void *conn);
-
-	PhidgetDevice *manager_create_device(CPhidgetHandle phid);
-	void manager_destroy_device(PhidgetDevice *pd);
-
-	void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn);
-	PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
-	void manager_destroy_message(PhidgetManagerMessage *msg);
+	void manager_init(void);
 
 #endif /* MANAGER_THREAD_H_ */
