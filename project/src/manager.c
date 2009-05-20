@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <phidget21.h>
 
@@ -64,7 +66,7 @@ void *__manager_thread_function(void *params) {
 	litm_code code;
 	CPhidgetManagerHandle phidm;
 
-	doLog(LOG_DEBUG, "manager: BEGIN thread");
+	doLog(LOG_DEBUG, "manager: BEGIN thread, pid[%u]", getpid() );
 
 	code = litm_connect_ex_wait(&conn, LITM_ID_MANAGER, 0);
 	if (LITM_CODE_OK!=code) {
