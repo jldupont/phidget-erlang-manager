@@ -15,10 +15,11 @@
 #	define LITM_BUS_MESSAGES 1
 #	define LITM_BUS_SYSTEM   2
 
-#	define LITM_ID_SIGNALS   1
-#	define LITM_ID_SERVER    2
-#	define LITM_ID_MANAGER   3
-#	define LITM_ID_MESSAGES  4
+#	define LITM_ID_MAIN      1
+#	define LITM_ID_SIGNALS   2
+#	define LITM_ID_SERVER    3
+#	define LITM_ID_MANAGER   4
+#	define LITM_ID_MESSAGES  5
 
 
 

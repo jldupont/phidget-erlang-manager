@@ -44,6 +44,7 @@
 #include "signals.h"
 #include "daemon.h"
 #include "stimer.h"
+#include "messages.h"
 
 #include "litm.h"
 
@@ -108,13 +109,21 @@ int main(int argc, char **argv) {
 	litm_connection *conn;
 	litm_code code;
 
-	code = litm_connect( &conn );
+	code = litm_connect_ex_wait( &conn, LITM_ID_MAIN, 0 );
 
 	// pass along the connection parameters
 	if (LITM_CODE_OK != code ) {
 		showMessage(MSG_LITM_CONNECTION_ERROR);
 		return 1;
 	}
+
+
+	code = litm_subscribe( conn, LITM_BUS_SYSTEM );
+	if (LITM_CODE_OK != code ) {
+		showMessage(MSG_LITM_SUBSCRIBE_ERROR);
+		return 1;
+	}
+
 
 	//  DAEMON
 	// *!*!*!*!
@@ -151,7 +160,7 @@ int main(int argc, char **argv) {
 	doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
 
 
-
+	messages_init();
 
 
 
@@ -188,25 +197,31 @@ int main(int argc, char **argv) {
 	// running in the server & manager threads
 	// at this point
 
-	int signal_caught;
-
 _close:
 //====
 
 	doLog(LOG_INFO, "before main loop");
 
-	do {
-		usleep(100*1000);
-		signal_caught = signals_get_signal();
-		if (SIGVTALRM == signal_caught) {
-			doLog(LOG_INFO, "phidgetmanager: received SIGVALRM");
+	litm_envelope *e;
+	bus_message  *msg;
+	bus_message_type type;
+
+	while(1) {
+
+		code = litm_receive_wait( conn, &e );
+		if (LITM_CODE_OK==code) {
+
+			//we just respond to shutdown here
+			msg = litm_get_message( e );
+			if (NULL!=msg) {
+				type = msg->type;
+				if (MESSAGE_SHUTDOWN==type) {
+					break;
+				}
+			}
 		}
-	} while(signal_caught!=SIGTERM && signal_caught!=SIGKILL);
 
-	// TODO send kill message to server thread
-
-
-	pthread_join( sThread, NULL );
+	}
 
 	doLog(LOG_INFO, "server thread exited");
 
