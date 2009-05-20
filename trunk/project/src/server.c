@@ -4,7 +4,23 @@
  * @date   2009-04-21
  * @author Jean-Lou Dupont
  */
+#include <pthread.h>
 #include "server.h"
+
+// PRIVATE
+pthread_t sThread;
+void *server_thread(void *params);
+int server_open_port(int port);
+
+
+/**
+ * Initialize the server thread
+ */
+void server_init(server_params *params) {
+
+	pthread_create(&sThread, NULL, &server_thread, (void *) &params);
+
+}//
 
 /**
  * Erlang Server Thread

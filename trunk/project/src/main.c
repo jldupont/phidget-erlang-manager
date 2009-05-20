@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
 	int result;
 	int port=0;
 	char *cookie, *command;
-	pthread_t sThread;
 
 
 	result = getOptionsAndCommand(argc, argv, &port, &cookie, &command);
@@ -190,24 +189,10 @@ int main(int argc, char **argv) {
 	params.port   = port;
 	params.cookie = cookie;
 
-
-	int result2 = pthread_create(&sThread, NULL, &server_thread, (void *) &params);
-	if (result2) {
-		showMessage( MSG_ERROR_SERVER_THREAD );
-		return 1;
-	}
+	server_init( &params );
 	*/
 	//}
 
-
-	//CPhidgetManagerHandle phidm;
-	//phidm = manager_create( conn );
-
-	// running in the server & manager threads
-	// at this point
-
-_close:
-//====
 
 	doLog(LOG_INFO, "main: STARTING loop");
 
