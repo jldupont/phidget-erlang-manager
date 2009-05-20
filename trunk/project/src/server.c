@@ -5,6 +5,8 @@
  * @author Jean-Lou Dupont
  */
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "server.h"
 
 // PRIVATE
@@ -33,7 +35,7 @@ void *server_thread(void *params) {
 
 	server_params *parameters = (server_params *) params;
 
-	doLog(LOG_DEBUG,"Server Thread Started, port[%u]", parameters->port);
+	doLog(LOG_DEBUG,"Server Thread Started, port[%u], pid[%u]", parameters->port, getpid());
 
 	// open server socket
 	listen_socket = server_open_port( parameters->port );
