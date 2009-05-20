@@ -18,6 +18,8 @@
 #	define LITM_ID_SIGNALS   1
 #	define LITM_ID_SERVER    2
 #	define LITM_ID_MANAGER   3
+#	define LITM_ID_MESSAGES  4
+
 
 
 	/**
@@ -146,6 +148,21 @@
 	} message_types;
 
 
+	/**
+	 * Maps message types to
+	 * a human readable form
+	 */
+	const char *messages_text[] = {
+		"**invalid**",
+
+		"shutdown",
+		"timer",
+
+		"phidget_device",
+		"phidget_digital_states",
+		"phidget_digital_set_states"
+
+	};
 
 	/**
 	 * Message envelope definition
@@ -171,5 +188,10 @@
 
 	} bus_message;
 
+
+	// PROTOTYPES
+	// ==========
+
+	void messages_init(void);
 
 #endif /* MESSAGES_H_ */

@@ -90,7 +90,8 @@ void *__signals_handler_thread(void* params) {
 		case SIGTERM:
 			DEBUG_LOG(LOG_DEBUG, "received SIGTERM");
 			// void_cleaner in utils.c
-			code = litm_send_shutdown( conn, LITM_ID_SIGNALS, &shutdown_message, &void_cleaner );
+			if (NULL!=conn)
+				litm_send_shutdown( conn, LITM_ID_SIGNALS, &shutdown_message, &void_cleaner );
 			__exit = 1;
 			break;
 
