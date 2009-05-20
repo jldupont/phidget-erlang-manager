@@ -5,7 +5,11 @@
  * @author Jean-Lou Dupont
  */
 
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/time.h>
 
@@ -17,14 +21,16 @@
 char *__logFilePath = "/var/log/phidgetmanager";
 pthread_t __messages_thread;
 
+void __messages_log_message(bus_message_type type);
 void __messages_log(const char *fmt, ... );
-void *__messages_thread(void* arg);
+void *__messages_thread_function(void* arg);
 
 
 
 void messages_init(void) {
 
 	pthread_create( &__messages_thread, NULL, __messages_thread_function, NULL );
+
 }//
 
 void *__messages_thread_function(void* arg) {
@@ -38,8 +44,8 @@ void *__messages_thread_function(void* arg) {
 		return NULL;
 	}
 
-	code1 = litm_subscribe_wait( conn, LITM_BUS_MESSAGES);
-	code2 = litm_subscribe_wait( conn, LITM_BUS_SYSTEM);
+	code1 = litm_subscribe_wait( conn, LITM_BUS_MESSAGES, 0);
+	code2 = litm_subscribe_wait( conn, LITM_BUS_SYSTEM,   0);
 
 	if (LITM_CODE_OK!=code1) {
 		DEBUG_LOG(LOG_ERR, "cannot subscribe to messages bus");
@@ -53,7 +59,7 @@ void *__messages_thread_function(void* arg) {
 
 
 	litm_envelope *e;
-	message_body *msg;
+	bus_message *msg;
 
 	while(1) {
 
@@ -85,7 +91,7 @@ void *__messages_thread_function(void* arg) {
 
 void __messages_log_message(bus_message_type type) {
 
-	const char *base[] = "%d: message type[%i]";
+	const char *base = "%d: message type[%i]";
 	time_t t;
 	struct tm tm;
 	char date[50];
@@ -96,7 +102,7 @@ void __messages_log_message(bus_message_type type) {
 	if (!strftime(date, sizeof (date), "%c", &tm))
 		strncpy(date, "?", sizeof (date));
 	else
-		date[0] = "\0";
+		date[0] = '\0';
 
 	__messages_log(base, &date, &messages_text[type] );
 
@@ -105,6 +111,7 @@ void __messages_log_message(bus_message_type type) {
 
 void __messages_log( const char *fmt, ... ) {
 
+	va_list va;
 	FILE *file = NULL;
 
 	file = fopen( __logFilePath, "a" );

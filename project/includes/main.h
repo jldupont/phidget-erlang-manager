@@ -22,6 +22,7 @@
 		MSG_INVALID_COMMAND,
 		MSG_CODE_NOT_FOUND,
 		MSG_LITM_CONNECTION_ERROR,
+		MSG_LITM_SUBSCRIBE_ERROR,
 
 		// daemon related
 		MSG_NO_PID_FILE,
@@ -51,6 +52,8 @@
 			"ERROR: invalid command\n",
 			"APPLICATION ERROR: error code not found\n",
 			"ERROR: cannot connect to 'litm'",
+			"ERROR: cannot subscribe to a litm bus",
+
 			//daemon related
 			"ERROR: PID file not found\n",
 			"ERROR: invalid daemon name\n",
