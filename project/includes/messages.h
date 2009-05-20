@@ -12,6 +12,13 @@
 #ifndef MESSAGES_H_
 #define MESSAGES_H_
 
+#	define LITM_BUS_MESSAGES 1
+#	define LITM_BUS_SYSTEM   2
+
+#	define LITM_ID_SIGNALS   1
+#	define LITM_ID_SERVER    2
+#	define LITM_ID_MANAGER   3
+
 
 	/**
 	 * Message type field definition
@@ -153,14 +160,14 @@
 
 		bus_message_type type;
 
-		union message_body {
+		union _message_body {
 
 			message_shutdown					ms;
 			message_timer						mt;
 			message_phidget_device				pd;
 			message_phidget_digital_states     ps;
 			message_phidget_digital_set_states pss;
-		};
+		} message_body;
 
 	} bus_message;
 

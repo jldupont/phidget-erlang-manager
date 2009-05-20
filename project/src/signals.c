@@ -16,7 +16,9 @@
 #include <stdlib.h>
 #include "signals.h"
 #include "helpers.h"
+#include "messages.h"
 #include "litm.h"
+#include "utils.h"
 
 
 // PRIVATE
@@ -60,11 +62,19 @@ void signals_init(int bus_id) {
 /**
  * Signal Handler for the whole process
  */
-void *__signals_handler_thread(void* _conn) {
+void *__signals_handler_thread(void* params) {
 
-	litm_connection *conn = _conn;
+	litm_connection *conn = NULL;
 	litm_code code;
 
+	// TODO LITM connect error: is there a better way to handle this??
+	code = litm_connect_ex_wait( &conn, LITM_ID_SIGNALS, 0);
+	if (LITM_CODE_OK != code)
+		DEBUG_LOG(LOG_ERR, "cannot connect to LITM");
+
+	bus_message shutdown_message;
+
+	shutdown_message.type = MESSAGE_SHUTDOWN;
 
 
 	sigset_t signal_set;
@@ -79,40 +89,27 @@ void *__signals_handler_thread(void* _conn) {
 
 		case SIGTERM:
 			DEBUG_LOG(LOG_DEBUG, "received SIGTERM");
-			pthread_mutex_lock(&__signals_mutex);
-			__caught_signal = SIGTERM;
-			__exit=1;
-			pthread_mutex_unlock(&__signals_mutex);
+			// void_cleaner in utils.c
+			code = litm_send_shutdown( conn, LITM_ID_SIGNALS, &shutdown_message, &void_cleaner );
+			__exit = 1;
 			break;
 
 		case SIGQUIT:
 			DEBUG_LOG(LOG_DEBUG, "received SIGQUIT");
-			pthread_mutex_lock(&__signals_mutex);
-			__caught_signal = SIGQUIT;
-			pthread_mutex_unlock(&__signals_mutex);
 			break;
 
 		 case SIGINT:
 			DEBUG_LOG(LOG_DEBUG, "received SIGINT");
-			pthread_mutex_lock(&__signals_mutex);
-			__caught_signal = SIGINT;
-			pthread_mutex_unlock(&__signals_mutex);
 			break;
 
 		 case SIGVTALRM:
 		 case SIGALRM:
 			// TODO generate timer message on litm
 			DEBUG_LOG(LOG_DEBUG, "received SIGVLARM");
-			pthread_mutex_lock(&__signals_mutex);
-			__caught_signal = SIGVTALRM;
-			pthread_mutex_unlock(&__signals_mutex);
 			break;
 
 		default:
 			DEBUG_LOG(LOG_DEBUG, "received unsupported signal, sig[%i]", sig);
-			pthread_mutex_lock(&__signals_mutex);
-			__caught_signal = 0;
-			pthread_mutex_unlock(&__signals_mutex);
 			break;
 		}
 
@@ -120,6 +117,8 @@ void *__signals_handler_thread(void* _conn) {
 			break;
 		}
 	}
+
+	litm_wait_shutdown();
 
 	return (void*)0;
 }//signal_handler_thread
