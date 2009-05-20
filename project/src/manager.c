@@ -30,26 +30,71 @@
 #include "logger.h"
 #include "manager.h"
 #include "litm.h"
+#include "messages.h"
+
+// PRIVATE
+pthread_t manager_thread;
+
+void *__manager_thread_function(void *params);
+
+
+int manager_gotAttach(CPhidgetHandle phid, void *conn);
+int manager_gotDetach(CPhidgetHandle phid, void *conn);
+
+PhidgetDevice *manager_create_device(CPhidgetHandle phid);
+void manager_destroy_device(PhidgetDevice *pd);
+
+void manager_push_message(PhidgetManagerMessageType type, PhidgetDevice *pd, litm_connection *conn);
+PhidgetManagerMessage *manager_create_message(PhidgetManagerMessageType type, PhidgetDevice *pd);
+void manager_destroy_message(PhidgetManagerMessage *msg);
 
 
 
-/**
- * Phidget Manager controller thread
- */
-CPhidgetManagerHandle manager_create(litm_connection *conn) {
+// ==========================================================
+// ==========================================================
 
+void manager_init(void) {
+
+	pthread_create(&sThread, NULL, &__manager_thread_function, (void *) NULL);
+
+}//
+
+void *__manager_thread_function(void *params) {
+
+	litm_connection *conn;
+	litm_code code;
 	CPhidgetManagerHandle phidm;
+
+	doLog(LOG_DEBUG, "manager: BEGIN thread");
+
+	code = litm_connect_ex_wait(&conn, LITM_ID_MANAGER, 0);
+	if (LITM_CODE_OK!=code) {
+		doLog(LOG_ERR, "manager: cannot connect to LITM");
+		return NULL;
+	}
+
+	code = litm_subscribe( conn, LITM_BUS_SYSTEM );
+	if (LITM_CODE_OK!=code) {
+		doLog(LOG_ERR, "manager: cannot subscribe to LITM");
+		return NULL;
+	}
+
+
 
 	// open up the Phidget Manager
 	CPhidgetManager_create(&phidm);
 	CPhidgetManager_set_OnAttach_Handler(phidm, manager_gotAttach, (void *)conn);
 	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)conn);
 
-	doLog(LOG_DEBUG, "Opening Phidget Manager");
+
+
 	CPhidgetManager_open(phidm);
 
-	return phidm;
-}//[/manager_thread]
+
+	doLog(LOG_DEBUG,"manager: END thread");
+}//thread
+
+
 
 
 /**
