@@ -72,7 +72,7 @@ void *__signals_handler_thread(void* params) {
 	if (LITM_CODE_OK != code)
 		DEBUG_LOG(LOG_ERR, "cannot connect to LITM");
 
-	bus_message shutdown_message;
+	static bus_message shutdown_message;
 
 	shutdown_message.type = MESSAGE_SHUTDOWN;
 

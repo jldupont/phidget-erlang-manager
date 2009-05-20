@@ -125,7 +125,7 @@ void __messages_log_message(bus_message_type type) {
 	if (!strftime(date, sizeof (date), "%c", &tm))
 		strncpy(date, "?", sizeof (date));
 
-	doLog(LOG_DEBUG,"__messages_log_message: type[%i]", type);
+	//doLog(LOG_DEBUG,"__messages_log_message: type[%i]", type);
 	__messages_log(base, date, messages_text[type] );
 
 }//function
@@ -142,7 +142,7 @@ void __messages_log( const char *fmt, ... ) {
 		va_start(va, fmt);
 		vfprintf(file, fmt, va);
 		va_end(va);
-		fprintf(file, "\"\n");
+		fprintf(file, "\n");
 		fflush(file);
 
 	} else {

@@ -35,8 +35,7 @@
 
 
 	// PROTOTYPES
-	void *server_thread(void *params);
-	int server_open_port(int port);
+	void server_init(server_params *params);
 
 
 #endif /* SERVER_H_ */
