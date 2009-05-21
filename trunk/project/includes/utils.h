@@ -10,4 +10,7 @@
 
 	void void_cleaner(void *msg);
 
+	void string_tolower(char *string);
+
+
 #endif /* UTILS_H_ */

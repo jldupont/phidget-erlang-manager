@@ -19,7 +19,6 @@
  *
  */
 
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -34,6 +33,7 @@
 #include "manager.h"
 #include "litm.h"
 #include "messages.h"
+#include "drivers.h"
 
 // PRIVATE
 pthread_t manager_thread;
@@ -47,7 +47,7 @@ void manager_destroy_device(PhidgetDevice *pd);
 int manager_gotAttach(CPhidgetHandle phid, void *conn);
 int manager_gotDetach(CPhidgetHandle phid, void *conn);
 
-void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget_device_state state );
+void __manager_send_message(litm_connection *conn, PhidgetDevice *pd,  phidget_device_state state );
 bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state);
 void __manager_clean_message_phidget_device(void *msg);
 
@@ -129,9 +129,17 @@ void *__manager_thread_function(void *params) {
  */
 int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
+	PhidgetDevice *pd;
+
+	pd = manager_create_device_info(phid);
+
 	doLog(LOG_DEBUG, "manager: device attached [%x]", phid);
 
-	__manager_send_message( conn, phid, PHIDGET_DEVICE_STATUS_ACTIVE );
+	__manager_send_message( conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
+
+	char (*type_name)[] = pd->type;
+
+	drivers_handle_type( type_name, LITM_BUS_MESSAGES, LITM_BUS_SYSTEM );
 
 	return 0;
 }//[/manager_gotAttach]
@@ -141,9 +149,13 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
  */
 int manager_gotDetach(CPhidgetHandle phid, void *conn) {
 
+	PhidgetDevice *pd;
+
+	pd = manager_create_device_info(phid);
+
 	doLog(LOG_INFO, "manager: device detached [%x]", phid);
 
-	__manager_send_message( conn, phid, PHIDGET_DEVICE_STATUS_INACTIVE );
+	__manager_send_message( conn, pd, PHIDGET_DEVICE_STATUS_INACTIVE );
 
 	return 0;
 }//[/manager_gotDetach]
@@ -153,13 +165,10 @@ int manager_gotDetach(CPhidgetHandle phid, void *conn) {
 
 
 
-void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget_device_state state ) {
+void __manager_send_message(litm_connection *conn, PhidgetDevice *pd,  phidget_device_state state ) {
 
 	litm_code   code;
 	bus_message *msg;
-	PhidgetDevice *pd;
-
-	pd = manager_create_device_info(phid);
 
 	msg = __manager_create_message_phidget_device( pd, state );
 

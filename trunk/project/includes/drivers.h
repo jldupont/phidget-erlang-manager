@@ -16,6 +16,10 @@
  *		\endcode
  *		where <i>phidget_type_name</i> is in lower-case.
  *
+ *		\subsection location Location
+ *
+ *		The libraries must be located in /usr/lib
+ *
  */
 
 #ifndef DRIVERS_H_
