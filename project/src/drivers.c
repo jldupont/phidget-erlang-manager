@@ -7,12 +7,17 @@
  *
  *
  */
+
+#include <dlfcn.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <litm.h>
 #include "drivers.h"
 #include "logger.h"
+#include "helpers.h"
+#include "utils.h"
 
 typedef void * lib_handle;
 
@@ -24,6 +29,7 @@ typedef struct _loaded_lib {
 } loaded_lib;
 
 int __drivers_initialized = 0;
+const char base_path[] = "/usr/lib/libpm";
 
 
 /**
@@ -36,8 +42,8 @@ loaded_lib __loaded_libs[DRIVERS_MAX_LIBS];
 // ==========
 void __drivers_init(void);
 void __drivers_load_lib(char (*type_name)[]);
-lib_handle __drivers_search_type(char *type_name);
-
+lib_handle __drivers_search_type(char (*type_name)[]);
+int __drivers__add_lib(char (*type_name)[], lib_handle h);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,6 +95,46 @@ void __drivers_init(void) {
  */
 void __drivers_load_lib(char (*type_name)[]) {
 
+	static char path[255];
+
+	snprintf((char*)&path, sizeof(path), "%s%s.so", (char*) &base_path, (char*)type_name );
+
+	doLog(LOG_INFO, "drivers: attempting to load driver[%s]", path);
+
+	string_tolower( (char *) path );
+
+	lib_handle lh=NULL;
+
+	lh= dlopen( path, RTLD_LAZY);
+	if (NULL==lh) {
+		doLog(LOG_ERR, "drivers: failed to load driver[%s]", path);
+		return;
+	}
+
+	int index=__drivers__add_lib( type_name, lh );
+
+	if (-1==index) {
+		doLog(LOG_ERR, "drivers: could not add driver to list");
+		return;
+	}
+
+
+
+	char *error;
+	void (*init)(void);
+
+	init  = dlsym( lh, "init" );
+	error = dlerror();
+
+	if ( NULL!= error ) {
+		doLog(LOG_ERR, "drivers: failed to find 'init' function in library [%s]", path);
+		dlclose( lh );
+		return;
+	}
+
+	doLog(LOG_INFO,"drivers: initializing library [%s]", path);
+	(*init)();
+
 
 }//
 
@@ -100,11 +146,20 @@ void __drivers_load_lib(char (*type_name)[]) {
  */
 lib_handle __drivers_search_type(char (*type_name)[]) {
 
+	DEBUG_LOG(LOG_DEBUG,"drivers: __drivers_search_type [%s]", type_name );
+
 	lib_handle result = NULL;
 
-	int i;
+	char (*sptr)[] = NULL;
+	int i, len;
+	len = strlen((char *) type_name);
+
 	for (i=0; i< DRIVERS_MAX_LIBS; i++) {
-		if (0==strncmp(type_name, __loaded_libs[i].type_name)) {
+		sptr = __loaded_libs[i].type_name;
+		if (NULL==sptr)
+			continue;
+
+		if (0==strncmp((char *)type_name, (char*) sptr, len )) {
 			result = __loaded_libs[i].h;
 		}
 	}
@@ -116,18 +171,25 @@ lib_handle __drivers_search_type(char (*type_name)[]) {
 /**
  * Adds a type to the list of loaded libs
  */
-void __drivers__add_lib(char (*type_name)[], lib_handle h) {
+int __drivers__add_lib(char (*type_name)[], lib_handle h) {
 
-	int i, done=0;
+	DEBUG_LOG(LOG_DEBUG,"drivers: __drivers__add_lib [%s]", type_name );
+
+	char (*tmp)[] = malloc( strlen((char*)type_name) * sizeof(char) );
+
+	strcpy( (char *) tmp, (char*) type_name );
+
+	int i, done=-1;
 	for (i=0; i< DRIVERS_MAX_LIBS; i++) {
 		if (NULL==__loaded_libs[i].h) {
 			__loaded_libs[i].h = h;
-			__loaded_libs[i].type_name = type_name;
-			done++;
+			__loaded_libs[i].type_name = tmp;
+			done=i;
 			break;
 		}
 	}
-	if (!done)
+	if (-1==done)
 		doLog(LOG_ERR, "drivers: could not add library");
 
+	return done;
 }//
