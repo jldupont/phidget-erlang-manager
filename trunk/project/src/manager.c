@@ -19,6 +19,7 @@
  *
  */
 
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -253,14 +254,14 @@ PhidgetDevice* manager_create_device_info(CPhidgetHandle phid) {
  */
 void manager_destroy_device(PhidgetDevice *pd) {
 
-	DEBUG_LOG(LOG_DEBUG, "manager: destroying device");
+	//DEBUG_LOG(LOG_DEBUG, "manager: destroying device");
 
 	free( pd->type );
 	free( pd->name );
 	free( pd->label );
 	free( pd );
 
-	DEBUG_LOG(LOG_DEBUG, "manager: finished destroying device");
+	//DEBUG_LOG(LOG_DEBUG, "manager: finished destroying device");
 
 }//[/manager_destroy_device]
 

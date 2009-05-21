@@ -10,6 +10,7 @@
 
 #include <syslog.h>
 
+
 	// Prototypes
 	// ==========
 	void doLog(int priority, char *message, ...);

@@ -43,4 +43,5 @@
 	int daemon_validate_command(char *command);
 	int daemon_is_start_command(char *command);
 
+
 #endif /* DAEMON_H_ */
