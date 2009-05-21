@@ -20,6 +20,14 @@
  *
  *		The libraries must be located in /usr/lib
  *
+ *		\subsection init Initialization
+ *
+ *		The function called when the library is loaded has for prototype:
+ *
+ *		\code
+ *			void (*init)( litm_bus message_bus_id, litm_bus system_bus_id );
+ *		\endcode
+ *
  */
 
 #ifndef DRIVERS_H_

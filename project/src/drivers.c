@@ -41,7 +41,7 @@ loaded_lib __loaded_libs[DRIVERS_MAX_LIBS];
 // PROTOTYPES
 // ==========
 void __drivers_init(void);
-void __drivers_load_lib(char (*type_name)[]);
+void __drivers_load_lib(char (*type_name)[], litm_bus message_bus_id, litm_bus system_bus_id);
 lib_handle __drivers_search_type(char (*type_name)[]);
 int __drivers__add_lib(char (*type_name)[], lib_handle h);
 
@@ -72,7 +72,7 @@ void drivers_handle_type(	char (*type_name)[],
 		return;
 	}
 
-	__drivers_load_lib( type_name );
+	__drivers_load_lib( type_name, message_bus_id, system_bus_id );
 
 }//
 
@@ -93,15 +93,16 @@ void __drivers_init(void) {
 /**
  * Loads & Inits a library
  */
-void __drivers_load_lib(char (*type_name)[]) {
+void __drivers_load_lib(char (*type_name)[],
+						litm_bus message_bus_id,
+						litm_bus system_bus_id) {
 
 	static char path[255];
 
 	snprintf((char*)&path, sizeof(path), "%s%s.so", (char*) &base_path, (char*)type_name );
+	string_tolower( (char *) path );
 
 	doLog(LOG_INFO, "drivers: attempting to load driver[%s]", path);
-
-	string_tolower( (char *) path );
 
 	lib_handle lh=NULL;
 
@@ -121,7 +122,7 @@ void __drivers_load_lib(char (*type_name)[]) {
 
 
 	char *error;
-	void (*init)(void);
+	void (*init)( litm_bus message_bus_id, litm_bus system_bus_id );
 
 	init  = dlsym( lh, "init" );
 	error = dlerror();
@@ -133,7 +134,7 @@ void __drivers_load_lib(char (*type_name)[]) {
 	}
 
 	doLog(LOG_INFO,"drivers: initializing library [%s]", path);
-	(*init)();
+	(*init)(message_bus_id, system_bus_id);
 
 
 }//
