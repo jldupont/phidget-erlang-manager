@@ -73,9 +73,10 @@ void *__signals_handler_thread(void* params) {
 		DEBUG_LOG(LOG_ERR, "cannot connect to LITM");
 
 	static bus_message shutdown_message;
+	static bus_message alarm_message;
 
 	shutdown_message.type = MESSAGE_SHUTDOWN;
-
+	alarm_message.type    = MESSAGE_TIMER;
 
 	sigset_t signal_set;
 	int sig, __exit=0;
@@ -105,6 +106,8 @@ void *__signals_handler_thread(void* params) {
 
 		 case SIGVTALRM:
 			 DEBUG_LOG(LOG_DEBUG, "signals: received SIGVTALRM");
+				if (NULL!=conn)
+					litm_send( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner );
 			 break;
 
 		 case SIGALRM:

@@ -23,6 +23,7 @@
 #	define LITM_ID_MANAGER   4
 #	define LITM_ID_MESSAGES  5
 
+#	define MESSAGE_MAX_DEVICES 32
 
 
 	/**
@@ -30,33 +31,6 @@
 	 */
 	typedef int bus_message_type;
 
-
-	/**
-	 * Definition of a _phidget device_
-	 *
-	 * @param serial serial number
-	 * @param name   device name
-	 * @param type   device type
-	 */
-	typedef struct {
-
-		int  serial;
-		char name[64];
-		char label[64];
-		char type[64];
-		int  version;
-
-	} phidget_device;
-
-	/**
-	 * Device status
-	 */
-	typedef enum {
-
-		PHIDGET_DEVICE_ACTIVE   = 1,
-		PHIDGET_DEVICE_INACTIVE
-
-	} phidget_device_state;
 
 	/**
 	 * Digital State type
@@ -89,10 +63,6 @@
 	} digital_states;
 
 
-	/**
-	 * Reference to a specific phidget device
-	 */
-	typedef int phidget_device_serial;
 
 			/**
 			 * Definition of shutdown message
@@ -112,14 +82,14 @@
 
 
 			/**
-			 * Definition of message _phidget_devices_
+			 * Definition of message _phidget_device_
 			 *
 			 * @param count the number of devices listed in the message
 			 *
 			 */
 			typedef struct {
-				PhidgetDevice *device;
-				phidget_device_state state;
+				int count;
+				PhidgetDevice* devices[MESSAGE_MAX_DEVICES];
 			} message_phidget_device;
 
 
@@ -127,7 +97,7 @@
 			 * Definition of message _phidget_states_
 			 */
 			typedef struct {
-				phidget_device *device;
+				PhidgetDevice* device;
 
 				int count;
 				digital_states (*states)[];
@@ -138,7 +108,7 @@
 			 * Definition message _phidget_set_states_
 			 */
 			typedef struct {
-				phidget_device *device;
+				PhidgetDevice* device;
 
 				int count;
 				digital_states (*states)[];

@@ -11,10 +11,23 @@
 #include <phidget21.h>
 #include "litm.h"
 
+	/**
+	 * Device status
+	 */
+	typedef enum {
+
+		PHIDGET_DEVICE_STATUS_UNKNOWN =1,
+		PHIDGET_DEVICE_STATUS_ACTIVE   = 1,
+		PHIDGET_DEVICE_STATUS_INACTIVE
+
+	} phidget_device_state;
+
+
 	// Device Information structure
 	// ============================
 	typedef struct _PhidgetDevice {
 
+		phidget_device_state state;
 		int version;
 		int serial;
 		char *type;

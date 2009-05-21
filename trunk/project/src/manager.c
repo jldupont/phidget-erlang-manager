@@ -40,7 +40,8 @@ pthread_t manager_thread;
 void *__manager_thread_function(void *params);
 
 
-PhidgetDevice *manager_create_device(CPhidgetHandle phid);
+PhidgetDevice* manager_create_device_info(CPhidgetHandle phid);
+
 void manager_destroy_device(PhidgetDevice *pd);
 int manager_gotAttach(CPhidgetHandle phid, void *conn);
 int manager_gotDetach(CPhidgetHandle phid, void *conn);
@@ -49,6 +50,7 @@ void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget
 bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state);
 void __manager_clean_message_phidget_device(void *msg);
 
+void __manager_handle_timer(CPhidgetManagerHandle phim);
 
 
 // ==========================================================
@@ -100,8 +102,13 @@ void *__manager_thread_function(void *params) {
 		if (LITM_CODE_OK==code) {
 			msg  = litm_get_message( e );
 			type = msg->type;
+
 			if (MESSAGE_SHUTDOWN==type) {
 				__exit = 1;
+			}
+
+			if (MESSAGE_TIMER==type) {
+				__manager_handle_timer(phidm);
 			}
 
 			litm_release( conn, e);
@@ -123,7 +130,7 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
 	doLog(LOG_DEBUG, "manager: device attached [%x]", phid);
 
-	__manager_send_message( conn, phid, PHIDGET_DEVICE_ACTIVE );
+	__manager_send_message( conn, phid, PHIDGET_DEVICE_STATUS_ACTIVE );
 
 	return 0;
 }//[/manager_gotAttach]
@@ -135,10 +142,14 @@ int manager_gotDetach(CPhidgetHandle phid, void *conn) {
 
 	doLog(LOG_INFO, "manager: device detached [%x]", phid);
 
-	__manager_send_message( conn, phid, PHIDGET_DEVICE_INACTIVE );
+	__manager_send_message( conn, phid, PHIDGET_DEVICE_STATUS_INACTIVE );
 
 	return 0;
 }//[/manager_gotDetach]
+
+
+
+
 
 
 void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget_device_state state ) {
@@ -146,7 +157,8 @@ void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget
 	litm_code   code;
 	bus_message *msg;
 	PhidgetDevice *pd;
-	pd = manager_create_device(phid);
+
+	pd = manager_create_device_info(phid);
 
 	msg = __manager_create_message_phidget_device( pd, state );
 
@@ -155,6 +167,8 @@ void __manager_send_message(litm_connection *conn, CPhidgetHandle phid,  phidget
 	if (LITM_CODE_OK!=code)
 		doLog(LOG_ERR, "manager: error sending message through LITM");
 }//
+
+
 
 /**
  * Creates from scratch a 'message_phidget_device' message
@@ -165,9 +179,10 @@ bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_
 	if (NULL==msg)
 		return NULL;
 
+	pd->state = state;
 	msg->type = MESSAGE_PHIDGET_DEVICE;
-	msg->message_body.mpd.device = pd;
-	msg->message_body.mpd.state = state;
+	msg->message_body.mpd.count = 1;
+	msg->message_body.mpd.devices[0] = pd;
 
 	return msg;
 }
@@ -182,7 +197,13 @@ void __manager_clean_message_phidget_device(void *msg) {
 
 	bus_message *m = (bus_message *)msg;
 
-	manager_destroy_device(m->message_body.mpd.device);
+	int i,count;
+
+	count = m->message_body.mpd.count;
+
+	for (i=0;i<count;i++)
+		manager_destroy_device(m->message_body.mpd.devices[i]);
+
 	free( m );
 
 }//
@@ -190,7 +211,7 @@ void __manager_clean_message_phidget_device(void *msg) {
 /**
  * Creates a device description object
  */
-PhidgetDevice *manager_create_device(CPhidgetHandle phid) {
+PhidgetDevice* manager_create_device_info(CPhidgetHandle phid) {
 
 	PhidgetDevice *pd;
 	const char *type, *name, *label;
@@ -244,3 +265,42 @@ void manager_destroy_device(PhidgetDevice *pd) {
 }//[/manager_destroy_device]
 
 
+void __manager_handle_timer(CPhidgetManagerHandle phim) {
+
+	int count, result;
+	CPhidgetHandle (*devices)[];
+
+	result = CPhidgetManager_getAttachedDevices(phim, &devices, &count);
+	if (EPHIDGET_OK!=result) {
+		doLog(LOG_ERR, "manager: error getting attached devices" );
+		return;
+	}
+
+	bus_message *msg = malloc( sizeof(bus_message) );
+	if (NULL==msg) {
+		CPhidgetManager_freeAttachedDevicesArray( devices );
+		return;
+	}
+
+	msg->type = MESSAGE_PHIDGET_DEVICE;
+
+
+	int i, done = 0;
+	PhidgetDevice *device;
+	CPhidgetHandle hdevice;
+
+	for (i=0; (i<count) && (i<MESSAGE_MAX_DEVICES) ; i++ ) {
+		hdevice = devices[i];
+		device = manager_create_device_info( hdevice );
+		msg->message_body.mpd.devices[i] = device;
+		done++;
+	}
+
+	msg->message_body.mpd.count = done;
+
+	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
+	if (LITM_CODE_OK!=code)
+		doLog(LOG_ERR, "manager: error sending message through LITM");
+
+	CPhidgetManager_freeAttachedDevicesArray( devices );
+}//
