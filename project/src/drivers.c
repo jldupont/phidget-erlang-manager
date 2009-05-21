@@ -35,6 +35,7 @@ loaded_lib __loaded_libs[DRIVERS_MAX_LIBS];
 // PROTOTYPES
 // ==========
 void __drivers_init(void);
+void __drivers_load_lib(char (*type_name)[]);
 lib_handle __drivers_search_type(char *type_name);
 
 
@@ -50,13 +51,22 @@ lib_handle __drivers_search_type(char *type_name);
  * of the dynamic library associated with a given
  * phidget type
  */
-void drivers_handle_type(	char *type_name,
+void drivers_handle_type(	char (*type_name)[],
 							litm_bus message_bus_id,
 							litm_bus system_bus_id ) {
 
 	//low frequency enough
 	__drivers_init();
 
+	lib_handle lh=NULL;
+
+	lh = __drivers_search_type( type_name );
+	if (NULL!=lh) {
+		//already loaded
+		return;
+	}
+
+	__drivers_load_lib( type_name );
 
 }//
 
@@ -75,11 +85,20 @@ void __drivers_init(void) {
 }//
 
 /**
+ * Loads & Inits a library
+ */
+void __drivers_load_lib(char (*type_name)[]) {
+
+
+}//
+
+
+/**
  * Searches for a lib associated with a type
  *
  * @return lib_handle or NULL
  */
-lib_handle __drivers_search_type(char *type_name) {
+lib_handle __drivers_search_type(char (*type_name)[]) {
 
 	lib_handle result = NULL;
 
@@ -97,7 +116,7 @@ lib_handle __drivers_search_type(char *type_name) {
 /**
  * Adds a type to the list of loaded libs
  */
-void __drivers__add_lib(char *type_name, lib_handle h) {
+void __drivers__add_lib(char (*type_name)[], lib_handle h) {
 
 	int i, done=0;
 	for (i=0; i< DRIVERS_MAX_LIBS; i++) {
