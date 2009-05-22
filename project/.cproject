@@ -30,6 +30,7 @@
 <listOptionValue builtIn="false" value="H:/"/>
 <listOptionValue builtIn="false" value="&quot;C:/Program Files/erl5.7/lib/erl_interface-3.6/include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/litm/trunk/project/includes}&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/drivers/include}&quot;"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.assembler.input.686742840" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
@@ -59,13 +60,14 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/src"/>
-<entry excluding="phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
-<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
 <entry excluding="drivers|main/include|main/src|includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/include"/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/src"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/src"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
+<entry excluding="include|phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
+<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -340,6 +342,9 @@
 <targetPlatform id="cdt.managedbuild.target.gnu.platform.mingw.exe.release.430971227" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.mingw.exe.release"/>
 <builder buildPath="${workspace_loc:/phidgetmanager/Release}" id="cdt.managedbuild.tool.gnu.builder.mingw.base.1266985539" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
 <tool id="cdt.managedbuild.tool.gnu.assembler.mingw.exe.release.454506151" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.mingw.exe.release">
+<option id="gnu.both.asm.option.include.paths.639076199" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidget_erlang_manager/trunk/project/drivers/include}&quot;"/>
+</option>
 <inputType id="cdt.managedbuild.tool.gnu.assembler.input.1183025196" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.archiver.mingw.base.2063909495" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.mingw.base"/>
@@ -362,13 +367,14 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
-<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
+<entry excluding="include|phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/src"/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/include"/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/src"/>
-<entry excluding="phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
 <entry excluding="drivers|main/include|main/src|includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
 </sourceEntries>
 </configuration>
 </storageModule>

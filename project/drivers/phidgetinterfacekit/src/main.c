@@ -5,3 +5,5 @@
  * @author Jean-Lou Dupont
  */
 
+#include "drivers/include/drivers_common.h"
+
