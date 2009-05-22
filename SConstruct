@@ -14,7 +14,6 @@ except:
 
 
 Help("""\
- Type:	
    'scons' to build the libraries (release and debug),
    'scons deb' to build the .deb package
    'scons release' to release the package to tags/debian repository
@@ -23,6 +22,8 @@ Help("""\
 
 # LIST MODULES
 # ============
+includes = ['#project/drivers/include', '#project/main/include']
+
 list_modules = [	'#project/main',
 					'#project/drivers/phidgetinterfacekit'
 				]
@@ -32,8 +33,8 @@ modules = []
 for module in list_modules:
 	modules.append( {	'script'  : "%s/SConscript" % module,
 						'build'   : module,
-						'release' : Environment(CPPPATH=module+'/include'),
-						'debug'   : Environment(CPPPATH=module+'/include', CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
+						'release' : Environment(CPPPATH=[module+'/include']+includes),
+						'debug'   : Environment(CPPPATH=[module+'/include']+includes, CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
 					} )
 
 for module in modules:

@@ -24,6 +24,13 @@
 // PRIVATE
 pthread_t driver_thread;
 
+int _activeSerials[15];
+
+
+void main_loop(litm_connection *conn);
+int isShutdown(bus_message *msg);
+
+
 /**
  * Entry Point
  */
@@ -34,6 +41,11 @@ void init(litm_bus msg, litm_bus sys) {
 
 	params->msg = msg;
 	params->sys = sys;
+
+	int i;
+	for (i=0;i<sizeof(_activeSerials)/sizeof(int); i++) {
+		_activeSerials[i]=0;
+	}
 
 	pthread_create(&driver_thread, NULL, DTF_CAST &driver_thread_function, (void *) params);
 
@@ -76,8 +88,98 @@ void *driver_thread_function(driver_thread_params *params) {
 	}
 
 	// we are good to go!
-
+	main_loop( conn );
 
 
 	DEBUG_LOG(LOG_DEBUG, "ifk: END thread");
 }//thread
+
+
+
+
+void main_loop(litm_connection *conn) {
+
+
+	int __exit = 0;
+	while(!__exit) {
+
+		__exit = handle_message( conn );
+		sleep(1);
+
+	}//while
+
+}//
+
+/**
+ *
+ * Handles messages:
+ *
+ *  1) message_phidget_device:  for opening/closing devices
+ *  2) shutdown
+ *  3) timer (?)
+ *
+ *@return 1 for shutdown
+ */
+int handle_messages(litm_connection *conn) {
+
+
+	litm_code code;
+	litm_envelope *e=NULL;
+	bus_message *msg;
+
+	code = litm_receive_nb(conn, &e);
+	if (LITM_CODE_OK==code) {
+
+		msg = litm_get_message( e );
+
+		if (isShutdown(msg)) {
+			litm_release( e );
+			return 1;
+		}
+
+		if (!isPhidgetDeviceMessage(msg)) {
+			litm_release( e );
+			return 0;
+		}
+		//instead of having another level
+		// of 'if's here....
+		handleOpen(msg);
+		handleClose(msg);
+
+		litm_release( e );
+	}
+
+	return 0;
+}//
+
+int isShutdown(bus_message *msg) {
+
+	return (MESSAGE_SHUTDOWN == msg->type);
+
+}
+
+int isPhidgetDeviceMessage(bus_message *msg) {
+
+	return (MESSAGE_PHIDGET_DEVICE == msg->type );
+}//
+
+/**
+ * go through
+ */
+void handleOpen(bus_message *msg) {
+
+}//
+
+void handleClose(bus_message *msg) {
+
+}//
+
+
+void openDevice(int serial) {
+
+}//
+
+void closeDevices(void) {
+
+}//
+
