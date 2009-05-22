@@ -21,20 +21,25 @@ Help("""\
    'scons install' to install on local machine
 """)
 
-main_inc = '#project/main/include'
-main_dir = '#project/main/SConscript'
-main_bld = '#project/main'
+# LIST MODULES
+# ============
+list_modules = [	'#project/main',
+					'#project/drivers/phidgetinterfacekit'
+				]
 
-ifk_inc  = '#project/drivers/phidgetinterfacekit/include'
-ifk_dir  = 'project/drivers/phidgetinterfacekit/SConscript'
-		
-# MAIN
-# ====
-main_env_release = Environment(CPPPATH=main_inc)
-SConscript(main_dir, build_dir=main_bld+'/release', exports={'env':main_env_release})
 
-main_env_debug   = Environment(CPPPATH=main_inc, CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
-SConscript(main_dir, build_dir=main_bld+'/debug', exports={'env':main_env_debug})
+modules = []
+for module in list_modules:
+	modules.append( {	'script'  : "%s/SConscript" % module,
+						'build'   : module,
+						'release' : Environment(CPPPATH=module+'/include'),
+						'debug'   : Environment(CPPPATH=module+'/include', CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
+					} )
+
+for module in modules:
+	SConscript(module['script'], build_dir=module['build']+'/release', exports={'env':module['release']})
+	SConscript(module['script'], build_dir=module['build']+'/debug',   exports={'env':module['debug']})
+
 
 
 # INSTALLING on LOCAL MACHINE
@@ -147,7 +152,7 @@ if 'release' in COMMAND_LINE_TARGETS:
 	
 if 'docs' in COMMAND_LINE_TARGETS:
 	print "scons: generating docs"
-	os.system("doxygen doxygen.config")
+	os.system("doxygen doxygen.cfg")
 	
 	print "scons: adjusting $version in html docs"
 	version = read_version()
