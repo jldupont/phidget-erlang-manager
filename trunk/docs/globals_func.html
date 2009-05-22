@@ -63,6 +63,30 @@
 : <a class="el" href="daemon_8c.html#30b4701e6237c7f871c933c7ccd48893">daemon.c</a>
 <li>__daemon_write_pid_file()
 : <a class="el" href="daemon_8c.html#5d39d81895a93e8bb514c1fcc2c7aa8e">daemon.c</a>
+<li>__drivers__add_lib()
+: <a class="el" href="drivers_8c.html#1303095a85fea2210f23a78e7b80016c">drivers.c</a>
+<li>__drivers_init()
+: <a class="el" href="drivers_8c.html#286f05f75b4ed8b7aa1a4baafd1ef1fd">drivers.c</a>
+<li>__drivers_load_lib()
+: <a class="el" href="drivers_8c.html#0f13d482808974a5e3b83ee5326f8873">drivers.c</a>
+<li>__drivers_search_type()
+: <a class="el" href="drivers_8c.html#de0d07b10f628ce287b33b65d734a4eb">drivers.c</a>
+<li>__manager_clean_message_phidget_device()
+: <a class="el" href="manager_8c.html#dee693d774f6afe4cee0fb7489fafdfd">manager.c</a>
+<li>__manager_create_message_phidget_device()
+: <a class="el" href="manager_8c.html#1915d5dbc9dda603f4a1987db426e5cd">manager.c</a>
+<li>__manager_handle_timer()
+: <a class="el" href="manager_8c.html#dadcb0d571ea036bc6fc78388c7704f9">manager.c</a>
+<li>__manager_send_message()
+: <a class="el" href="manager_8c.html#7b3edece1f1bf38339f2d32d8bc304f2">manager.c</a>
+<li>__manager_thread_function()
+: <a class="el" href="manager_8c.html#91ad8f523b44b1d8e6fe947b27813925">manager.c</a>
+<li>__messages_log()
+: <a class="el" href="messages_8c.html#a940ba89f5b31ecb7819a69c418ba57c">messages.c</a>
+<li>__messages_log_message()
+: <a class="el" href="messages_8c.html#62a1c17d2fbdfeeebabdc2df1e6cad4f">messages.c</a>
+<li>__messages_thread_function()
+: <a class="el" href="messages_8c.html#5ecbfef686fb24bcd20dc21e55ecb95f">messages.c</a>
 <li>__signals_handler_thread()
 : <a class="el" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">signals.c</a>
 </ul>
@@ -85,10 +109,11 @@
 , <a class="el" href="logger_8c.html#7380c33fa7a012bfb1b5dc892228d0e4">logger.c</a>
 <li>doLogInteger()
 : <a class="el" href="logger_8h.html#168705795c698dd97bc551b7ffd140ff">logger.h</a>
-, <a class="el" href="logger_8c.html#168705795c698dd97bc551b7ffd140ff">logger.c</a>
 <li>doLogString()
-: <a class="el" href="logger_8c.html#5cb5355b505b137b172dc2873e717a79">logger.c</a>
-, <a class="el" href="logger_8h.html#5cb5355b505b137b172dc2873e717a79">logger.h</a>
+: <a class="el" href="logger_8h.html#5cb5355b505b137b172dc2873e717a79">logger.h</a>
+<li>drivers_handle_type()
+: <a class="el" href="drivers_8c.html#7d4f4a9d171f4e530ddc3617b539b563">drivers.c</a>
+, <a class="el" href="drivers_8h.html#7d4f4a9d171f4e530ddc3617b539b563">drivers.h</a>
 </ul>
 <h3><a class="anchor" name="index_g">- g -</a></h3><ul>
 <li>getOptionsAndCommand()
@@ -101,57 +126,51 @@
 <h3><a class="anchor" name="index_m">- m -</a></h3><ul>
 <li>main()
 : <a class="el" href="main_8c.html#3c04138a5bfe5d72780bb7e82a18e627">main.c</a>
-<li>manager_create()
-: <a class="el" href="manager_8c.html#4b631931877d32faec304ac2657a4f73">manager.c</a>
-, <a class="el" href="manager_8h.html#4b631931877d32faec304ac2657a4f73">manager.h</a>
-<li>manager_create_device()
-: <a class="el" href="manager_8c.html#5fce11ea17722355cff644dde4d90e0b">manager.c</a>
-, <a class="el" href="manager_8h.html#5fce11ea17722355cff644dde4d90e0b">manager.h</a>
-<li>manager_create_message()
-: <a class="el" href="manager_8c.html#e7babb3234d64955679e1c5bbd47038a">manager.c</a>
-, <a class="el" href="manager_8h.html#e7babb3234d64955679e1c5bbd47038a">manager.h</a>
+<li>manager_create_device_info()
+: <a class="el" href="manager_8c.html#02f954c077a128f1f9c878e5aec052a5">manager.c</a>
 <li>manager_destroy_device()
 : <a class="el" href="manager_8c.html#5e0e645469402e4c94355e78d9e62bf6">manager.c</a>
-, <a class="el" href="manager_8h.html#5e0e645469402e4c94355e78d9e62bf6">manager.h</a>
-<li>manager_destroy_message()
-: <a class="el" href="manager_8h.html#a24631eec6a315b93ac175dbc17d61b7">manager.h</a>
-, <a class="el" href="manager_8c.html#a24631eec6a315b93ac175dbc17d61b7">manager.c</a>
 <li>manager_gotAttach()
-: <a class="el" href="manager_8h.html#3e386fe05cb87e8efcac16bfd6caf473">manager.h</a>
-, <a class="el" href="manager_8c.html#3e386fe05cb87e8efcac16bfd6caf473">manager.c</a>
+: <a class="el" href="manager_8c.html#71f95e56a8a55af04bf17e8d7969170e">manager.c</a>
 <li>manager_gotDetach()
-: <a class="el" href="manager_8c.html#b41b64b087dd6947a34e63085a992bad">manager.c</a>
-, <a class="el" href="manager_8h.html#b41b64b087dd6947a34e63085a992bad">manager.h</a>
-<li>manager_push_message()
-: <a class="el" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager.c</a>
-, <a class="el" href="manager_8h.html#ddca934ecdba237c1bf92f5d86fa7571">manager.h</a>
+: <a class="el" href="manager_8c.html#9a8630291efc4f935bd836f08fde026c">manager.c</a>
+<li>manager_init()
+: <a class="el" href="manager_8h.html#e25a6ebec00aafe318e1375b526add65">manager.h</a>
+, <a class="el" href="manager_8c.html#e25a6ebec00aafe318e1375b526add65">manager.c</a>
+<li>messages_init()
+: <a class="el" href="messages_8h.html#333992ff1f885e2a05ee8f29ef45f9a3">messages.h</a>
+, <a class="el" href="messages_8c.html#333992ff1f885e2a05ee8f29ef45f9a3">messages.c</a>
 </ul>
 <h3><a class="anchor" name="index_s">- s -</a></h3><ul>
+<li>server_init()
+: <a class="el" href="server_8c.html#d72fe1ade21ba53cdc82c4034ba1c442">server.c</a>
+, <a class="el" href="server_8h.html#d72fe1ade21ba53cdc82c4034ba1c442">server.h</a>
 <li>server_open_port()
 : <a class="el" href="server_8c.html#4a4003ed17c29dc812a5093005377067">server.c</a>
-, <a class="el" href="server_8h.html#4a4003ed17c29dc812a5093005377067">server.h</a>
 <li>server_thread()
-: <a class="el" href="server_8h.html#1d5410e985f217aba2848a0ea733d8c4">server.h</a>
-, <a class="el" href="server_8c.html#1d5410e985f217aba2848a0ea733d8c4">server.c</a>
+: <a class="el" href="server_8c.html#96c93f81eb48699bc5b308a0ba0e2c10">server.c</a>
 <li>showHelp()
 : <a class="el" href="main_8c.html#9676ea19719f9450f31279d52bb2de42">main.c</a>
 <li>showMessage()
 : <a class="el" href="main_8c.html#585cc171f13159e34868c5475f6bc8b9">main.c</a>
 <li>showMessageEx()
 : <a class="el" href="main_8c.html#e6950ac61d8c6325323408f34f946993">main.c</a>
-<li>signals_get_signal()
-: <a class="el" href="signals_8c.html#b9291a1fee343e1b8dfecfa08922bd94">signals.c</a>
-, <a class="el" href="signals_8h.html#b9291a1fee343e1b8dfecfa08922bd94">signals.h</a>
 <li>signals_init()
 : <a class="el" href="signals_8h.html#3719a1754f6e317bbb96770b973d453c">signals.h</a>
 , <a class="el" href="signals_8c.html#3719a1754f6e317bbb96770b973d453c">signals.c</a>
+<li>stimer_init()
+: <a class="el" href="stimer_8c.html#ee05308503e555dcc447630a456fe23d">stimer.c</a>
+, <a class="el" href="stimer_8h.html#ee05308503e555dcc447630a456fe23d">stimer.h</a>
 </ul>
 <h3><a class="anchor" name="index_v">- v -</a></h3><ul>
 <li>validatePortCookie()
 : <a class="el" href="main_8c.html#35fcec03d276ef1e24136e07124e8110">main.c</a>
+<li>void_cleaner()
+: <a class="el" href="utils_8h.html#9da691869fbef5b18072717d5178981e">utils.h</a>
+, <a class="el" href="utils_8c.html#9da691869fbef5b18072717d5178981e">utils.c</a>
 </ul>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:13 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:21 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

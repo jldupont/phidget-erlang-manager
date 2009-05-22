@@ -24,6 +24,7 @@
 <h1>project/includes/signals.h File Reference</h1><code>#include &lt;stdio.h&gt;</code><br>
 <code>#include &lt;pthread.h&gt;</code><br>
 <code>#include &lt;signal.h&gt;</code><br>
+<code>#include &quot;litm.h&quot;</code><br>
 
 <p>
 <div class="dynheader">
@@ -47,8 +48,6 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="signals_8h.html#3719a1754f6e317bbb96770b973d453c">signals_init</a> (void)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="signals_8h.html#b9291a1fee343e1b8dfecfa08922bd94">signals_get_signal</a> (void)</td></tr>
-
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 <dl class="date" compact><dt><b>Date:</b></dt><dd>2009-04-22 </dd></dl>
@@ -56,37 +55,6 @@ This graph shows which files directly or indirectly include this file:</div>
 
 <p>Definition in file <a class="el" href="signals_8h-source.html">signals.h</a>.</p>
 <hr><h2>Function Documentation</h2>
-<a class="anchor" name="b9291a1fee343e1b8dfecfa08922bd94"></a><!-- doxytag: member="signals.h::signals_get_signal" ref="b9291a1fee343e1b8dfecfa08922bd94" args="(void)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int signals_get_signal           </td>
-          <td>(</td>
-          <td class="paramtype">void&nbsp;</td>
-          <td class="paramname">          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-Returns the ``caught`` signal or -1 if none. 
-<p>Definition at line <a class="el" href="signals_8c-source.html#l00051">51</a> of file <a class="el" href="signals_8c-source.html">signals.c</a>.</p>
-
-<p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dynsection">
-<p><center><img src="signals_8h_b9291a1fee343e1b8dfecfa08922bd94_icgraph.png" border="0" usemap="#signals_8h_b9291a1fee343e1b8dfecfa08922bd94_icgraph_map" alt=""></center>
-<map name="signals_8h_b9291a1fee343e1b8dfecfa08922bd94_icgraph_map">
-<area shape="rect" href="main_8c.html#3c04138a5bfe5d72780bb7e82a18e627" title="main" alt="" coords="183,5,231,32"></map>
-</div>
-
-</div>
-</div><p>
 <a class="anchor" name="3719a1754f6e317bbb96770b973d453c"></a><!-- doxytag: member="signals.h::signals_init" ref="3719a1754f6e317bbb96770b973d453c" args="(void)" -->
 <div class="memitem">
 <div class="memproto">
@@ -105,7 +73,7 @@ Here is the caller graph for this function:</div>
 
 <p>
 Init the module 
-<p>Definition at line <a class="el" href="signals_8c-source.html#l00026">26</a> of file <a class="el" href="signals_8c-source.html">signals.c</a>.</p>
+<p>Definition at line <a class="el" href="signals_8c-source.html#l00034">34</a> of file <a class="el" href="signals_8c-source.html">signals.c</a>.</p>
 
 <p>
 <div class="dynheader">
@@ -113,7 +81,7 @@ Here is the call graph for this function:</div>
 <div class="dynsection">
 <p><center><img src="signals_8h_3719a1754f6e317bbb96770b973d453c_cgraph.png" border="0" usemap="#signals_8h_3719a1754f6e317bbb96770b973d453c_cgraph_map" alt=""></center>
 <map name="signals_8h_3719a1754f6e317bbb96770b973d453c_cgraph_map">
-<area shape="rect" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60" title="__signals_handler_thread" alt="" coords="141,5,309,32"></map>
+<area shape="rect" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60" title="__signals_handler_thread" alt="" coords="141,5,309,32"><area shape="rect" href="utils_8c.html#9da691869fbef5b18072717d5178981e" title="void_cleaner" alt="" coords="359,5,452,32"></map>
 </div>
 
 <p>
@@ -128,7 +96,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div><p>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:12 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:20 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

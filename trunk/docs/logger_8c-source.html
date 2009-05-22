@@ -28,7 +28,7 @@
 <a name="l00007"></a>00007 <span class="preprocessor">#include &lt;stdio.h&gt;</span>
 <a name="l00008"></a>00008 <span class="preprocessor">#include &lt;stdlib.h&gt;</span>
 <a name="l00009"></a>00009 <span class="preprocessor">#include &lt;stdarg.h&gt;</span>
-<a name="l00010"></a>00010 <span class="preprocessor">#include "../includes/logger.h"</span>
+<a name="l00010"></a>00010 <span class="preprocessor">#include "<a class="code" href="logger_8h.html">logger.h</a>"</span>
 <a name="l00011"></a>00011 
 <a name="l00012"></a><a class="code" href="logger_8c.html#a4c3f800cd36a7cab78e6e26def1a1ea">00012</a> <span class="keywordtype">char</span> *<a class="code" href="logger_8c.html#a4c3f800cd36a7cab78e6e26def1a1ea">_LOGGER_IDENTITY</a> = <span class="stringliteral">"phidgetmanager"</span>;
 <a name="l00013"></a>00013 <span class="comment"></span>
@@ -51,28 +51,8 @@
 <a name="l00030"></a>00030         closelog();
 <a name="l00031"></a>00031 
 <a name="l00032"></a>00032 }
-<a name="l00033"></a>00033 
-<a name="l00034"></a><a class="code" href="logger_8h.html#5cb5355b505b137b172dc2873e717a79">00034</a> <span class="keywordtype">void</span> <a class="code" href="logger_8c.html#5cb5355b505b137b172dc2873e717a79">doLogString</a>(<span class="keywordtype">int</span> priority, <span class="keywordtype">char</span> *message, <span class="keywordtype">char</span> *param) {
-<a name="l00035"></a>00035 
-<a name="l00036"></a>00036         openlog(<a class="code" href="logger_8c.html#a4c3f800cd36a7cab78e6e26def1a1ea">_LOGGER_IDENTITY</a>, LOG_PID, LOG_LOCAL1);
-<a name="l00037"></a>00037 
-<a name="l00038"></a>00038         syslog(priority, message, param);
-<a name="l00039"></a>00039 
-<a name="l00040"></a>00040         closelog();
-<a name="l00041"></a>00041 }
-<a name="l00042"></a>00042 
-<a name="l00043"></a>00043 
-<a name="l00044"></a><a class="code" href="logger_8h.html#168705795c698dd97bc551b7ffd140ff">00044</a> <span class="keywordtype">void</span> <a class="code" href="logger_8c.html#168705795c698dd97bc551b7ffd140ff">doLogInteger</a>(<span class="keywordtype">int</span> priority, <span class="keywordtype">char</span> *message, <span class="keywordtype">int</span> param) {
-<a name="l00045"></a>00045 
-<a name="l00046"></a>00046         openlog(<a class="code" href="logger_8c.html#a4c3f800cd36a7cab78e6e26def1a1ea">_LOGGER_IDENTITY</a>, LOG_PID, LOG_LOCAL1);
-<a name="l00047"></a>00047 
-<a name="l00048"></a>00048         syslog(priority, message, param);
-<a name="l00049"></a>00049 
-<a name="l00050"></a>00050         closelog();
-<a name="l00051"></a>00051 
-<a name="l00052"></a>00052 }<span class="comment">// [/doLog]</span>
 </pre></div></div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:11 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:20 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

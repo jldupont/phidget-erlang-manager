@@ -28,91 +28,43 @@ Collaboration diagram for bus_message:</div>
 <div class="dynsection">
 <p><center><img src="structbus__message__coll__graph.png" border="0" usemap="#bus__message__coll__map" alt="Collaboration graph"></center>
 <map name="bus__message__coll__map">
-<area shape="rect" href="structmessage__phidget__set__states.html" title="message_phidget_set_states" alt="" coords="5,96,197,123"><area shape="rect" href="structmessage__phidget__devices.html" title="message_phidget_devices" alt="" coords="221,96,397,123"><area shape="rect" href="structphidget__device.html" title="phidget_device" alt="" coords="256,5,363,32"><area shape="rect" href="structmessage__phidget__states.html" title="message_phidget_states" alt="" coords="421,96,587,123"></map>
+<area shape="rect" href="unionbus__message_1_1__message__body.html" title="bus_message::bus_message::_message_body" alt="" coords="524,107,817,133"><area shape="rect" href="structmessage__phidget__device.html" title="message_phidget_device" alt="" coords="243,5,411,32"><area shape="rect" href="struct__PhidgetDevice.html" title="_PhidgetDevice" alt="" coords="5,56,117,83"><area shape="rect" href="structmessage__phidget__digital__set__states.html" title="message_phidget_digital_set_states" alt="" coords="211,56,443,83"><area shape="rect" href="structmessage__phidget__digital__states.html" title="message_phidget_digital_states" alt="" coords="223,107,431,133"><area shape="rect" href="structmessage__shutdown.html" title="message_shutdown" alt="" coords="259,157,395,184"><area shape="rect" href="structmessage__timer.html" title="message_timer" alt="" coords="272,208,381,235"></map>
 <center><font size="2">[<a target="top" href="graph_legend.html">legend</a>]</font></center></div>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
+<tr><td colspan="2"><br><h2>Data Structures</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">union &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="unionbus__message_1_1__message__body.html">_message_body</a></td></tr>
+
 <tr><td colspan="2"><br><h2>Data Fields</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="messages_8h.html#7b570e7e51096a50b2b5ef60af3a61e0">bus_message_type</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">type</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="messages_8h.html#70e2d0a01a521b5f1e583bcb6091aab2">bus_message_type</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">type</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap>union {</td></tr>
-
-<tr><td class="memItemLeft" nowrap>&nbsp;&nbsp;&nbsp;<a class="el" href="structmessage__phidget__devices.html">message_phidget_devices</a>&nbsp;&nbsp;&nbsp;<a class="el" href="structbus__message.html#6c4139c4b1a1a1e612b1459878bde34f">pd</a></td></tr>
-
-<tr><td class="memItemLeft" nowrap>&nbsp;&nbsp;&nbsp;<a class="el" href="structmessage__phidget__states.html">message_phidget_states</a>&nbsp;&nbsp;&nbsp;<a class="el" href="structbus__message.html#dc41e2fe3edfec4d361f48b5c55a5603">ps</a></td></tr>
-
-<tr><td class="memItemLeft" nowrap>&nbsp;&nbsp;&nbsp;<a class="el" href="structmessage__phidget__set__states.html">message_phidget_set_states</a>&nbsp;&nbsp;&nbsp;<a class="el" href="structbus__message.html#1d232b85541590da91e030a478dbc08a">pss</a></td></tr>
-
-<tr><td class="memItemLeft" nowrap valign="top">};&nbsp;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">union <a class="el" href="unionbus__message_1_1__message__body.html">bus_message::_message_body</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structbus__message.html#d54568ae6efccf3ebbb5d2c764106e19">message_body</a></td></tr>
 
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
-Message envelope definition 
-<p>Definition at line <a class="el" href="messages_8h-source.html#l00072">72</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
+Message envelope definition<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>type</em>&nbsp;</td><td>message type </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>serial</em>&nbsp;</td><td>phidget device serial id </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>message_body</em>&nbsp;</td><td>message body for the specific message type </td></tr>
+  </table>
+</dl>
+
+<p>Definition at line <a class="el" href="messages_8h-source.html#l00144">144</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
 <hr><h2>Field Documentation</h2>
-<a class="anchor" name="9254008f0903d09a8dd31af6552bf0ff"></a><!-- doxytag: member="bus_message::@1" ref="9254008f0903d09a8dd31af6552bf0ff" args="" -->
+<a class="anchor" name="d54568ae6efccf3ebbb5d2c764106e19"></a><!-- doxytag: member="bus_message::message_body" ref="d54568ae6efccf3ebbb5d2c764106e19" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">union { ... }           </td>
+          <td class="memname">union <a class="el" href="unionbus__message_1_1__message__body.html">bus_message::_message_body</a>  <a class="el" href="structbus__message.html#d54568ae6efccf3ebbb5d2c764106e19">bus_message::message_body</a>          </td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
 <p>
-
-</div>
-</div><p>
-<a class="anchor" name="6c4139c4b1a1a1e612b1459878bde34f"></a><!-- doxytag: member="bus_message::pd" ref="6c4139c4b1a1a1e612b1459878bde34f" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structmessage__phidget__devices.html">message_phidget_devices</a> <a class="el" href="structbus__message.html#6c4139c4b1a1a1e612b1459878bde34f">bus_message::pd</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="messages_8h-source.html#l00076">76</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="dc41e2fe3edfec4d361f48b5c55a5603"></a><!-- doxytag: member="bus_message::ps" ref="dc41e2fe3edfec4d361f48b5c55a5603" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structmessage__phidget__states.html">message_phidget_states</a> <a class="el" href="structbus__message.html#dc41e2fe3edfec4d361f48b5c55a5603">bus_message::ps</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="messages_8h-source.html#l00077">77</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="1d232b85541590da91e030a478dbc08a"></a><!-- doxytag: member="bus_message::pss" ref="1d232b85541590da91e030a478dbc08a" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structmessage__phidget__set__states.html">message_phidget_set_states</a> <a class="el" href="structbus__message.html#1d232b85541590da91e030a478dbc08a">bus_message::pss</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="messages_8h-source.html#l00078">78</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
 
 </div>
 </div><p>
@@ -121,7 +73,7 @@ Message envelope definition
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="messages_8h.html#7b570e7e51096a50b2b5ef60af3a61e0">bus_message_type</a> <a class="el" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">bus_message::type</a>          </td>
+          <td class="memname"><a class="el" href="messages_8h.html#70e2d0a01a521b5f1e583bcb6091aab2">bus_message_type</a> <a class="el" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">bus_message::type</a>          </td>
         </tr>
       </table>
 </div>
@@ -129,14 +81,14 @@ Message envelope definition
 
 <p>
 
-<p>Definition at line <a class="el" href="messages_8h-source.html#l00074">74</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
+<p>Definition at line <a class="el" href="messages_8h-source.html#l00146">146</a> of file <a class="el" href="messages_8h-source.html">messages.h</a>.</p>
 
 </div>
 </div><p>
 <hr>The documentation for this struct was generated from the following file:<ul>
 <li>project/includes/<a class="el" href="messages_8h-source.html">messages.h</a></ul>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:13 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:21 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>
