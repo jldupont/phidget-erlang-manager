@@ -26,117 +26,135 @@
 <a name="l00005"></a>00005 <span class="comment"> *</span>
 <a name="l00006"></a>00006 <span class="comment"> *  @date   2009-04-22</span>
 <a name="l00007"></a>00007 <span class="comment"> *  @author Jean-Lou Dupont</span>
-<a name="l00008"></a>00008 <span class="comment"> */</span>
-<a name="l00009"></a>00009 
-<a name="l00010"></a>00010 <span class="preprocessor">#include "<a class="code" href="signals_8h.html">signals.h</a>"</span>
-<a name="l00011"></a>00011 <span class="preprocessor">#include "<a class="code" href="helpers_8h.html">helpers.h</a>"</span>
-<a name="l00012"></a>00012 
-<a name="l00013"></a>00013 
-<a name="l00014"></a>00014 <span class="comment">// PRIVATE</span>
-<a name="l00015"></a><a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">00015</a> pthread_t               <a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">__signal_thread</a>;
-<a name="l00016"></a><a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">00016</a> <span class="keywordtype">int</span>                             <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a> = -1;
-<a name="l00017"></a><a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">00017</a> pthread_mutex_t <a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a> = PTHREAD_MUTEX_INITIALIZER;
-<a name="l00018"></a>00018 
-<a name="l00019"></a>00019 <span class="comment">// PRIVATE PROTOTYPES</span>
-<a name="l00020"></a>00020 <span class="keywordtype">void</span> *<a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>(<span class="keywordtype">void</span>* arg);
-<a name="l00021"></a>00021 
-<a name="l00022"></a>00022 <span class="comment"></span>
-<a name="l00023"></a>00023 <span class="comment">/**</span>
-<a name="l00024"></a>00024 <span class="comment"> * Init the module</span>
-<a name="l00025"></a>00025 <span class="comment"> */</span>
-<a name="l00026"></a><a class="code" href="signals_8h.html#3719a1754f6e317bbb96770b973d453c">00026</a> <span class="keywordtype">void</span> <a class="code" href="signals_8c.html#3719a1754f6e317bbb96770b973d453c">signals_init</a>(<span class="keywordtype">void</span>) {
-<a name="l00027"></a>00027 
-<a name="l00028"></a>00028         <a class="code" href="helpers_8h.html#e0188c06a0b9870c90e05292f629c1d1">DEBUG_MSG</a>(<span class="stringliteral">"DEBUG: signals_init: BEGIN\n"</span>);
+<a name="l00008"></a>00008 <span class="comment"> *</span>
+<a name="l00009"></a>00009 <span class="comment"> *</span>
+<a name="l00010"></a>00010 <span class="comment"> * This module confines all signals from the process</span>
+<a name="l00011"></a>00011 <span class="comment"> * to the handler thread: signals are then dispatched</span>
+<a name="l00012"></a>00012 <span class="comment"> * to all interested subscribers through &lt;b&gt;litm&lt;/b&gt;.</span>
+<a name="l00013"></a>00013 <span class="comment"> *</span>
+<a name="l00014"></a>00014 <span class="comment"> */</span>
+<a name="l00015"></a>00015 
+<a name="l00016"></a>00016 <span class="preprocessor">#include &lt;stdlib.h&gt;</span>
+<a name="l00017"></a>00017 <span class="preprocessor">#include "<a class="code" href="signals_8h.html">signals.h</a>"</span>
+<a name="l00018"></a>00018 <span class="preprocessor">#include "<a class="code" href="helpers_8h.html">helpers.h</a>"</span>
+<a name="l00019"></a>00019 <span class="preprocessor">#include "<a class="code" href="messages_8h.html">messages.h</a>"</span>
+<a name="l00020"></a>00020 <span class="preprocessor">#include "litm.h"</span>
+<a name="l00021"></a>00021 <span class="preprocessor">#include "<a class="code" href="utils_8h.html">utils.h</a>"</span>
+<a name="l00022"></a>00022 
+<a name="l00023"></a>00023 
+<a name="l00024"></a>00024 <span class="comment">// PRIVATE</span>
+<a name="l00025"></a><a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">00025</a> pthread_t               <a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">__signal_thread</a>;
+<a name="l00026"></a>00026 
+<a name="l00027"></a>00027 <span class="comment">// PRIVATE PROTOTYPES</span>
+<a name="l00028"></a>00028 <span class="keywordtype">void</span> *<a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>(<span class="keywordtype">void</span>* arg);
 <a name="l00029"></a>00029 
-<a name="l00030"></a>00030         <span class="comment">// Confine all process signals</span>
-<a name="l00031"></a>00031         <span class="comment">//  to one thread: easier management</span>
-<a name="l00032"></a>00032 
-<a name="l00033"></a>00033         <span class="comment">/* block all signals */</span>
-<a name="l00034"></a>00034         sigset_t        signal_set;
+<a name="l00030"></a>00030 <span class="comment"></span>
+<a name="l00031"></a>00031 <span class="comment">/**</span>
+<a name="l00032"></a>00032 <span class="comment"> * Init the module</span>
+<a name="l00033"></a>00033 <span class="comment"> */</span>
+<a name="l00034"></a><a class="code" href="signals_8h.html#3719a1754f6e317bbb96770b973d453c">00034</a> <span class="keywordtype">void</span> <a class="code" href="signals_8c.html#3719a1754f6e317bbb96770b973d453c">signals_init</a>(<span class="keywordtype">void</span>) {
 <a name="l00035"></a>00035 
-<a name="l00036"></a>00036         sigfillset( &amp;signal_set );
-<a name="l00037"></a>00037         pthread_sigmask( SIG_BLOCK, &amp;signal_set, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a> );
-<a name="l00038"></a>00038 
-<a name="l00039"></a>00039         <span class="comment">/* create the signal handling thread */</span>
-<a name="l00040"></a>00040         pthread_create( &amp;<a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">__signal_thread</a>, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>, <a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a> );
-<a name="l00041"></a>00041 
-<a name="l00042"></a>00042         <a class="code" href="helpers_8h.html#e0188c06a0b9870c90e05292f629c1d1">DEBUG_MSG</a>(<span class="stringliteral">"DEBUG: signals_init: END\n"</span>);
+<a name="l00036"></a>00036         <a class="code" href="helpers_8h.html#e0188c06a0b9870c90e05292f629c1d1">DEBUG_MSG</a>(<span class="stringliteral">"DEBUG: signals_init: BEGIN\n"</span>);
+<a name="l00037"></a>00037 
+<a name="l00038"></a>00038         <span class="comment">// Confine all process signals</span>
+<a name="l00039"></a>00039         <span class="comment">//  to one thread: easier management</span>
+<a name="l00040"></a>00040 
+<a name="l00041"></a>00041         <span class="comment">/* block all signals */</span>
+<a name="l00042"></a>00042         sigset_t        signal_set;
 <a name="l00043"></a>00043 
-<a name="l00044"></a>00044 }<span class="comment">// signal_init</span>
-<a name="l00045"></a>00045 
-<a name="l00046"></a>00046 <span class="comment"></span>
-<a name="l00047"></a>00047 <span class="comment">/**</span>
-<a name="l00048"></a>00048 <span class="comment"> * Returns the ``caught`` signal</span>
-<a name="l00049"></a>00049 <span class="comment"> *  or -1 if none.</span>
-<a name="l00050"></a>00050 <span class="comment"> */</span>
-<a name="l00051"></a><a class="code" href="signals_8h.html#b9291a1fee343e1b8dfecfa08922bd94">00051</a> <span class="keywordtype">int</span> <a class="code" href="signals_8c.html#b9291a1fee343e1b8dfecfa08922bd94">signals_get_signal</a>(<span class="keywordtype">void</span>) {
-<a name="l00052"></a>00052 
-<a name="l00053"></a>00053         <span class="keywordtype">int</span> result;
+<a name="l00044"></a>00044         sigfillset( &amp;signal_set );
+<a name="l00045"></a>00045         pthread_sigmask( SIG_BLOCK, &amp;signal_set, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a> );
+<a name="l00046"></a>00046 
+<a name="l00047"></a>00047         <span class="comment">/* create the signal handling thread */</span>
+<a name="l00048"></a>00048         pthread_create( &amp;<a class="code" href="signals_8c.html#cd075eeb9509fd40627afb71edf02473">__signal_thread</a>, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>, <a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>, <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a> );
+<a name="l00049"></a>00049 
+<a name="l00050"></a>00050         <a class="code" href="helpers_8h.html#e0188c06a0b9870c90e05292f629c1d1">DEBUG_MSG</a>(<span class="stringliteral">"DEBUG: signals_init: END\n"</span>);
+<a name="l00051"></a>00051 
+<a name="l00052"></a>00052 }<span class="comment">// signal_init</span>
+<a name="l00053"></a>00053 
 <a name="l00054"></a>00054 
-<a name="l00055"></a>00055         pthread_mutex_lock( &amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a> );
-<a name="l00056"></a>00056         <span class="comment">//{</span>
-<a name="l00057"></a>00057 
-<a name="l00058"></a>00058                 result = <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a>;
-<a name="l00059"></a>00059 
-<a name="l00060"></a>00060         <span class="comment">//}</span>
-<a name="l00061"></a>00061         pthread_mutex_unlock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00062"></a>00062 
-<a name="l00063"></a>00063         <span class="keywordflow">return</span> result;
-<a name="l00064"></a>00064 }<span class="comment">// signal_get_signal</span>
-<a name="l00065"></a>00065 
+<a name="l00055"></a>00055 
+<a name="l00056"></a>00056 <span class="comment">// -----------------------------------------------------------------------------</span>
+<a name="l00057"></a>00057 <span class="comment">//</span>
+<a name="l00058"></a>00058 <span class="comment">// PRIVATE</span>
+<a name="l00059"></a>00059 <span class="comment">//</span>
+<a name="l00060"></a>00060 
+<a name="l00061"></a>00061 <span class="comment"></span>
+<a name="l00062"></a>00062 <span class="comment">/**</span>
+<a name="l00063"></a>00063 <span class="comment"> * Signal Handler for the whole process</span>
+<a name="l00064"></a>00064 <span class="comment"> */</span>
+<a name="l00065"></a><a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">00065</a> <span class="keywordtype">void</span> *<a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>(<span class="keywordtype">void</span>* params) {
 <a name="l00066"></a>00066 
-<a name="l00067"></a>00067 <span class="comment">// -----------------------------------------------------------------------------</span>
-<a name="l00068"></a>00068 <span class="comment">//</span>
-<a name="l00069"></a>00069 <span class="comment">// PRIVATE</span>
-<a name="l00070"></a>00070 <span class="comment">//</span>
-<a name="l00071"></a>00071 
-<a name="l00072"></a>00072 <span class="comment"></span>
-<a name="l00073"></a>00073 <span class="comment">/**</span>
-<a name="l00074"></a>00074 <span class="comment"> * Signal Handler for the whole process</span>
-<a name="l00075"></a>00075 <span class="comment"> */</span>
-<a name="l00076"></a><a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">00076</a> <span class="keywordtype">void</span> *<a class="code" href="signals_8c.html#e3de95502be3ef55e1c339d513cc8b60">__signals_handler_thread</a>(<span class="keywordtype">void</span>* arg) {
+<a name="l00067"></a>00067         litm_connection *conn = <a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>;
+<a name="l00068"></a>00068         litm_code code;
+<a name="l00069"></a>00069 
+<a name="l00070"></a>00070         <span class="comment">// TODO LITM connect error: is there a better way to handle this??</span>
+<a name="l00071"></a>00071         code = litm_connect_ex_wait( &amp;conn, <a class="code" href="messages_8h.html#c10db24361e3f83de591168f1a47f7bd">LITM_ID_SIGNALS</a>, 0);
+<a name="l00072"></a>00072         <span class="keywordflow">if</span> (LITM_CODE_OK != code)
+<a name="l00073"></a>00073                 <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_ERR, <span class="stringliteral">"cannot connect to LITM"</span>);
+<a name="l00074"></a>00074 
+<a name="l00075"></a>00075         <span class="keyword">static</span> <a class="code" href="structbus__message.html">bus_message</a> shutdown_message;
+<a name="l00076"></a>00076         <span class="keyword">static</span> <a class="code" href="structbus__message.html">bus_message</a> alarm_message;
 <a name="l00077"></a>00077 
-<a name="l00078"></a>00078         sigset_t signal_set;
-<a name="l00079"></a>00079         <span class="keywordtype">int</span> sig;
+<a name="l00078"></a>00078         shutdown_message.<a class="code" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">type</a> = <a class="code" href="messages_8h.html#e29cf522682f5c8a9dc0d0ea4285c682ddd25ff2ed89248b37be40ac1e2b2c33">MESSAGE_SHUTDOWN</a>;
+<a name="l00079"></a>00079         alarm_message.<a class="code" href="structbus__message.html#db1ef66ba2628bdf025d216dfd45419d">type</a>    = <a class="code" href="messages_8h.html#e29cf522682f5c8a9dc0d0ea4285c682d933fee9fc851839b93a9c330043727f">MESSAGE_TIMER</a>;
 <a name="l00080"></a>00080 
-<a name="l00081"></a>00081         <span class="keywordflow">for</span>(;;) {
-<a name="l00082"></a>00082                         <span class="comment">/* wait for any and all signals */</span>
-<a name="l00083"></a>00083                         sigfillset( &amp;signal_set );
-<a name="l00084"></a>00084                         sigwait( &amp;signal_set, &amp;sig );
-<a name="l00085"></a>00085 
-<a name="l00086"></a>00086                         <span class="keywordflow">switch</span>( sig ) {
-<a name="l00087"></a>00087 
-<a name="l00088"></a>00088                         <span class="keywordflow">case</span> SIGTERM:
-<a name="l00089"></a>00089                           pthread_mutex_lock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00090"></a>00090                           <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a> = SIGTERM;
-<a name="l00091"></a>00091                           pthread_mutex_unlock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00092"></a>00092                           <span class="keywordflow">break</span>;
-<a name="l00093"></a>00093 
-<a name="l00094"></a>00094                         <span class="keywordflow">case</span> SIGQUIT:
-<a name="l00095"></a>00095                           pthread_mutex_lock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00096"></a>00096                           <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a> = SIGQUIT;
-<a name="l00097"></a>00097                           pthread_mutex_unlock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00098"></a>00098                           <span class="keywordflow">break</span>;
-<a name="l00099"></a>00099 
-<a name="l00100"></a>00100                          <span class="keywordflow">case</span> SIGINT:
-<a name="l00101"></a>00101                           pthread_mutex_lock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00102"></a>00102                           <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a> = SIGINT;
-<a name="l00103"></a>00103                           pthread_mutex_unlock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00104"></a>00104                           <span class="keywordflow">break</span>;
-<a name="l00105"></a>00105 
-<a name="l00106"></a>00106                         <span class="keywordflow">default</span>:
-<a name="l00107"></a>00107                           pthread_mutex_lock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00108"></a>00108                           <a class="code" href="signals_8c.html#868e98d1a9a65b4fd6d60b224f66ed6a">__caught_signal</a> = 0;
-<a name="l00109"></a>00109                           pthread_mutex_unlock(&amp;<a class="code" href="signals_8c.html#468e5751d62c19a2524c7a6546427d9d">__signals_mutex</a>);
-<a name="l00110"></a>00110                           <span class="keywordflow">break</span>;
-<a name="l00111"></a>00111                         }
-<a name="l00112"></a>00112         }
-<a name="l00113"></a>00113 
-<a name="l00114"></a>00114         <span class="keywordflow">return</span> (<span class="keywordtype">void</span>*)0;
-<a name="l00115"></a>00115 }<span class="comment">//signal_handler_thread</span>
-<a name="l00116"></a>00116 
+<a name="l00081"></a>00081         sigset_t signal_set;
+<a name="l00082"></a>00082         <span class="keywordtype">int</span> sig, __exit=0;
+<a name="l00083"></a>00083 
+<a name="l00084"></a>00084         <span class="keywordflow">for</span>(;;) {
+<a name="l00085"></a>00085                 <span class="comment">/* wait for any and all signals */</span>
+<a name="l00086"></a>00086                 sigfillset( &amp;signal_set );
+<a name="l00087"></a>00087                 sigwait( &amp;signal_set, &amp;sig );
+<a name="l00088"></a>00088 
+<a name="l00089"></a>00089                 <span class="keywordflow">switch</span>( sig ) {
+<a name="l00090"></a>00090 
+<a name="l00091"></a>00091                 <span class="keywordflow">case</span> SIGTERM:
+<a name="l00092"></a>00092                         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: received SIGTERM"</span>);
+<a name="l00093"></a>00093                         <span class="comment">// void_cleaner in utils.c</span>
+<a name="l00094"></a>00094                         <span class="keywordflow">if</span> (<a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>!=conn)
+<a name="l00095"></a>00095                                 litm_send_shutdown( conn, <a class="code" href="messages_8h.html#2040debede671cfa6720c87fc84d2129">LITM_BUS_SYSTEM</a>, &amp;shutdown_message, &amp;<a class="code" href="utils_8c.html#9da691869fbef5b18072717d5178981e">void_cleaner</a> );
+<a name="l00096"></a>00096                         __exit = 1;
+<a name="l00097"></a>00097                         <span class="keywordflow">break</span>;
+<a name="l00098"></a>00098 
+<a name="l00099"></a>00099                 <span class="keywordflow">case</span> SIGQUIT:
+<a name="l00100"></a>00100                         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: received SIGQUIT"</span>);
+<a name="l00101"></a>00101                         <span class="keywordflow">break</span>;
+<a name="l00102"></a>00102 
+<a name="l00103"></a>00103                  <span class="keywordflow">case</span> SIGINT:
+<a name="l00104"></a>00104                         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: received SIGINT"</span>);
+<a name="l00105"></a>00105                         <span class="keywordflow">break</span>;
+<a name="l00106"></a>00106 
+<a name="l00107"></a>00107                  <span class="keywordflow">case</span> SIGVTALRM:
+<a name="l00108"></a>00108                          <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: received SIGVTALRM"</span>);
+<a name="l00109"></a>00109                                 <span class="keywordflow">if</span> (<a class="code" href="helpers_8h.html#070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>!=conn)
+<a name="l00110"></a>00110                                         litm_send( conn, <a class="code" href="messages_8h.html#2040debede671cfa6720c87fc84d2129">LITM_BUS_SYSTEM</a>, &amp;alarm_message, &amp;<a class="code" href="utils_8c.html#9da691869fbef5b18072717d5178981e">void_cleaner</a> );
+<a name="l00111"></a>00111                          <span class="keywordflow">break</span>;
+<a name="l00112"></a>00112 
+<a name="l00113"></a>00113                  <span class="keywordflow">case</span> SIGALRM:
+<a name="l00114"></a>00114                         <span class="comment">// TODO generate timer message on litm</span>
+<a name="l00115"></a>00115                         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: received SIGALRM"</span>);
+<a name="l00116"></a>00116                         <span class="keywordflow">break</span>;
+<a name="l00117"></a>00117 
+<a name="l00118"></a>00118                 <span class="keywordflow">default</span>:
+<a name="l00119"></a>00119                         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>(LOG_DEBUG, <span class="stringliteral">"signals: unsupported signal, sig[%i]"</span>, sig);
+<a name="l00120"></a>00120                         <span class="keywordflow">break</span>;
+<a name="l00121"></a>00121                 }
+<a name="l00122"></a>00122 
+<a name="l00123"></a>00123                 <span class="keywordflow">if</span> (1==__exit) {
+<a name="l00124"></a>00124                         <span class="keywordflow">break</span>;
+<a name="l00125"></a>00125                 }
+<a name="l00126"></a>00126         }
+<a name="l00127"></a>00127 
+<a name="l00128"></a>00128         <span class="comment">//litm_wait_shutdown();</span>
+<a name="l00129"></a>00129 
+<a name="l00130"></a>00130         <a class="code" href="helpers_8h.html#21a2c7330a04ac78200a986f66609369">DEBUG_LOG</a>( LOG_INFO, <span class="stringliteral">"signals: END thread"</span> );
+<a name="l00131"></a>00131 
+<a name="l00132"></a>00132         <span class="keywordflow">return</span> (<span class="keywordtype">void</span>*)0;
+<a name="l00133"></a>00133 }<span class="comment">//signal_handler_thread</span>
+<a name="l00134"></a>00134 
 </pre></div></div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:11 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:20 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

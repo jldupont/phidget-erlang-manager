@@ -1,0 +1,18 @@
+"""
+scons build file
+
+@author: Jean-Lou Dupont
+"""
+
+Import('env')
+
+d = env.Dictionary()
+
+if d.get('_DEBUG', False):
+	libs=['pthread','litm_debug','phidget21']
+else:
+	libs=['pthread','litm','phidget21']
+
+pr = env.SharedLibrary('phidgetinterfacekit', Glob("*.c"), LIBS=libs )
+Default(pr)
+	

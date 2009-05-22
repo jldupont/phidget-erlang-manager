@@ -42,30 +42,26 @@
 <a name="l00021"></a>00021 <span class="preprocessor">#include &lt;sys/socket.h&gt;</span>
 <a name="l00022"></a>00022 <span class="preprocessor">#include &lt;netinet/in.h&gt;</span>
 <a name="l00023"></a>00023 
-<a name="l00024"></a>00024 <span class="comment">//include "erl_interface.h"</span>
-<a name="l00025"></a>00025 <span class="preprocessor">#include "ei.h"</span>
-<a name="l00026"></a>00026 
-<a name="l00027"></a>00027 <span class="preprocessor">#include "../includes/logger.h"</span>
-<a name="l00028"></a>00028 <span class="preprocessor">#include "../includes/qport.h"</span>
-<a name="l00029"></a>00029 <span class="preprocessor">#include "../includes/manager.h"</span>  <span class="comment">//for PhidgetManagerMessage type</span>
+<a name="l00024"></a>00024 <span class="preprocessor">#include "ei.h"</span>
+<a name="l00025"></a>00025 
+<a name="l00026"></a>00026 <span class="preprocessor">#include "<a class="code" href="logger_8h.html">logger.h</a>"</span>
+<a name="l00027"></a>00027 <span class="preprocessor">#include "<a class="code" href="manager_8h.html">manager.h</a>"</span>  <span class="comment">//for PhidgetManagerMessage type</span>
+<a name="l00028"></a>00028 
+<a name="l00029"></a><a class="code" href="structserver__params.html">00029</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span>{
 <a name="l00030"></a>00030 
-<a name="l00031"></a><a class="code" href="structserver__params.html">00031</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00032"></a>00032 
-<a name="l00033"></a><a class="code" href="structserver__params.html#bd881bf01ca3fadaf55f087ba707ac73">00033</a>                 <span class="keywordtype">int</span> port;
-<a name="l00034"></a><a class="code" href="structserver__params.html#b79001f83f2aa06748d8e90928ee7ae7">00034</a>                 <span class="keywordtype">char</span> *cookie;
-<a name="l00035"></a><a class="code" href="structserver__params.html#ab90345fea33cbc9d6a44163eba1abb9">00035</a>                 qport_context *qpc;
+<a name="l00031"></a><a class="code" href="structserver__params.html#bd881bf01ca3fadaf55f087ba707ac73">00031</a>                 <span class="keywordtype">int</span> port;
+<a name="l00032"></a><a class="code" href="structserver__params.html#b79001f83f2aa06748d8e90928ee7ae7">00032</a>                 <span class="keywordtype">char</span> *cookie;
+<a name="l00033"></a>00033 
+<a name="l00034"></a>00034         } <a class="code" href="structserver__params.html">server_params</a>;
+<a name="l00035"></a>00035 
 <a name="l00036"></a>00036 
-<a name="l00037"></a>00037         } <a class="code" href="structserver__params.html">server_params</a>;
-<a name="l00038"></a>00038 
+<a name="l00037"></a>00037         <span class="comment">// PROTOTYPES</span>
+<a name="l00038"></a>00038         <span class="keywordtype">void</span> <a class="code" href="server_8c.html#d72fe1ade21ba53cdc82c4034ba1c442">server_init</a>(<a class="code" href="structserver__params.html">server_params</a> *params);
 <a name="l00039"></a>00039 
-<a name="l00040"></a>00040         <span class="comment">// PROTOTYPES</span>
-<a name="l00041"></a>00041         <span class="keywordtype">void</span> *<a class="code" href="server_8c.html#1d5410e985f217aba2848a0ea733d8c4">server_thread</a>(<span class="keywordtype">void</span> *params);
-<a name="l00042"></a>00042         <span class="keywordtype">int</span> <a class="code" href="server_8c.html#4a4003ed17c29dc812a5093005377067">server_open_port</a>(<span class="keywordtype">int</span> port);
-<a name="l00043"></a>00043 
-<a name="l00044"></a>00044 
-<a name="l00045"></a>00045 <span class="preprocessor">#endif </span><span class="comment">/* SERVER_H_ */</span>
+<a name="l00040"></a>00040 
+<a name="l00041"></a>00041 <span class="preprocessor">#endif </span><span class="comment">/* SERVER_H_ */</span>
 </pre></div></div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:11 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:20 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

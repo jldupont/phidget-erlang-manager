@@ -30,56 +30,59 @@
 <a name="l00009"></a>00009 <span class="preprocessor"></span><span class="preprocessor">#define MANAGER_THREAD_H_</span>
 <a name="l00010"></a>00010 <span class="preprocessor"></span>
 <a name="l00011"></a>00011 <span class="preprocessor">#include &lt;phidget21.h&gt;</span>
-<a name="l00012"></a>00012 <span class="preprocessor">#include "qport.h"</span>
-<a name="l00013"></a>00013 
-<a name="l00014"></a>00014         <span class="comment">// Device Information structure</span>
-<a name="l00015"></a>00015         <span class="comment">// ============================</span>
-<a name="l00016"></a><a class="code" href="struct__PhidgetDevice.html">00016</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__PhidgetDevice.html">_PhidgetDevice</a> {
-<a name="l00017"></a>00017 
-<a name="l00018"></a><a class="code" href="struct__PhidgetDevice.html#afc54d8966df3343bbf0eb2d67687164">00018</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetDevice.html#afc54d8966df3343bbf0eb2d67687164">version</a>;
-<a name="l00019"></a><a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">00019</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">serial</a>;
-<a name="l00020"></a><a class="code" href="struct__PhidgetDevice.html#1ca895374871dc8e91595bf144be61fd">00020</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#1ca895374871dc8e91595bf144be61fd">type</a>;
-<a name="l00021"></a><a class="code" href="struct__PhidgetDevice.html#b3570907060fdde76f0b28ed89c6c63a">00021</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#b3570907060fdde76f0b28ed89c6c63a">name</a>;
-<a name="l00022"></a><a class="code" href="struct__PhidgetDevice.html#dd288f117f15f253981522d3f9c3ce58">00022</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#dd288f117f15f253981522d3f9c3ce58">label</a>;
-<a name="l00023"></a>00023 
-<a name="l00024"></a>00024         } <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a>;
+<a name="l00012"></a>00012 <span class="preprocessor">#include "litm.h"</span>
+<a name="l00013"></a>00013 <span class="comment"></span>
+<a name="l00014"></a>00014 <span class="comment">        /**</span>
+<a name="l00015"></a>00015 <span class="comment">         * Device status</span>
+<a name="l00016"></a>00016 <span class="comment">         */</span>
+<a name="l00017"></a><a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1">00017</a>         <span class="keyword">typedef</span> <span class="keyword">enum</span> {
+<a name="l00018"></a>00018 
+<a name="l00019"></a><a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1f9006a78af359145f3152513eb64fbbb">00019</a>                 <a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1f9006a78af359145f3152513eb64fbbb">PHIDGET_DEVICE_STATUS_UNKNOWN</a> =1,
+<a name="l00020"></a><a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b13a21c12ce4add39486af180fc2dd6987">00020</a>                 <a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b13a21c12ce4add39486af180fc2dd6987">PHIDGET_DEVICE_STATUS_ACTIVE</a>   = 1,
+<a name="l00021"></a><a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1929d703dedc2b79edcbca4544f33e8ad">00021</a>                 <a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1929d703dedc2b79edcbca4544f33e8ad">PHIDGET_DEVICE_STATUS_INACTIVE</a>
+<a name="l00022"></a>00022 
+<a name="l00023"></a>00023         } <a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1">phidget_device_state</a>;
+<a name="l00024"></a>00024 
 <a name="l00025"></a>00025 
-<a name="l00026"></a>00026 
-<a name="l00027"></a>00027         <span class="comment">// Message structure</span>
-<a name="l00028"></a>00028         <span class="comment">// =================</span>
-<a name="l00029"></a><a class="code" href="struct__PhidgetManagerMessage.html">00029</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__PhidgetManagerMessage.html">_PhidgetManagerMessage</a> {
-<a name="l00030"></a>00030 
-<a name="l00031"></a><a class="code" href="struct__PhidgetManagerMessage.html#211e79286363663410a0a14244815dea">00031</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetManagerMessage.html#211e79286363663410a0a14244815dea">type</a>;
-<a name="l00032"></a><a class="code" href="struct__PhidgetManagerMessage.html#ef2e1d9daab582cecca8612930d02ea1">00032</a>                 <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *<a class="code" href="struct__PhidgetManagerMessage.html#ef2e1d9daab582cecca8612930d02ea1">pd</a>;
-<a name="l00033"></a>00033 
-<a name="l00034"></a>00034         } <a class="code" href="struct__PhidgetManagerMessage.html">PhidgetManagerMessage</a>;
-<a name="l00035"></a>00035 
+<a name="l00026"></a>00026         <span class="comment">// Device Information structure</span>
+<a name="l00027"></a>00027         <span class="comment">// ============================</span>
+<a name="l00028"></a><a class="code" href="struct__PhidgetDevice.html">00028</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__PhidgetDevice.html">_PhidgetDevice</a> {
+<a name="l00029"></a>00029 
+<a name="l00030"></a><a class="code" href="struct__PhidgetDevice.html#71966011c5f7f8b694ee925a6cdafbcd">00030</a>                 <a class="code" href="manager_8h.html#2866e309041eeceac146ed36967b54b1">phidget_device_state</a> <a class="code" href="struct__PhidgetDevice.html#71966011c5f7f8b694ee925a6cdafbcd">state</a>;
+<a name="l00031"></a><a class="code" href="struct__PhidgetDevice.html#afc54d8966df3343bbf0eb2d67687164">00031</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetDevice.html#afc54d8966df3343bbf0eb2d67687164">version</a>;
+<a name="l00032"></a><a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">00032</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetDevice.html#5aa7e91ecfa26f1e364274148d0373a1">serial</a>;
+<a name="l00033"></a><a class="code" href="struct__PhidgetDevice.html#1ca895374871dc8e91595bf144be61fd">00033</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#1ca895374871dc8e91595bf144be61fd">type</a>;
+<a name="l00034"></a><a class="code" href="struct__PhidgetDevice.html#b3570907060fdde76f0b28ed89c6c63a">00034</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#b3570907060fdde76f0b28ed89c6c63a">name</a>;
+<a name="l00035"></a><a class="code" href="struct__PhidgetDevice.html#dd288f117f15f253981522d3f9c3ce58">00035</a>                 <span class="keywordtype">char</span> *<a class="code" href="struct__PhidgetDevice.html#dd288f117f15f253981522d3f9c3ce58">label</a>;
 <a name="l00036"></a>00036 
-<a name="l00037"></a>00037         <span class="comment">// Message Types</span>
-<a name="l00038"></a>00038         <span class="comment">// =============</span>
-<a name="l00039"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae72">00039</a>         <span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae72">_PhidgetManagerMessageType</a> {
-<a name="l00040"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">00040</a>                 <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">MESSAGE_ATTACH</a>,
-<a name="l00041"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">00041</a>                 <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">MESSAGE_DETACH</a>
-<a name="l00042"></a>00042         } <a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a>;
+<a name="l00037"></a>00037         } <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a>;
+<a name="l00038"></a>00038 
+<a name="l00039"></a>00039 
+<a name="l00040"></a>00040         <span class="comment">// Message structure</span>
+<a name="l00041"></a>00041         <span class="comment">// =================</span>
+<a name="l00042"></a><a class="code" href="struct__PhidgetManagerMessage.html">00042</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__PhidgetManagerMessage.html">_PhidgetManagerMessage</a> {
 <a name="l00043"></a>00043 
-<a name="l00044"></a>00044 
-<a name="l00045"></a>00045         <span class="comment">// PROTOTYPES</span>
-<a name="l00046"></a>00046         <span class="comment">// ==========</span>
-<a name="l00047"></a>00047         CPhidgetManagerHandle <a class="code" href="manager_8c.html#4b631931877d32faec304ac2657a4f73">manager_create</a>(qport_context *qpc);
+<a name="l00044"></a><a class="code" href="struct__PhidgetManagerMessage.html#211e79286363663410a0a14244815dea">00044</a>                 <span class="keywordtype">int</span> <a class="code" href="struct__PhidgetManagerMessage.html#211e79286363663410a0a14244815dea">type</a>;
+<a name="l00045"></a><a class="code" href="struct__PhidgetManagerMessage.html#ef2e1d9daab582cecca8612930d02ea1">00045</a>                 <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *<a class="code" href="struct__PhidgetManagerMessage.html#ef2e1d9daab582cecca8612930d02ea1">pd</a>;
+<a name="l00046"></a>00046 
+<a name="l00047"></a>00047         } <a class="code" href="struct__PhidgetManagerMessage.html">PhidgetManagerMessage</a>;
 <a name="l00048"></a>00048 
-<a name="l00049"></a>00049         <span class="keywordtype">int</span> <a class="code" href="manager_8c.html#3e386fe05cb87e8efcac16bfd6caf473">manager_gotAttach</a>(CPhidgetHandle phid, <span class="keywordtype">void</span> *qpc);
-<a name="l00050"></a>00050         <span class="keywordtype">int</span> <a class="code" href="manager_8c.html#b41b64b087dd6947a34e63085a992bad">manager_gotDetach</a>(CPhidgetHandle phid, <span class="keywordtype">void</span> *qpc);
-<a name="l00051"></a>00051 
-<a name="l00052"></a>00052         <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *<a class="code" href="manager_8c.html#5fce11ea17722355cff644dde4d90e0b">manager_create_device</a>(CPhidgetHandle phid);
-<a name="l00053"></a>00053         <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#5e0e645469402e4c94355e78d9e62bf6">manager_destroy_device</a>(<a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *pd);
-<a name="l00054"></a>00054 
-<a name="l00055"></a>00055         <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#ddca934ecdba237c1bf92f5d86fa7571">manager_push_message</a>(<a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a> type, <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *pd, qport_context *qpc);
-<a name="l00056"></a>00056         <a class="code" href="struct__PhidgetManagerMessage.html">PhidgetManagerMessage</a> *<a class="code" href="manager_8c.html#e7babb3234d64955679e1c5bbd47038a">manager_create_message</a>(<a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a> type, <a class="code" href="struct__PhidgetDevice.html">PhidgetDevice</a> *pd);
-<a name="l00057"></a>00057         <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#a24631eec6a315b93ac175dbc17d61b7">manager_destroy_message</a>(<a class="code" href="struct__PhidgetManagerMessage.html">PhidgetManagerMessage</a> *msg);
-<a name="l00058"></a>00058 
-<a name="l00059"></a>00059 <span class="preprocessor">#endif </span><span class="comment">/* MANAGER_THREAD_H_ */</span>
+<a name="l00049"></a>00049 
+<a name="l00050"></a>00050         <span class="comment">// Message Types</span>
+<a name="l00051"></a>00051         <span class="comment">// =============</span>
+<a name="l00052"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae72">00052</a>         <span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae72">_PhidgetManagerMessageType</a> {
+<a name="l00053"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">00053</a>                 <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae7222c43695ba5dfe3c1db96376dff90fa1">MESSAGE_ATTACH</a>,
+<a name="l00054"></a><a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">00054</a>                 <a class="code" href="manager_8h.html#661deb527388a1595ff5fc6241d6ae727de96f3270e33e398e844bda69c2ff81">MESSAGE_DETACH</a>
+<a name="l00055"></a>00055         } <a class="code" href="manager_8h.html#2466720d5b0bb6da62459be4f6961c6d">PhidgetManagerMessageType</a>;
+<a name="l00056"></a>00056 
+<a name="l00057"></a>00057 
+<a name="l00058"></a>00058         <span class="comment">// PROTOTYPES</span>
+<a name="l00059"></a>00059         <span class="comment">// ==========</span>
+<a name="l00060"></a>00060         <span class="keywordtype">void</span> <a class="code" href="manager_8c.html#e25a6ebec00aafe318e1375b526add65">manager_init</a>(<span class="keywordtype">void</span>);
+<a name="l00061"></a>00061 
+<a name="l00062"></a>00062 <span class="preprocessor">#endif </span><span class="comment">/* MANAGER_THREAD_H_ */</span>
 </pre></div></div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Fri May 1 21:04:11 2009 for Phidget_Erlang_Manager by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu May 21 12:48:20 2009 for Phidget_Erlang_Manager by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

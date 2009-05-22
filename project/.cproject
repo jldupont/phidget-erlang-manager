@@ -18,8 +18,19 @@
 <folderInfo id="cdt.managedbuild.config.gnu.mingw.exe.debug.1808069665." name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.gnu.mingw.exe.debug.1461082096" name="MinGW GCC" superClass="cdt.managedbuild.toolchain.gnu.mingw.exe.debug">
 <targetPlatform id="cdt.managedbuild.target.gnu.platform.mingw.exe.debug.1535027697" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.mingw.exe.debug"/>
-<builder buildPath="${workspace_loc:/phidgetmanager/Debug}" id="cdt.managedbuild.tool.gnu.builder.mingw.base.1703557510" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
+<builder buildPath="${workspace_loc:/phidgetmanager/Debug}" id="cdt.managedbuild.tool.gnu.builder.mingw.base.1703557510" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base">
+<outputEntries>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Debug"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Release"/>
+</outputEntries>
+</builder>
 <tool id="cdt.managedbuild.tool.gnu.assembler.mingw.exe.debug.609525899" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.mingw.exe.debug">
+<option id="gnu.both.asm.option.include.paths.652290253" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/phidgetmanager/includes}&quot;"/>
+<listOptionValue builtIn="false" value="H:/"/>
+<listOptionValue builtIn="false" value="&quot;C:/Program Files/erl5.7/lib/erl_interface-3.6/include&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/litm/trunk/project/includes}&quot;"/>
+</option>
 <inputType id="cdt.managedbuild.tool.gnu.assembler.input.686742840" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.archiver.mingw.base.2049518315" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.mingw.base"/>
@@ -31,10 +42,10 @@
 <option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.mingw.exe.debug.option.optimization.level.698104408" name="Optimization Level" superClass="gnu.c.compiler.mingw.exe.debug.option.optimization.level" valueType="enumerated"/>
 <option id="gnu.c.compiler.mingw.exe.debug.option.debugging.level.1969515046" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 <option id="gnu.c.compiler.option.include.paths.29469561" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/includes}&quot;"/>
-<listOptionValue builtIn="false" value="h:\"/>
-<listOptionValue builtIn="false" value="&quot;C:\Program Files\erl5.7\lib\erl_interface-3.6\include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${workspace_loc:/litm/trunk/project/includes}&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/phidgetmanager/includes}&quot;"/>
+<listOptionValue builtIn="false" value="H:/"/>
+<listOptionValue builtIn="false" value="&quot;C:/Program Files/erl5.7/lib/erl_interface-3.6/include&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/litm/trunk/project/includes}&quot;"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1649748391" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
@@ -48,9 +59,15 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="includes/old"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/src"/>
+<entry excluding="phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
+<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/old"/>
+<entry excluding="drivers|main/include|main/src|includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="includes/old"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/src"/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -306,6 +323,7 @@
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 <storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 <storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cconfiguration>
 <cconfiguration id="cdt.managedbuild.config.gnu.mingw.exe.release.1811807439">
 <storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.mingw.exe.release.1811807439" moduleId="org.eclipse.cdt.core.settings" name="Release">
@@ -346,8 +364,14 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/include"/>
+<entry excluding="include|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit"/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/old"/>
-<entry excluding="includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="main/src"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/include"/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers/phidgetinterfacekit/src"/>
+<entry excluding="phidgetinterfacekit" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="drivers"/>
+<entry excluding="drivers|main/include|main/src|includes/old|src/old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="includes/old"/>
 </sourceEntries>
 </configuration>
@@ -604,6 +628,7 @@
 <storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 <storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cconfiguration>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
