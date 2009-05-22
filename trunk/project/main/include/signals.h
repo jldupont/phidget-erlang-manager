@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-#include "litm.h"
+#include <litm.h>
 
 		//PROTOTYPES//
 		//==========//
