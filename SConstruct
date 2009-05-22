@@ -21,15 +21,20 @@ Help("""\
    'scons install' to install on local machine
 """)
 
-__dirs = 'project/main/src/SConscript'
-		#'project/src/drivers/phidgetinterfacekit']
+main_inc = '#project/main/include'
+main_dir = '#project/main/SConscript'
+main_bld = '#project/main'
+
+ifk_inc  = '#project/drivers/phidgetinterfacekit/include'
+ifk_dir  = 'project/drivers/phidgetinterfacekit/SConscript'
 		
-env_release = Environment(CPPPATH='#project/main/include')
-SConscript(__dirs, build_dir='#project/main/release', exports={'env':env_release})
+# MAIN
+# ====
+main_env_release = Environment(CPPPATH=main_inc)
+SConscript(main_dir, build_dir=main_bld+'/release', exports={'env':main_env_release})
 
-
-env_debug   = Environment(CPPPATH='#project/main/include', CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
-SConscript(__dirs, build_dir='#project/main/debug', exports={'env':env_debug})
+main_env_debug   = Environment(CPPPATH=main_inc, CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
+SConscript(main_dir, build_dir=main_bld+'/debug', exports={'env':main_env_debug})
 
 
 # INSTALLING on LOCAL MACHINE
@@ -112,7 +117,7 @@ if 'deb' in COMMAND_LINE_TARGETS:
 	except Exception,e:
 		print "*** ERROR [%s] ***" % e
 	
-env_release.Command("deb", "/tmp/litm", "dpkg-deb --build $SOURCE")
+#env_release.Command("deb", "/tmp/litm", "dpkg-deb --build $SOURCE")
 
 	
 
