@@ -137,7 +137,7 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
 	__manager_send_message( conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
 
-	char (*type_name)[] = pd->type;
+	char (*type_name)[] = (char (*)[])pd->type;
 
 	drivers_handle_type( type_name, LITM_BUS_MESSAGES, LITM_BUS_SYSTEM );
 
