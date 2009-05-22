@@ -21,14 +21,15 @@ Help("""\
    'scons install' to install on local machine
 """)
 
-
+__dirs = 'project/src/SConscript'
+		#'project/src/drivers/phidgetinterfacekit']
+		
 env_release = Environment(CPPPATH='#project/includes')
-SConscript('project/src/SConscript', build_dir='release', exports={'env':env_release})
+SConscript(__dirs, build_dir='#project/release', exports={'env':env_release})
 
 
-env_debug   = Environment(CPPPATH='#project/includes', CPPFLAGS="-D_DEBUG -g")
-SConscript('project/src/SConscript', build_dir='debug', exports={'env':env_debug})
-
+env_debug   = Environment(CPPPATH='#project/includes', CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
+SConscript(__dirs, build_dir='#project/debug', exports={'env':env_debug})
 
 
 # INSTALLING on LOCAL MACHINE
