@@ -36,20 +36,26 @@
 
 	} driver_thread_params;
 
+	#ifdef __cplusplus
+		extern "C" {
+	#endif
+		/**
+		 * Prototype of the entry point function for the drivers
+		 *
+		 * @param message_bus_id the LITM bus_id for the messages
+		 * @param system_bus_id  the LITM bus_id for the system messages (eg. shutdown, timer etc.)
+		 *
+		 */
+		void init(litm_bus messages_bus_id, litm_bus system_bus_id);
 
-	/**
-	 * Prototype of the entry point function for the drivers
-	 *
-	 * @param message_bus_id the LITM bus_id for the messages
-	 * @param system_bus_id  the LITM bus_id for the system messages (eg. shutdown, timer etc.)
-	 *
-	 */
-	void init(litm_bus messages_bus_id, litm_bus system_bus_id);
+		/**
+		 * Prototype of the thread function
+		 */
+		void *driver_thread_function(driver_thread_params *params);
 
-	/**
-	 * Prototype of the thread function
-	 */
-	void *driver_thread_function(driver_thread_params *params);
+	#ifdef __cplusplus
+		}
+	#endif
 
 
 #endif /* DRIVERS_COMMON_H_ */

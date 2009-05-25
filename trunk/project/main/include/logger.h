@@ -11,12 +11,17 @@
 #include <syslog.h>
 
 
-	// Prototypes
-	// ==========
-	void doLog(int priority, char *message, ...);
-	void doLogInteger(int priority, char *message, int param);
-	void doLogString(int priority, char *message, char *param);
+	#ifdef __cplusplus
+		extern "C" {
+	#endif
 
+		// Prototypes
+		// ==========
+		void doLog(int priority, const char *message, ...);
+
+	#ifdef __cplusplus
+		}
+	#endif
 
 
 #endif /* LOGGER_H_ */

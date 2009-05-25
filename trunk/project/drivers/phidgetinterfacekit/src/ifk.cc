@@ -16,9 +16,11 @@
  * 3- shutdown?
  *
  */
-
+#include <map>
 #include "drivers_common.h"
 #include "messages.h"
+
+using namespace std;
 
 
 // PRIVATE
@@ -29,6 +31,10 @@ int _activeSerials[15];
 
 void main_loop(litm_connection *conn);
 int isShutdown(bus_message *msg);
+int isPhidgetDeviceMessage(bus_message *msg);
+int handle_messages(litm_connection *conn);
+void handleOpen(bus_message *msg);
+void handleClose(bus_message *msg);
 
 
 /**
@@ -37,7 +43,7 @@ int isShutdown(bus_message *msg);
 void init(litm_bus msg, litm_bus sys) {
 
 	driver_thread_params *params;
-	params = malloc( sizeof(driver_thread_params) );
+	params = (driver_thread_params *) malloc( sizeof(driver_thread_params) );
 
 	params->msg = msg;
 	params->sys = sys;
@@ -103,7 +109,7 @@ void main_loop(litm_connection *conn) {
 	int __exit = 0;
 	while(!__exit) {
 
-		__exit = handle_message( conn );
+		__exit = handle_messages( conn );
 		sleep(1);
 
 	}//while
@@ -130,15 +136,15 @@ int handle_messages(litm_connection *conn) {
 	code = litm_receive_nb(conn, &e);
 	if (LITM_CODE_OK==code) {
 
-		msg = litm_get_message( e );
+		msg = (bus_message *) litm_get_message( e );
 
 		if (isShutdown(msg)) {
-			litm_release( e );
+			litm_release( conn, e );
 			return 1;
 		}
 
 		if (!isPhidgetDeviceMessage(msg)) {
-			litm_release( e );
+			litm_release( conn, e );
 			return 0;
 		}
 		//instead of having another level
@@ -146,7 +152,7 @@ int handle_messages(litm_connection *conn) {
 		handleOpen(msg);
 		handleClose(msg);
 
-		litm_release( e );
+		litm_release( conn, e );
 	}
 
 	return 0;
