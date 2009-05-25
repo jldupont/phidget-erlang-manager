@@ -26,7 +26,7 @@ using namespace std;
 // PRIVATE
 pthread_t driver_thread;
 
-int _activeSerials[15];
+map<int, CPhidgetInterfaceKitHandle> _activeSerials;
 
 
 void main_loop(litm_connection *conn);
@@ -36,6 +36,12 @@ int handle_messages(litm_connection *conn);
 void handleOpen(bus_message *msg);
 void handleClose(bus_message *msg);
 
+
+int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr);
+int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr);
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *userptr, int ErrorCode, const char *unknown);
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value);
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value);
 
 /**
  * Entry Point
@@ -170,7 +176,10 @@ int isPhidgetDeviceMessage(bus_message *msg) {
 }//
 
 /**
- * go through
+ * Verifies if the device(s) is/are already opened
+ *  - if not opened, open the device & configure callbacks
+ *	- already opened, bail out
+ *
  */
 void handleOpen(bus_message *msg) {
 
@@ -183,9 +192,51 @@ void handleClose(bus_message *msg) {
 
 void openDevice(int serial) {
 
+	CPhidgetInterfaceKitHandle IFK=0;
+
+	CPhidgetInterfaceKit_create(&IFK);
+
+	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, NULL);
+	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, NULL);
+	CPhidget_set_OnAttach_Handler((CPhidgetHandle)IFK, IFK_AttachHandler, NULL);
+	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, NULL);
+	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, NULL);
+
+	CPhidget_open((CPhidgetHandle)IFK, serial);
+
+	_activeSerials.insert( serial, IFK );
+
 }//
 
 void closeDevices(void) {
 
 }//
+
+
+int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr)
+{
+	return 0;
+}
+
+int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr)
+{
+	return 0;
+}
+
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *userptr, int ErrorCode, const char *unknown)
+{
+	return 0;
+}
+
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value)
+{
+	return 0;
+}
+
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value)
+{
+	return 0;
+}
+
+
 
