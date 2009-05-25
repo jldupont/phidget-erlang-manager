@@ -46,5 +46,6 @@ for module in modules:
 # INSTALLING on LOCAL MACHINE
 if 'install' in COMMAND_LINE_TARGETS:
 	print "scons: INSTALLING LOCALLY"
-
+	#shutil.copy("project/main/debug/phidgetmanager", "")
+	shutil.copy("./project/drivers/phidgetinterfacekit/debug/libphidgetinterfacekit.so", "/usr/lib/libpmphidgetinterfacekit.so")
 

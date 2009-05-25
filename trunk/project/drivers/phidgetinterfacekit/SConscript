@@ -3,6 +3,7 @@ scons build file
 
 @author: Jean-Lou Dupont
 """
+import shutil
 
 Import('env')
 

@@ -18,23 +18,23 @@
  */
 #include <map>
 #include "drivers_common.h"
-#include "drivers_types.h"
 #include "messages.h"
 
 using namespace std;
 
-
 // PRIVATE
 pthread_t driver_thread;
 
-typedef pair<int, CPhidgetInterfaceKitHandle> PairIFK;
+typedef pair<int, CPhidgetHandle> PairIFK;
+typedef std::map<int, CPhidgetHandle> IFKMap;
 
-std::map<int, CPhidgetInterfaceKitHandle> _activeSerials;
+IFKMap _activeSerials;
 
 void main_loop(litm_connection *conn);
 int isShutdown(bus_message *msg);
 int isPhidgetDeviceMessage(bus_message *msg);
 int handle_messages(litm_connection *conn);
+void openDevice(int serial);
 void handleOpen(bus_message *msg);
 void handleClose(bus_message *msg);
 
@@ -180,6 +180,21 @@ int isPhidgetDeviceMessage(bus_message *msg) {
  */
 void handleOpen(bus_message *msg) {
 
+	DEBUG_LOG(LOG_INFO,"drivers:ifk:handleOpen");
+
+	int serial;
+	int index;
+	IFKMap::iterator it;
+
+	for (index=0; index<msg->message_body.mpd.count; index++) {
+		serial = msg->message_body.mpd.devices[index]->serial;
+		it = _activeSerials.find(serial);
+
+		if (it!=_activeSerials.end()) {
+			openDevice( serial );
+		}
+	}
+
 }//
 
 void handleClose(bus_message *msg) {
@@ -188,6 +203,8 @@ void handleClose(bus_message *msg) {
 
 
 void openDevice(int serial) {
+
+	DEBUG_LOG(LOG_INFO,"drivers:ifk:openDevice, serial[%i]", serial);
 
 	CPhidgetInterfaceKitHandle IFK=0;
 
@@ -201,7 +218,6 @@ void openDevice(int serial) {
 
 	CPhidget_open((CPhidgetHandle)IFK, serial);
 
-	_activeSerials.insert( PairIFK(serial, IFK) );
 
 }//
 
@@ -212,11 +228,33 @@ void closeDevices(void) {
 
 int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr)
 {
+	int serial;
+
+	CPhidget_getSerialNumber(IFK, &serial);
+
+	_activeSerials.insert( PairIFK(serial, IFK) );
+
+	DEBUG_LOG(LOG_INFO, "drivers:ifk: AttachHandler, serial[%i]", serial);
 	return 0;
 }
 
 int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr)
 {
+	int serial;
+	IFKMap::iterator it;
+
+	CPhidget_getSerialNumber(IFK, &serial);
+
+	it = _activeSerials.find( serial );
+	if (it!=_activeSerials.end()) {
+
+		_activeSerials.erase( serial );
+		DEBUG_LOG(LOG_INFO, "drivers:ifk: DetachHandler, serial[%i]", serial);
+	} else {
+		DEBUG_LOG(LOG_ERR, "drivers:ifk: DetachHandler, serial[%i] NOT FOUND", serial);
+	}
+
+
 	return 0;
 }
 
