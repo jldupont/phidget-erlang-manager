@@ -18,6 +18,7 @@
  */
 #include <map>
 #include "drivers_common.h"
+#include "drivers_types.h"
 #include "messages.h"
 
 using namespace std;
@@ -26,8 +27,9 @@ using namespace std;
 // PRIVATE
 pthread_t driver_thread;
 
-map<int, CPhidgetInterfaceKitHandle> _activeSerials;
+typedef pair<int, CPhidgetInterfaceKitHandle> PairIFK;
 
+std::map<int, CPhidgetInterfaceKitHandle> _activeSerials;
 
 void main_loop(litm_connection *conn);
 int isShutdown(bus_message *msg);
@@ -53,11 +55,6 @@ void init(litm_bus msg, litm_bus sys) {
 
 	params->msg = msg;
 	params->sys = sys;
-
-	int i;
-	for (i=0;i<sizeof(_activeSerials)/sizeof(int); i++) {
-		_activeSerials[i]=0;
-	}
 
 	pthread_create(&driver_thread, NULL, DTF_CAST &driver_thread_function, (void *) params);
 
@@ -204,7 +201,7 @@ void openDevice(int serial) {
 
 	CPhidget_open((CPhidgetHandle)IFK, serial);
 
-	_activeSerials.insert( serial, IFK );
+	_activeSerials.insert( PairIFK(serial, IFK) );
 
 }//
 
