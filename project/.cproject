@@ -43,6 +43,7 @@
 <listOptionValue builtIn="false" value="&quot;C:/Program Files/erl5.7/lib/erl_interface-3.6/include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/drivers/include}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/phidgetmanager/main/include}&quot;"/>
+<listOptionValue builtIn="false" value="&quot;H:\c++\4.3&quot;"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1649748391" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>

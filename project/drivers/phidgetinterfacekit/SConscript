@@ -13,6 +13,6 @@ if d.get('_DEBUG', False):
 else:
 	libs=['pthread','litm','phidget21']
 
-pr = env.SharedLibrary('phidgetinterfacekit', Glob("src/*.c"), LIBS=libs )
+pr = env.SharedLibrary('phidgetinterfacekit', Glob("src/*.cc"), LIBS=libs )
 Default(pr)
 	
