@@ -30,15 +30,14 @@ typedef std::map<int, CPhidgetHandle> IFKMap;
 
 IFKMap _activeSerials;
 
-void main_loop(litm_connection *conn);
-void openDevice(litm_connection *conn, int serial);
-void handleOpen(litm_connection *conn, bus_message *msg);
+void main_loop(driver_thread_params *params);
+void openDevice(driver_thread_params *params, int serial);
+void handleOpen(driver_thread_params *params, bus_message *msg);
 int isShutdown(bus_message *msg);
 int isPhidgetDeviceMessage(bus_message *msg);
-int handle_messages(litm_connection *conn);
+int handle_messages(driver_thread_params *params);
 
-
-void IFK_SendDigitalState(litm_connection *conn, int serial, int index, int value);
+void IFK_SendDigitalState(driver_thread_params *conn, int serial, int index, int value);
 
 
 int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr);
@@ -57,6 +56,7 @@ void init(litm_bus msg, litm_bus sys) {
 	driver_thread_params *params;
 	params = (driver_thread_params *) malloc( sizeof(driver_thread_params) );
 
+	params->conn = NULL;
 	params->msg = msg;
 	params->sys = sys;
 
@@ -94,6 +94,7 @@ void *driver_thread_function(driver_thread_params *params) {
 		DEBUG_LOG(LOG_INFO, "drivers:ifk: connected to LITM");
 	}
 
+	params->conn = conn;
 
 	code = litm_subscribe_wait( conn, bmsg, 0 );
 	if (LITM_CODE_OK!=code) {
@@ -114,7 +115,7 @@ void *driver_thread_function(driver_thread_params *params) {
 	DEBUG_LOG(LOG_INFO, "drivers:ifk: BEFORE main loop");
 
 	// we are good to go!
-	main_loop( conn );
+	main_loop( params );
 
 
 	DEBUG_LOG(LOG_DEBUG, "ifk: END thread");
@@ -123,13 +124,13 @@ void *driver_thread_function(driver_thread_params *params) {
 
 
 
-void main_loop(litm_connection *conn) {
+void main_loop(driver_thread_params *params) {
 
 
 	int __exit = 0;
 	while(!__exit) {
 
-		__exit = handle_messages( conn );
+		__exit = handle_messages( params );
 		usleep(250*1000);
 
 	}//while
@@ -145,9 +146,9 @@ void main_loop(litm_connection *conn) {
  *
  * @return 1 for shutdown
  */
-int handle_messages(litm_connection *conn) {
+int handle_messages(driver_thread_params *params) {
 
-
+	litm_connection *conn=params->conn;
 	litm_code code;
 	litm_envelope *e=NULL;
 	bus_message *msg;
@@ -168,7 +169,7 @@ int handle_messages(litm_connection *conn) {
 		}
 		//instead of having another level
 		// of 'if's here....
-		handleOpen(conn, msg);
+		handleOpen(params, msg);
 
 		litm_release( conn, e );
 	}
@@ -193,9 +194,9 @@ int isPhidgetDeviceMessage(bus_message *msg) {
  *	- already opened, bail out
  *
  */
-void handleOpen(litm_connection *conn, bus_message *msg) {
+void handleOpen(driver_thread_params *params, bus_message *msg) {
 
-	DEBUG_LOG(LOG_INFO,"drivers:ifk:handleOpen");
+	//DEBUG_LOG(LOG_INFO,"drivers:ifk:handleOpen");
 
 	int serial;
 	int index;
@@ -206,7 +207,7 @@ void handleOpen(litm_connection *conn, bus_message *msg) {
 		it = _activeSerials.find(serial);
 
 		if (it==_activeSerials.end()) {
-			openDevice( conn, serial );
+			openDevice( params, serial );
 		}
 	}
 
@@ -214,7 +215,7 @@ void handleOpen(litm_connection *conn, bus_message *msg) {
 
 
 
-void openDevice(litm_connection *conn, int serial) {
+void openDevice(driver_thread_params *params, int serial) {
 
 	DEBUG_LOG(LOG_INFO,"drivers:ifk:openDevice, serial[%i]", serial);
 
@@ -222,11 +223,12 @@ void openDevice(litm_connection *conn, int serial) {
 
 	CPhidgetInterfaceKit_create(&IFK);
 
-	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, (void*)conn);
-	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, (void*)conn);
-	CPhidget_set_OnAttach_Handler((CPhidgetHandle)IFK, IFK_AttachHandler, (void*)conn);
-	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, (void*)conn);
-	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, (void*)conn);
+	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, (void*)params);
+	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, (void*)params);
+
+	CPhidget_set_OnAttach_Handler((CPhidgetHandle)IFK, IFK_AttachHandler, (void*)params);
+	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, (void*)params);
+	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, (void*)params);
 
 	CPhidget_open((CPhidgetHandle)IFK, serial);
 
@@ -235,7 +237,7 @@ void openDevice(litm_connection *conn, int serial) {
 
 
 
-int IFK_AttachHandler(CPhidgetHandle IFK, void *conn)
+int IFK_AttachHandler(CPhidgetHandle IFK, void *params)
 {
 	int serial;
 
@@ -247,7 +249,7 @@ int IFK_AttachHandler(CPhidgetHandle IFK, void *conn)
 	return 0;
 }
 
-int IFK_DetachHandler(CPhidgetHandle IFK, void *conn)
+int IFK_DetachHandler(CPhidgetHandle IFK, void *params)
 {
 	int serial;
 	IFKMap::iterator it;
@@ -267,38 +269,47 @@ int IFK_DetachHandler(CPhidgetHandle IFK, void *conn)
 	return 0;
 }
 
-int IFK_ErrorHandler(CPhidgetHandle IFK, void *conn, int ErrorCode, const char *unknown)
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *params, int ErrorCode, const char *unknown)
 {
 	doLog(LOG_ERR, "drivers:ifk: error[%i]", ErrorCode);
 	return 0;
 }
 
-int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *conn, int Index, int Value)
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *params, int Index, int Value)
 {
 	doLog(LOG_ERR, "drivers:ifk: output changed, index[%i] value[%i]", Index, Value);
 	return 0;
 }
 
-int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *conn, int Index, int Value)
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *params, int Index, int Value)
 {
 	if (NULL==IFK) {
 		doLog(LOG_ERR, "drivers:ifk: input changed handler: NULL");
 		return 0;
 	}
 	int serial;
-	CPhidget_getSerialNumber(IFK, &serial);
+	CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
 
-	IFK_SendDigitalState((litm_connection*)conn, serial, Index, Value);
+	IFK_SendDigitalState((driver_thread_params *)params, serial, Index, Value);
 	return 0;
 }
 
-void IFK_SendDigitalState(litm_connection *conn, int serial, int index, int value) {
+void IFK_SendDigitalState(driver_thread_params *params, int serial, int index, int value) {
 
+	litm_code code;
 	bus_message *msg = (bus_message *) malloc(sizeof(bus_message));
 
 	msg->type = MESSAGE_PHIDGET_DIGITAL_STATE;
 	msg->message_body.mps.serial = serial;
 	msg->message_body.mps.index = index;
 	msg->message_body.mps.value = value;
-}
+
+	//default cleaner, default timeout
+	code = litm_send_wait(params->conn, params->msg, msg, NULL, 0);
+
+	if (LITM_CODE_OK!=code) {
+		doLog(LOG_ERR, "drivers:ifk:SendDigitalState: error sending message");
+	}
+
+}//
 

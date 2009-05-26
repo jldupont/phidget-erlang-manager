@@ -31,6 +31,7 @@
 	 */
 	typedef struct {
 
+		litm_connection *conn;
 		litm_bus msg;
 		litm_bus sys;
 
