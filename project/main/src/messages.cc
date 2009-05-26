@@ -55,6 +55,8 @@ void *__messages_thread_function(void* arg) {
 	litm_connection *conn=NULL;
 	litm_code code, code1, code2;
 
+	doLog(LOG_INFO, "messages: BEGIN thread" );
+
 	code = litm_connect_ex_wait(&conn, LITM_ID_MESSAGES, 0);
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "messages: cannot connect to LITM" );
@@ -78,7 +80,6 @@ void *__messages_thread_function(void* arg) {
 	litm_envelope *e;
 	bus_message *msg;
 
-	doLog(LOG_INFO, "messages: starting loop" );
 
 	while(1) {
 

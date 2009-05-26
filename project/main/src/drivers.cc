@@ -174,7 +174,7 @@ lib_handle __drivers_search_type(char *type_name) {
  */
 int __drivers__add_lib(char *type_name, lib_handle h) {
 
-	DEBUG_LOG(LOG_DEBUG,"drivers: __drivers__add_lib [%s]", type_name );
+	//DEBUG_LOG(LOG_DEBUG,"drivers: __drivers__add_lib [%s]", type_name );
 
 	char *tmp = (char *) malloc( strlen(type_name) * sizeof(char) );
 

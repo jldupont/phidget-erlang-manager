@@ -99,7 +99,8 @@ void *__manager_thread_function(void *params) {
 
 	while(!__exit) {
 
-		usleep(250*1000);
+		//usleep(250*1000);
+		sched_yield();
 
 		code = litm_receive_nb( conn, &e );
 		if (LITM_CODE_OK==code) {
