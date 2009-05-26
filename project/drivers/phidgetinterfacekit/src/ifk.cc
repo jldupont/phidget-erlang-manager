@@ -33,9 +33,9 @@ IFKMap _activeSerials;
 void main_loop(driver_thread_params *params);
 void openDevice(driver_thread_params *params, int serial);
 void handleOpen(driver_thread_params *params, bus_message *msg);
-int isShutdown(bus_message *msg);
-int isPhidgetDeviceMessage(bus_message *msg);
-int handle_messages(driver_thread_params *params);
+bool isShutdown(bus_message *msg);
+bool isPhidgetDeviceMessage(bus_message *msg);
+bool handle_messages(driver_thread_params *params);
 
 void IFK_SendDigitalState(driver_thread_params *conn, int serial, int index, int value);
 
@@ -127,11 +127,11 @@ void *driver_thread_function(driver_thread_params *params) {
 void main_loop(driver_thread_params *params) {
 
 
-	int __exit = 0;
+	bool __exit = false;
 	while(!__exit) {
 
-		__exit = handle_messages( params );
 		usleep(250*1000);
+		__exit = handle_messages( params );
 
 	}//while
 
@@ -146,7 +146,7 @@ void main_loop(driver_thread_params *params) {
  *
  * @return 1 for shutdown
  */
-int handle_messages(driver_thread_params *params) {
+bool handle_messages(driver_thread_params *params) {
 
 	litm_connection *conn=params->conn;
 	litm_code code;
@@ -177,13 +177,13 @@ int handle_messages(driver_thread_params *params) {
 	return 0;
 }//
 
-int isShutdown(bus_message *msg) {
+bool isShutdown(bus_message *msg) {
 
 	return (MESSAGE_SHUTDOWN == msg->type);
 
 }
 
-int isPhidgetDeviceMessage(bus_message *msg) {
+bool isPhidgetDeviceMessage(bus_message *msg) {
 
 	return (MESSAGE_PHIDGET_DEVICE == msg->type );
 }//

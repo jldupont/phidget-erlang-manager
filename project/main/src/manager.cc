@@ -95,9 +95,11 @@ void *__manager_thread_function(void *params) {
 	litm_envelope *e;
 	bus_message   *msg;
 	bus_message_type type;
-	int __exit = 0;
+	bool __exit = 0;
 
 	while(!__exit) {
+
+		usleep(250*1000);
 
 		code = litm_receive_nb( conn, &e );
 		if (LITM_CODE_OK==code) {
@@ -105,7 +107,7 @@ void *__manager_thread_function(void *params) {
 			type = msg->type;
 
 			if (MESSAGE_SHUTDOWN==type) {
-				__exit = 1;
+				__exit = true;
 			}
 
 			if (MESSAGE_TIMER==type) {
@@ -309,7 +311,7 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 	msg->message_body.mpd.count = done;
 
 	litm_code code;
-	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
+	code = litm_send_wait( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device, 0 );
 	if (LITM_CODE_OK!=code)
 		doLog(LOG_ERR, "manager: error sending message through LITM");
 
