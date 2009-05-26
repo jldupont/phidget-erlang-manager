@@ -50,6 +50,8 @@ int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int In
  */
 void init(litm_bus msg, litm_bus sys) {
 
+	DEBUG_LOG(LOG_INFO,"drivers:ifk: init() BEGIN");
+
 	driver_thread_params *params;
 	params = (driver_thread_params *) malloc( sizeof(driver_thread_params) );
 
@@ -58,6 +60,7 @@ void init(litm_bus msg, litm_bus sys) {
 
 	pthread_create(&driver_thread, NULL, DTF_CAST &driver_thread_function, (void *) params);
 
+	DEBUG_LOG(LOG_INFO,"drivers:ifk: init() END");
 }//
 
 
@@ -77,24 +80,36 @@ void *driver_thread_function(driver_thread_params *params) {
 	litm_connection *conn=NULL;
 	litm_code        code;
 
+	//yield
+	sleep(1);
+
 	//default timeout
 	code = litm_connect_ex_wait( &conn, LITM_DRIVER_IFK_ID, 0);
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot connect to LITM");
 		return NULL;
+	} else {
+		DEBUG_LOG(LOG_INFO, "drivers:ifk: connected to LITM");
 	}
+
 
 	code = litm_subscribe_wait( conn, bmsg, 0 );
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot subscribe to LITM [messages]");
 		return NULL;
+	} else {
+		DEBUG_LOG(LOG_INFO, "drivers:ifk: subscribed to LITM messages bus");
 	}
 
 	code = litm_subscribe_wait( conn, bsys, 0 );
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot subscribe to LITM [system]");
 		return NULL;
+	} else {
+		DEBUG_LOG(LOG_INFO, "drivers:ifk: subscribed to LITM system bus");
 	}
+
+	DEBUG_LOG(LOG_INFO, "drivers:ifk: BEFORE main loop");
 
 	// we are good to go!
 	main_loop( conn );
@@ -113,7 +128,7 @@ void main_loop(litm_connection *conn) {
 	while(!__exit) {
 
 		__exit = handle_messages( conn );
-		sleep(1);
+		usleep(1000);
 
 	}//while
 
@@ -190,7 +205,7 @@ void handleOpen(bus_message *msg) {
 		serial = msg->message_body.mpd.devices[index]->serial;
 		it = _activeSerials.find(serial);
 
-		if (it!=_activeSerials.end()) {
+		if (it==_activeSerials.end()) {
 			openDevice( serial );
 		}
 	}
