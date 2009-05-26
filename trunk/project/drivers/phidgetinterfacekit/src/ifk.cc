@@ -277,7 +277,9 @@ int IFK_ErrorHandler(CPhidgetHandle IFK, void *params, int ErrorCode, const char
 
 int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *params, int Index, int Value)
 {
-	doLog(LOG_ERR, "drivers:ifk: output changed, index[%i] value[%i]", Index, Value);
+	int serial;
+	serial = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+	doLog(LOG_ERR, "drivers:ifk: output changed, serial[%i] index[%i] value[%i]", serial, Index, Value);
 	return 0;
 }
 
@@ -289,6 +291,8 @@ int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *params, int Ind
 	}
 	int serial;
 	CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+
+	doLog(LOG_ERR, "drivers:ifk: input changed, serial[%i] index[%i] value[%i]", serial, Index, Value);
 
 	IFK_SendDigitalState((driver_thread_params *)params, serial, Index, Value);
 	return 0;

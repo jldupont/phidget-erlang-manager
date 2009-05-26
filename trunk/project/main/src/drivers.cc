@@ -23,7 +23,7 @@ typedef void * lib_handle;
 
 typedef struct _loaded_lib {
 
-	char (*type_name)[];
+	char *type_name;
 	lib_handle h;
 
 } loaded_lib;
@@ -41,9 +41,9 @@ loaded_lib __loaded_libs[DRIVERS_MAX_LIBS];
 // PROTOTYPES
 // ==========
 void __drivers_init(void);
-void __drivers_load_lib(char (*type_name)[], litm_bus message_bus_id, litm_bus system_bus_id);
-lib_handle __drivers_search_type(char (*type_name)[]);
-int __drivers__add_lib(char (*type_name)[], lib_handle h);
+void __drivers_load_lib(char *type_name, litm_bus message_bus_id, litm_bus system_bus_id);
+lib_handle __drivers_search_type(char *type_name);
+int __drivers__add_lib(char *type_name, lib_handle h);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,7 +57,7 @@ int __drivers__add_lib(char (*type_name)[], lib_handle h);
  * of the dynamic library associated with a given
  * phidget type
  */
-void drivers_handle_type(	char (*type_name)[],
+void drivers_handle_type(	char *type_name,
 							litm_bus message_bus_id,
 							litm_bus system_bus_id ) {
 
@@ -93,13 +93,13 @@ void __drivers_init(void) {
 /**
  * Loads & Inits a library
  */
-void __drivers_load_lib(char (*type_name)[],
+void __drivers_load_lib(char *type_name,
 						litm_bus message_bus_id,
 						litm_bus system_bus_id) {
 
 	static char path[255];
 
-	snprintf((char*)&path, sizeof(path), "%s%s.so", (char*) &base_path, (char*)type_name );
+	snprintf((char*)&path, sizeof(path), "%s%s.so", (char*) &base_path, type_name );
 	string_tolower( (char *) path );
 
 	doLog(LOG_INFO, "drivers: attempting to load driver[%s]", path);
@@ -124,7 +124,7 @@ void __drivers_load_lib(char (*type_name)[],
 	char *error;
 	void (*init)( litm_bus message_bus_id, litm_bus system_bus_id );
 
-	init  = dlsym( lh, "init" );
+	init  = (void (*)(litm_bus, litm_bus))dlsym( lh, "init" );
 	error = dlerror();
 
 	if ( NULL!= error ) {
@@ -145,22 +145,22 @@ void __drivers_load_lib(char (*type_name)[],
  *
  * @return lib_handle or NULL
  */
-lib_handle __drivers_search_type(char (*type_name)[]) {
+lib_handle __drivers_search_type(char *type_name) {
 
 	DEBUG_LOG(LOG_DEBUG,"drivers: __drivers_search_type [%s]", type_name );
 
 	lib_handle result = NULL;
 
-	char (*sptr)[] = NULL;
+	char *sptr = NULL;
 	int i, len;
-	len = strlen((char *) type_name);
+	len = strlen(type_name);
 
 	for (i=0; i< DRIVERS_MAX_LIBS; i++) {
 		sptr = __loaded_libs[i].type_name;
 		if (NULL==sptr)
 			continue;
 
-		if (0==strncmp((char *)type_name, (char*) sptr, len )) {
+		if (0==strncmp(type_name, (char*) sptr, len )) {
 			result = __loaded_libs[i].h;
 		}
 	}
@@ -172,13 +172,13 @@ lib_handle __drivers_search_type(char (*type_name)[]) {
 /**
  * Adds a type to the list of loaded libs
  */
-int __drivers__add_lib(char (*type_name)[], lib_handle h) {
+int __drivers__add_lib(char *type_name, lib_handle h) {
 
 	DEBUG_LOG(LOG_DEBUG,"drivers: __drivers__add_lib [%s]", type_name );
 
-	char (*tmp)[] = malloc( strlen((char*)type_name) * sizeof(char) );
+	char *tmp = (char *) malloc( strlen(type_name) * sizeof(char) );
 
-	strcpy( (char *) tmp, (char*) type_name );
+	strcpy( (char *) tmp, type_name );
 
 	int i, done=-1;
 	for (i=0; i< DRIVERS_MAX_LIBS; i++) {

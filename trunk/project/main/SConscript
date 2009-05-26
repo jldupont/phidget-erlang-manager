@@ -13,6 +13,6 @@ if d.get('_DEBUG', False):
 else:
 	libs=['pthread','litm','phidget21','ei']
 
-pr = env.Program('phidgetmanager', Glob("src/*.c"), LIBS=libs )
+pr = env.Program('phidgetmanager', Glob("src/*.cc"), LIBS=libs )
 Default(pr)
 	

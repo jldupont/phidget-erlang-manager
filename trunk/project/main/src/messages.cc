@@ -35,7 +35,7 @@ const char *messages_text[] = {
 
 
 // PRIVATE
-char *__logFilePath = "/var/log/phidgetmanager";
+const char *__logFilePath = "/var/log/phidgetmanager";
 pthread_t __messages_thread;
 
 void __messages_log_message(bus_message_type type);
@@ -87,7 +87,7 @@ void *__messages_thread_function(void* arg) {
 
 			doLog(LOG_INFO, "messages: RX message" );
 
-			msg = litm_get_message( e );
+			msg = (bus_message *) litm_get_message( e );
 			if (NULL!=msg) {
 				bus_message_type type;
 

@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
 			doLog(LOG_INFO, "main: RX message");
 
 			//we just respond to shutdown here
-			msg = litm_get_message( e );
+			msg = (bus_message *) litm_get_message( e );
 			if (NULL!=msg) {
 				type = msg->type;
 
@@ -267,12 +267,12 @@ void showMessageEx(int msg_id, ...) {
 	int _MAX_SIZE = 1024;
 	int n;
 
-	char *msg_format = main_messages[msg_id];
+	const char *msg_format = main_messages[msg_id];
 	char *msg_args;
 
 	// if we fail for that small buffer,
 	//  then the system as a much bigger problem ;-)
-	msg_args = malloc( _MAX_SIZE * sizeof(char) );
+	msg_args = (char *) malloc( _MAX_SIZE * sizeof(char) );
 	va_list ap;
 
 	va_start(ap, msg_id);

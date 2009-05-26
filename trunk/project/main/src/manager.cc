@@ -101,7 +101,7 @@ void *__manager_thread_function(void *params) {
 
 		code = litm_receive_nb( conn, &e );
 		if (LITM_CODE_OK==code) {
-			msg  = litm_get_message( e );
+			msg  = (bus_message *) litm_get_message( e );
 			type = msg->type;
 
 			if (MESSAGE_SHUTDOWN==type) {
@@ -135,9 +135,9 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
 	doLog(LOG_DEBUG, "manager: device attached [%x]", phid);
 
-	__manager_send_message( conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
+	__manager_send_message( (litm_connection *) conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
 
-	char (*type_name)[] = (char (*)[])pd->type;
+	char *type_name = pd->type;
 
 	drivers_handle_type( type_name, LITM_BUS_MESSAGES, LITM_BUS_SYSTEM );
 
@@ -155,7 +155,7 @@ int manager_gotDetach(CPhidgetHandle phid, void *conn) {
 
 	doLog(LOG_INFO, "manager: device detached [%x]", phid);
 
-	__manager_send_message( conn, pd, PHIDGET_DEVICE_STATUS_INACTIVE );
+	__manager_send_message( (litm_connection *) conn, pd, PHIDGET_DEVICE_STATUS_INACTIVE );
 
 	return 0;
 }//[/manager_gotDetach]
@@ -185,7 +185,7 @@ void __manager_send_message(litm_connection *conn, PhidgetDevice *pd,  phidget_d
  */
 bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state) {
 
-	bus_message *msg = malloc( sizeof(bus_message) );
+	bus_message *msg = (bus_message *) malloc( sizeof(bus_message) );
 	if (NULL==msg)
 		return NULL;
 
@@ -229,7 +229,7 @@ PhidgetDevice* manager_create_device_info(CPhidgetHandle phid) {
 	//DEBUG_LOG(LOG_DEBUG, "manager: creating device");
 
 	// if malloc fails, we have a much bigger problem
-	pd = malloc(sizeof(PhidgetDevice));
+	pd = (PhidgetDevice *) malloc(sizeof(PhidgetDevice));
 
 	CPhidget_getSerialNumber(phid, &pd->serial);
   	CPhidget_getDeviceVersion(phid, &pd->version);
@@ -244,9 +244,9 @@ PhidgetDevice* manager_create_device_info(CPhidgetHandle phid) {
 	size_t sz_name  = strlen( name )  + sz_char;
 	size_t sz_label = strlen( label ) + sz_char;
 
-	pd->type  = malloc( sz_type  * sizeof(char) );
-	pd->name  = malloc( sz_name  * sizeof(char) );
-	pd->label = malloc( sz_label * sizeof(char) );
+	pd->type  = (char *) malloc( sz_type  * sizeof(char) );
+	pd->name  = (char *) malloc( sz_name  * sizeof(char) );
+	pd->label = (char *) malloc( sz_label * sizeof(char) );
 
 	strncpy( pd->type,  type,  sz_type  );
 	strncpy( pd->name,  name,  sz_name  );
@@ -286,7 +286,7 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 		return;
 	}
 
-	bus_message *msg = malloc( sizeof(bus_message) );
+	bus_message *msg = (bus_message *) malloc( sizeof(bus_message) );
 	if (NULL==msg) {
 		CPhidgetManager_freeAttachedDevicesArray( *devices );
 		return;
