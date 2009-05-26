@@ -135,7 +135,7 @@ void __drivers_load_lib(char (*type_name)[],
 
 	doLog(LOG_INFO,"drivers: initializing library [%s]", path);
 	(*init)(message_bus_id, system_bus_id);
-
+	doLog(LOG_INFO,"drivers: finished initializing library [%s]", path);
 
 }//
 
