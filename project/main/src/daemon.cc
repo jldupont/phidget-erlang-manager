@@ -15,14 +15,14 @@
 
 // PRIVATE PROTOTYPES
 // ==================
-DaemonErrorCode __daemon_verify_match(char *name, pid_t pid);
-DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid);
-DaemonErrorCode __daemon_handle_stop(char *name);
-DaemonErrorCode __daemon_handle_start(char *name);
-DaemonErrorCode __daemon_write_pid_file(char *name);
-int   __daemon_translate_command(char *cmd);
-void  __daemon_delete_pid_file(char *name);
-char *__daemon_construct_pid_filename(char *name);
+DaemonErrorCode __daemon_verify_match(const char *name, pid_t pid);
+DaemonErrorCode __daemon_get_pid_from_file(const char *name, pid_t *pid);
+DaemonErrorCode __daemon_handle_stop(const char *name);
+DaemonErrorCode __daemon_handle_start(const char *name);
+DaemonErrorCode __daemon_write_pid_file(const char *name);
+int   __daemon_translate_command(const char *cmd);
+void  __daemon_delete_pid_file(const char *name);
+char *__daemon_construct_pid_filename(const char *name);
 
 
 
@@ -38,7 +38,7 @@ char *__daemon_construct_pid_filename(char *name);
  *  @param cmd:  the command, either 'start' or 'stop'
  *
  */
-DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
+DaemonErrorCode daemon_handle_command(const char *name, char *cmd) {
 
 	DEBUG_MSG("DEBUG: daemon_handle_command: BEGIN\n");
 
@@ -64,7 +64,7 @@ DaemonErrorCode daemon_handle_command(char *name, char *cmd) {
 /**
  * Returns 0 if the command is valid
  */
-int daemon_validate_command(char *command) {
+int daemon_validate_command(const char *command) {
 
 	int result = __daemon_translate_command(command);
 
@@ -85,7 +85,7 @@ int daemon_validate_command(char *command) {
  *  to in /var/run/$name
  *
  */
-DaemonErrorCode __daemon_handle_stop(char *name) {
+DaemonErrorCode __daemon_handle_stop(const char *name) {
 
 	DEBUG_MSG("DEBUG: __daemon_handle_stop: BEGIN\n");
 
@@ -128,7 +128,7 @@ DaemonErrorCode __daemon_handle_stop(char *name) {
  *
  *  The daemon must not already exist (!)
  */
-DaemonErrorCode __daemon_handle_start(char *name) {
+DaemonErrorCode __daemon_handle_start(const char *name) {
 
 	DEBUG_MSG("DEBUG: __daemon_handle_start: BEGIN\n");
 
@@ -164,7 +164,7 @@ DaemonErrorCode __daemon_handle_start(char *name) {
 /**
  * Writes the PID file for the current daemon
  */
-DaemonErrorCode __daemon_write_pid_file(char *name) {
+DaemonErrorCode __daemon_write_pid_file(const char *name) {
 
 	DEBUG_MSG("DEBUG: __daemon_write_pid_file: BEGIN\n");
 
@@ -196,7 +196,7 @@ DaemonErrorCode __daemon_write_pid_file(char *name) {
 }// __daemon_write_pid_file
 
 
-void __daemon_delete_pid_file(char *name) {
+void __daemon_delete_pid_file(const char *name) {
 
 	DEBUG_MSG("DEBUG: __daemon_delete_pid_file: BEGIN\n");
 
@@ -216,7 +216,7 @@ void __daemon_delete_pid_file(char *name) {
  *  whilst verifying the validity of the said command.
  *
  */
-int __daemon_translate_command(char *cmd) {
+int __daemon_translate_command(const char *cmd) {
 
 	if (NULL==cmd) {
 		return COMMAND_INVALID;
@@ -236,7 +236,7 @@ int __daemon_translate_command(char *cmd) {
 /**
  * Returns 1 if TRUE
  */
-int daemon_is_start_command(char *command) {
+int daemon_is_start_command(const char *command) {
 
 	return __daemon_translate_command(command) == COMMAND_START;
 }
@@ -245,7 +245,7 @@ int daemon_is_start_command(char *command) {
  * Retrieves the PID from the filesystem /var/run/$name
  *  Returns <0 on error
  */
-DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
+DaemonErrorCode __daemon_get_pid_from_file(const char *name, pid_t *pid) {
 
 	DEBUG_MSG("DEBUG: __daemon_get_pid_from_file: BEGIN\n");
 
@@ -298,11 +298,11 @@ DaemonErrorCode __daemon_get_pid_from_file(char *name, pid_t *pid) {
  *  The client of this function is responsible for
  *  freeing the memory buffer.
  */
-char *__daemon_construct_pid_filename(char *name) {
+char *__daemon_construct_pid_filename(const char *name) {
 
 	DEBUG_MSG("DEBUG: __daemon_construct_pid_filename: BEGIN\n");
 
-	char *filename = malloc(1024*sizeof(char));
+	char *filename = (char *) malloc(1024*sizeof(char));
 
 	snprintf(filename, 1024*sizeof(char), "/var/run/%s", name);
 
@@ -325,7 +325,7 @@ char *__daemon_construct_pid_filename(char *name) {
  *  in /proc/$pid/cmdline and matches it with $name
  *
  */
-DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
+DaemonErrorCode __daemon_verify_match(const char *name, pid_t pid) {
 
 	DEBUG_MSG("DEBUG: __daemon_verify_match: BEGIN\n");
 
@@ -333,7 +333,7 @@ DaemonErrorCode __daemon_verify_match(char *name, pid_t pid) {
 	char read_buffer[1024];
 	FILE *file;
 	int  rc;
-	regex_t * myregex = calloc(1, sizeof(regex_t));
+	regex_t * myregex = (regex_t *) calloc(1, sizeof(regex_t));
 
 
 	if (NULL==name) {

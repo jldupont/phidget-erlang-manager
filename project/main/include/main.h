@@ -41,7 +41,7 @@
 
 	// Messages table
 	// ==============
-	char *main_messages[] = {
+	const char *main_messages[] = {
 			"OK",
 			"ERROR: missing arguments\n",
 			"ERROR: 'port' argument must be an integer [1;65535]\n",

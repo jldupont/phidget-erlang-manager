@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include "logger.h"
 
-char *_LOGGER_IDENTITY = "phidgetmanager";
+const char *_LOGGER_IDENTITY = "phidgetmanager";
 
 /**
  * Crude logging function
