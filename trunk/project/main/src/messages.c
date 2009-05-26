@@ -92,7 +92,10 @@ void *__messages_thread_function(void* arg) {
 				bus_message_type type;
 
 				type = msg->type;
-				__messages_log_message( type );
+
+				//too many timer messages
+				if (MESSAGE_TIMER!=type)
+					__messages_log_message( type );
 
 				// must release no matter what
 				litm_release(conn, e);
