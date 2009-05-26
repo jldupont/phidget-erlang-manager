@@ -85,7 +85,7 @@ void *__messages_thread_function(void* arg) {
 		code = litm_receive_wait(conn, &e);
 		if (LITM_CODE_OK==code) {
 
-			doLog(LOG_INFO, "messages: RX message" );
+			//doLog(LOG_INFO, "messages: RX message" );
 
 			msg = (bus_message *) litm_get_message( e );
 			if (NULL!=msg) {
