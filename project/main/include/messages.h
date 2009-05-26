@@ -68,7 +68,7 @@
 			 * Definition of shutdown message
 			 */
 			typedef struct {
-
+				//nothing really to add here
 			} message_shutdown;
 
 			/**
@@ -94,18 +94,20 @@
 
 
 			/**
-			 * Definition of message _phidget_states_
+			 * Definition of message _phidget_digital_state_
 			 */
 			typedef struct {
-				PhidgetDevice* device;
 
-				int count;
-				digital_states (*states)[];
-			} message_phidget_digital_states;
+				int serial;
+
+				int index;
+				int value;
+
+			} message_phidget_digital_state;
 
 
 			/**
-			 * Definition message _phidget_set_states_
+			 * Definition message _phidget_digital_set_states_
 			 */
 			typedef struct {
 				PhidgetDevice* device;
@@ -126,7 +128,7 @@
 		MESSAGE_TIMER,
 
 		MESSAGE_PHIDGET_DEVICE,
-		MESSAGE_PHIDGET_DIGITAL_STATES,
+		MESSAGE_PHIDGET_DIGITAL_STATE,
 		MESSAGE_PHIDGET_DIGITAL_SET_STATES
 
 	} message_types;
@@ -150,7 +152,7 @@
 			message_shutdown					ms;
 			message_timer						mt;
 			message_phidget_device				mpd;
-			message_phidget_digital_states      mps;
+			message_phidget_digital_state       mps;
 			message_phidget_digital_set_states  mpss;
 
 		} message_body;

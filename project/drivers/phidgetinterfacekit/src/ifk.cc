@@ -31,12 +31,14 @@ typedef std::map<int, CPhidgetHandle> IFKMap;
 IFKMap _activeSerials;
 
 void main_loop(litm_connection *conn);
+void openDevice(litm_connection *conn, int serial);
+void handleOpen(litm_connection *conn, bus_message *msg);
 int isShutdown(bus_message *msg);
 int isPhidgetDeviceMessage(bus_message *msg);
 int handle_messages(litm_connection *conn);
-void openDevice(int serial);
-void handleOpen(bus_message *msg);
-void handleClose(bus_message *msg);
+
+
+void IFK_SendDigitalState(litm_connection *conn, int serial, int index, int value);
 
 
 int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr);
@@ -128,7 +130,7 @@ void main_loop(litm_connection *conn) {
 	while(!__exit) {
 
 		__exit = handle_messages( conn );
-		usleep(1000);
+		usleep(250*1000);
 
 	}//while
 
@@ -140,9 +142,8 @@ void main_loop(litm_connection *conn) {
  *
  *  1) message_phidget_device:  for opening/closing devices
  *  2) shutdown
- *  3) timer (?)
  *
- *@return 1 for shutdown
+ * @return 1 for shutdown
  */
 int handle_messages(litm_connection *conn) {
 
@@ -167,8 +168,7 @@ int handle_messages(litm_connection *conn) {
 		}
 		//instead of having another level
 		// of 'if's here....
-		handleOpen(msg);
-		handleClose(msg);
+		handleOpen(conn, msg);
 
 		litm_release( conn, e );
 	}
@@ -193,7 +193,7 @@ int isPhidgetDeviceMessage(bus_message *msg) {
  *	- already opened, bail out
  *
  */
-void handleOpen(bus_message *msg) {
+void handleOpen(litm_connection *conn, bus_message *msg) {
 
 	DEBUG_LOG(LOG_INFO,"drivers:ifk:handleOpen");
 
@@ -206,18 +206,15 @@ void handleOpen(bus_message *msg) {
 		it = _activeSerials.find(serial);
 
 		if (it==_activeSerials.end()) {
-			openDevice( serial );
+			openDevice( conn, serial );
 		}
 	}
 
 }//
 
-void handleClose(bus_message *msg) {
-
-}//
 
 
-void openDevice(int serial) {
+void openDevice(litm_connection *conn, int serial) {
 
 	DEBUG_LOG(LOG_INFO,"drivers:ifk:openDevice, serial[%i]", serial);
 
@@ -225,23 +222,20 @@ void openDevice(int serial) {
 
 	CPhidgetInterfaceKit_create(&IFK);
 
-	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, NULL);
-	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, NULL);
-	CPhidget_set_OnAttach_Handler((CPhidgetHandle)IFK, IFK_AttachHandler, NULL);
-	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, NULL);
-	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, NULL);
+	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, (void*)conn);
+	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, (void*)conn);
+	CPhidget_set_OnAttach_Handler((CPhidgetHandle)IFK, IFK_AttachHandler, (void*)conn);
+	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, (void*)conn);
+	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, (void*)conn);
 
 	CPhidget_open((CPhidgetHandle)IFK, serial);
 
 
 }//
 
-void closeDevices(void) {
-
-}//
 
 
-int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr)
+int IFK_AttachHandler(CPhidgetHandle IFK, void *conn)
 {
 	int serial;
 
@@ -253,7 +247,7 @@ int IFK_AttachHandler(CPhidgetHandle IFK, void *userptr)
 	return 0;
 }
 
-int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr)
+int IFK_DetachHandler(CPhidgetHandle IFK, void *conn)
 {
 	int serial;
 	IFKMap::iterator it;
@@ -263,7 +257,7 @@ int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr)
 	it = _activeSerials.find( serial );
 	if (it!=_activeSerials.end()) {
 
-		_activeSerials.erase( serial );
+		_activeSerials.erase( it );
 		DEBUG_LOG(LOG_INFO, "drivers:ifk: DetachHandler, serial[%i]", serial);
 	} else {
 		DEBUG_LOG(LOG_ERR, "drivers:ifk: DetachHandler, serial[%i] NOT FOUND", serial);
@@ -273,20 +267,38 @@ int IFK_DetachHandler(CPhidgetHandle IFK, void *userptr)
 	return 0;
 }
 
-int IFK_ErrorHandler(CPhidgetHandle IFK, void *userptr, int ErrorCode, const char *unknown)
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *conn, int ErrorCode, const char *unknown)
 {
+	doLog(LOG_ERR, "drivers:ifk: error[%i]", ErrorCode);
 	return 0;
 }
 
-int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value)
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *conn, int Index, int Value)
 {
+	doLog(LOG_ERR, "drivers:ifk: output changed, index[%i] value[%i]", Index, Value);
 	return 0;
 }
 
-int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr, int Index, int Value)
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *conn, int Index, int Value)
 {
+	if (NULL==IFK) {
+		doLog(LOG_ERR, "drivers:ifk: input changed handler: NULL");
+		return 0;
+	}
+	int serial;
+	CPhidget_getSerialNumber(IFK, &serial);
+
+	IFK_SendDigitalState((litm_connection*)conn, serial, Index, Value);
 	return 0;
 }
 
+void IFK_SendDigitalState(litm_connection *conn, int serial, int index, int value) {
 
+	bus_message *msg = (bus_message *) malloc(sizeof(bus_message));
+
+	msg->type = MESSAGE_PHIDGET_DIGITAL_STATE;
+	msg->message_body.mps.serial = serial;
+	msg->message_body.mps.index = index;
+	msg->message_body.mps.value = value;
+}
 
