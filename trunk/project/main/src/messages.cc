@@ -57,14 +57,14 @@ void *__messages_thread_function(void* arg) {
 
 	doLog(LOG_INFO, "messages: BEGIN thread" );
 
-	code = litm_connect_ex_wait(&conn, LITM_ID_MESSAGES, 0);
+	code = litm_connect_ex(&conn, LITM_ID_MESSAGES);
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "messages: cannot connect to LITM" );
 		return NULL;
 	}
 
-	code1 = litm_subscribe_wait( conn, LITM_BUS_MESSAGES, 0);
-	code2 = litm_subscribe_wait( conn, LITM_BUS_SYSTEM,   0);
+	code1 = litm_subscribe( conn, LITM_BUS_MESSAGES);
+	code2 = litm_subscribe( conn, LITM_BUS_SYSTEM);
 
 	if (LITM_CODE_OK!=code1) {
 		doLog(LOG_ERR, "cannot subscribe to messages bus");
@@ -79,6 +79,7 @@ void *__messages_thread_function(void* arg) {
 
 	litm_envelope *e;
 	bus_message *msg;
+	int type;
 
 
 	while(1) {
@@ -88,20 +89,18 @@ void *__messages_thread_function(void* arg) {
 
 			//doLog(LOG_INFO, "messages: RX message" );
 
-			msg = (bus_message *) litm_get_message( e );
+			msg = (bus_message *) litm_get_message( e, &type );
 			if (NULL!=msg) {
 				bus_message_type type;
 
-				type = msg->type;
-
 				//too many timer messages
-				if (MESSAGE_TIMER!=type)
+				if (LITM_MESSAGE_TYPE_TIMER!=type)
 					__messages_log_message( type );
 
 				// must release no matter what
 				litm_release(conn, e);
 
-				if ( MESSAGE_SHUTDOWN == type )
+				if ( LITM_MESSAGE_TYPE_SHUTDOWN == type )
 					break;
 			}
 		}

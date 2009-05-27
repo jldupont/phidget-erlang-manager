@@ -33,8 +33,6 @@ IFKMap _activeSerials;
 void main_loop(driver_thread_params *params);
 void openDevice(driver_thread_params *params, int serial);
 void handleOpen(driver_thread_params *params, bus_message *msg);
-bool isShutdown(bus_message *msg);
-bool isPhidgetDeviceMessage(bus_message *msg);
 bool handle_messages(driver_thread_params *params);
 
 void IFK_SendDigitalState(driver_thread_params *conn, int serial, int index, int value);
@@ -83,7 +81,7 @@ void *driver_thread_function(driver_thread_params *params) {
 	litm_code        code;
 
 	//default timeout
-	code = litm_connect_ex_wait( &conn, LITM_DRIVER_IFK_ID, 0);
+	code = litm_connect_ex( &conn, LITM_DRIVER_IFK_ID);
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot connect to LITM");
 		return NULL;
@@ -93,7 +91,7 @@ void *driver_thread_function(driver_thread_params *params) {
 
 	params->conn = conn;
 
-	code = litm_subscribe_wait( conn, bmsg, 0 );
+	code = litm_subscribe( conn, bmsg);
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot subscribe to LITM [messages]");
 		return NULL;
@@ -101,7 +99,7 @@ void *driver_thread_function(driver_thread_params *params) {
 		DEBUG_LOG(LOG_INFO, "drivers:ifk: subscribed to LITM messages bus");
 	}
 
-	code = litm_subscribe_wait( conn, bsys, 0 );
+	code = litm_subscribe( conn, bsys );
 	if (LITM_CODE_OK!=code) {
 		doLog( LOG_ERR, "driver ifk: cannot subscribe to LITM [system]");
 		return NULL;
@@ -148,18 +146,19 @@ bool handle_messages(driver_thread_params *params) {
 	litm_code code;
 	litm_envelope *e=NULL;
 	bus_message *msg;
+	int type;
 
 	code = litm_receive_wait_timer(conn, &e, 250*1000);
 	if (LITM_CODE_OK==code) {
 
-		msg = (bus_message *) litm_get_message( e );
+		msg = (bus_message *) litm_get_message( e, &type );
 
-		if (isShutdown(msg)) {
+		if (LITM_MESSAGE_TYPE_SHUTDOWN==type) {
 			litm_release( conn, e );
 			return 1;
 		}
 
-		if (!isPhidgetDeviceMessage(msg)) {
+		if (MESSAGE_PHIDGET_DEVICE!=type) {
 			litm_release( conn, e );
 			return 0;
 		}
@@ -173,16 +172,6 @@ bool handle_messages(driver_thread_params *params) {
 	return 0;
 }//
 
-bool isShutdown(bus_message *msg) {
-
-	return (MESSAGE_SHUTDOWN == msg->type);
-
-}
-
-bool isPhidgetDeviceMessage(bus_message *msg) {
-
-	return (MESSAGE_PHIDGET_DEVICE == msg->type );
-}//
 
 /**
  * Verifies if the device(s) is/are already opened
@@ -299,13 +288,12 @@ void IFK_SendDigitalState(driver_thread_params *params, int serial, int index, i
 	litm_code code;
 	bus_message *msg = (bus_message *) malloc(sizeof(bus_message));
 
-	msg->type = MESSAGE_PHIDGET_DIGITAL_STATE;
 	msg->message_body.mps.serial = serial;
 	msg->message_body.mps.index = index;
 	msg->message_body.mps.value = value;
 
 	//default cleaner, default timeout
-	code = litm_send(params->conn, params->msg, msg, NULL);
+	code = litm_send(params->conn, params->msg, msg, NULL, MESSAGE_PHIDGET_DIGITAL_STATE);
 
 	if (LITM_CODE_OK!=code) {
 		doLog(LOG_ERR, "drivers:ifk:SendDigitalState: error sending message");

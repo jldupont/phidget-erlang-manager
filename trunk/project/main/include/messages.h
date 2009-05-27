@@ -124,10 +124,7 @@
 	 */
 	typedef enum _message_types {
 
-		MESSAGE_SHUTDOWN       = 1,
-		MESSAGE_TIMER,
-
-		MESSAGE_PHIDGET_DEVICE,
+		MESSAGE_PHIDGET_DEVICE = LITM_MESSAGE_TYPE_USER_START,
 		MESSAGE_PHIDGET_DIGITAL_STATE,
 		MESSAGE_PHIDGET_DIGITAL_SET_STATES
 
@@ -144,8 +141,6 @@
 	 *
 	 */
 	typedef struct {
-
-		bus_message_type type;
 
 		union _message_body {
 
