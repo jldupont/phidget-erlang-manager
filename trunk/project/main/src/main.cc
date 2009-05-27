@@ -163,8 +163,8 @@ int main(int argc, char **argv) {
 
 
 
-	int sresult = stimer_init();
-	doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
+	//int sresult = stimer_init();
+	//doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
 
 
 	messages_init();
@@ -203,10 +203,10 @@ int main(int argc, char **argv) {
 
 	while(1) {
 
-		code = litm_receive_wait( conn, &e );
+		code = litm_receive_wait_timer( conn, &e, 250*1000 );
 		if (LITM_CODE_OK==code) {
 
-			doLog(LOG_INFO, "main: RX message");
+			//doLog(LOG_INFO, "main: RX message");
 
 			//we just respond to shutdown here
 			msg = (bus_message *) litm_get_message( e );

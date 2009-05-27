@@ -1,0 +1,2 @@
+#!/bin/sh
+./project/main/debug/phidgetmanager -c cookie -p 7000 start
