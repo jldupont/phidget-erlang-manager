@@ -82,9 +82,6 @@ void *driver_thread_function(driver_thread_params *params) {
 	litm_connection *conn=NULL;
 	litm_code        code;
 
-	//yield
-	sleep(1);
-
 	//default timeout
 	code = litm_connect_ex_wait( &conn, LITM_DRIVER_IFK_ID, 0);
 	if (LITM_CODE_OK!=code) {
@@ -130,7 +127,6 @@ void main_loop(driver_thread_params *params) {
 	bool __exit = false;
 	while(!__exit) {
 
-		usleep(250*1000);
 		__exit = handle_messages( params );
 
 	}//while
@@ -153,7 +149,7 @@ bool handle_messages(driver_thread_params *params) {
 	litm_envelope *e=NULL;
 	bus_message *msg;
 
-	code = litm_receive_nb(conn, &e);
+	code = litm_receive_wait_timer(conn, &e, 250*1000);
 	if (LITM_CODE_OK==code) {
 
 		msg = (bus_message *) litm_get_message( e );
@@ -277,9 +273,9 @@ int IFK_ErrorHandler(CPhidgetHandle IFK, void *params, int ErrorCode, const char
 
 int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *params, int Index, int Value)
 {
-	int serial;
-	serial = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
-	doLog(LOG_ERR, "drivers:ifk: output changed, serial[%i] index[%i] value[%i]", serial, Index, Value);
+	int serial, result;
+	result = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+	doLog(LOG_ERR, "drivers:ifk: output changed, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
 	return 0;
 }
 
@@ -309,7 +305,7 @@ void IFK_SendDigitalState(driver_thread_params *params, int serial, int index, i
 	msg->message_body.mps.value = value;
 
 	//default cleaner, default timeout
-	code = litm_send_wait(params->conn, params->msg, msg, NULL, 0);
+	code = litm_send(params->conn, params->msg, msg, NULL);
 
 	if (LITM_CODE_OK!=code) {
 		doLog(LOG_ERR, "drivers:ifk:SendDigitalState: error sending message");

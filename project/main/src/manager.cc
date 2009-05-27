@@ -100,9 +100,9 @@ void *__manager_thread_function(void *params) {
 	while(!__exit) {
 
 		//usleep(250*1000);
-		sched_yield();
+		//sched_yield();
 
-		code = litm_receive_nb( conn, &e );
+		code = litm_receive_wait_timer( conn, &e, 250*1000 );
 		if (LITM_CODE_OK==code) {
 			msg  = (bus_message *) litm_get_message( e );
 			type = msg->type;
@@ -312,7 +312,7 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 	msg->message_body.mpd.count = done;
 
 	litm_code code;
-	code = litm_send_wait( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device, 0 );
+	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
 	if (LITM_CODE_OK!=code)
 		doLog(LOG_ERR, "manager: error sending message through LITM");
 

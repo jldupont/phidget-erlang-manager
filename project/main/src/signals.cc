@@ -107,7 +107,7 @@ void *__signals_handler_thread(void* params) {
 		 case SIGVTALRM:
 			 DEBUG_LOG(LOG_DEBUG, "signals: received SIGVTALRM");
 				if (NULL!=conn)
-					litm_send( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner );
+					litm_send_timer( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner );
 			 break;
 
 		 case SIGALRM:

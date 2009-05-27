@@ -83,7 +83,7 @@ void *__messages_thread_function(void* arg) {
 
 	while(1) {
 
-		code = litm_receive_wait(conn, &e);
+		code = litm_receive_wait_timer(conn, &e, 250*1000);
 		if (LITM_CODE_OK==code) {
 
 			//doLog(LOG_INFO, "messages: RX message" );
