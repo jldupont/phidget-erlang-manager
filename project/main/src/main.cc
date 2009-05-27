@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 	litm_connection *conn;
 	litm_code code;
 
-	code = litm_connect_ex_wait( &conn, LITM_ID_MAIN, 0 );
+	code = litm_connect_ex( &conn, LITM_ID_MAIN );
 
 	// pass along the connection parameters
 	if (LITM_CODE_OK != code ) {
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
 
 	litm_envelope *e;
 	bus_message  *msg;
-	bus_message_type type;
+	int type;
 
 	while(1) {
 
@@ -209,13 +209,12 @@ int main(int argc, char **argv) {
 			//doLog(LOG_INFO, "main: RX message");
 
 			//we just respond to shutdown here
-			msg = (bus_message *) litm_get_message( e );
+			msg = (bus_message *) litm_get_message( e, &type );
 			if (NULL!=msg) {
-				type = msg->type;
 
 				litm_release( conn, e );
 
-				if (MESSAGE_SHUTDOWN==type) {
+				if (LITM_MESSAGE_TYPE_SHUTDOWN==type) {
 					break;
 				}
 			}

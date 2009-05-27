@@ -71,7 +71,7 @@ void *__manager_thread_function(void *params) {
 
 	doLog(LOG_DEBUG, "manager: BEGIN thread, pid[%u]", getpid() );
 
-	code = litm_connect_ex_wait(&conn, LITM_ID_MANAGER, 0);
+	code = litm_connect_ex(&conn, LITM_ID_MANAGER);
 	if (LITM_CODE_OK!=code) {
 		doLog(LOG_ERR, "manager: cannot connect to LITM");
 		return NULL;
@@ -94,7 +94,7 @@ void *__manager_thread_function(void *params) {
 
 	litm_envelope *e;
 	bus_message   *msg;
-	bus_message_type type;
+	int type;
 	bool __exit = 0;
 
 	while(!__exit) {
@@ -104,14 +104,13 @@ void *__manager_thread_function(void *params) {
 
 		code = litm_receive_wait_timer( conn, &e, 250*1000 );
 		if (LITM_CODE_OK==code) {
-			msg  = (bus_message *) litm_get_message( e );
-			type = msg->type;
+			msg  = (bus_message *) litm_get_message( e, &type );
 
-			if (MESSAGE_SHUTDOWN==type) {
+			if (LITM_MESSAGE_TYPE_SHUTDOWN==type) {
 				__exit = true;
 			}
 
-			if (MESSAGE_TIMER==type) {
+			if (LITM_MESSAGE_TYPE_TIMER==type) {
 				__manager_handle_timer(conn, phidm);
 			}
 
@@ -136,7 +135,7 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
 	pd = manager_create_device_info(phid);
 
-	doLog(LOG_DEBUG, "manager: device attached [%x]", phid);
+	doLog(LOG_DEBUG, "manager: device attached [%x][%s]", phid, pd->type);
 
 	__manager_send_message( (litm_connection *) conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
 
@@ -176,7 +175,7 @@ void __manager_send_message(litm_connection *conn, PhidgetDevice *pd,  phidget_d
 	msg = __manager_create_message_phidget_device( pd, state );
 
 
-	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
+	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device, MESSAGE_PHIDGET_DEVICE );
 	if (LITM_CODE_OK!=code)
 		doLog(LOG_ERR, "manager: error sending message through LITM");
 }//
@@ -193,7 +192,6 @@ bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_
 		return NULL;
 
 	pd->state = state;
-	msg->type = MESSAGE_PHIDGET_DEVICE;
 	msg->message_body.mpd.count = 1;
 	msg->message_body.mpd.devices[0] = pd;
 
@@ -295,9 +293,6 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 		return;
 	}
 
-	msg->type = MESSAGE_PHIDGET_DEVICE;
-
-
 	int i, done = 0;
 	PhidgetDevice *device;
 	CPhidgetHandle hdevice;
@@ -312,7 +307,7 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 	msg->message_body.mpd.count = done;
 
 	litm_code code;
-	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device );
+	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device, MESSAGE_PHIDGET_DEVICE );
 	if (LITM_CODE_OK!=code)
 		doLog(LOG_ERR, "manager: error sending message through LITM");
 

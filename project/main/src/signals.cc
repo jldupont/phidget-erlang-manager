@@ -68,15 +68,12 @@ void *__signals_handler_thread(void* params) {
 	litm_code code;
 
 	// TODO LITM connect error: is there a better way to handle this??
-	code = litm_connect_ex_wait( &conn, LITM_ID_SIGNALS, 0);
+	code = litm_connect_ex( &conn, LITM_ID_SIGNALS);
 	if (LITM_CODE_OK != code)
 		DEBUG_LOG(LOG_ERR, "cannot connect to LITM");
 
 	static bus_message shutdown_message;
 	static bus_message alarm_message;
-
-	shutdown_message.type = MESSAGE_SHUTDOWN;
-	alarm_message.type    = MESSAGE_TIMER;
 
 	sigset_t signal_set;
 	int sig, __exit=0;
@@ -92,7 +89,7 @@ void *__signals_handler_thread(void* params) {
 			DEBUG_LOG(LOG_DEBUG, "signals: received SIGTERM");
 			// void_cleaner in utils.c
 			if (NULL!=conn)
-				litm_send_shutdown( conn, LITM_BUS_SYSTEM, &shutdown_message, &void_cleaner );
+				litm_send( conn, LITM_BUS_SYSTEM, &shutdown_message, &void_cleaner, LITM_MESSAGE_TYPE_SHUTDOWN );
 			__exit = 1;
 			break;
 
@@ -107,7 +104,7 @@ void *__signals_handler_thread(void* params) {
 		 case SIGVTALRM:
 			 DEBUG_LOG(LOG_DEBUG, "signals: received SIGVTALRM");
 				if (NULL!=conn)
-					litm_send_timer( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner );
+					litm_send( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner, LITM_MESSAGE_TYPE_TIMER );
 			 break;
 
 		 case SIGALRM:
