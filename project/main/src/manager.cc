@@ -31,7 +31,7 @@
 #include "helpers.h"
 #include "logger.h"
 #include "manager.h"
-#include "litm.h"
+#include <litm.h>
 #include "messages.h"
 #include "drivers.h"
 
@@ -137,11 +137,10 @@ int manager_gotAttach(CPhidgetHandle phid, void *conn) {
 
 	doLog(LOG_DEBUG, "manager: device attached [%x][%s]", phid, pd->type);
 
+	drivers_handle_type( pd->type, LITM_BUS_MESSAGES, LITM_BUS_SYSTEM );
+
 	__manager_send_message( (litm_connection *) conn, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
 
-	char *type_name = pd->type;
-
-	drivers_handle_type( type_name, LITM_BUS_MESSAGES, LITM_BUS_SYSTEM );
 
 	return 0;
 }//[/manager_gotAttach]

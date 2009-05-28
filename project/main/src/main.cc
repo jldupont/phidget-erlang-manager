@@ -47,7 +47,7 @@
 #include "stimer.h"
 #include "messages.h"
 
-#include "litm.h"
+#include <litm.h>
 
 typedef enum _CMDLINE_ERRORS {
 
@@ -163,9 +163,7 @@ int main(int argc, char **argv) {
 
 
 
-	//int sresult = stimer_init();
-	//doLog(LOG_DEBUG,"stimer, result[%i] errno[%i]", sresult, errno);
-
+	stimer_init();
 
 	messages_init();
 

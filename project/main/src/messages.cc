@@ -14,7 +14,7 @@
 #include <sys/time.h>
 
 #include "messages.h"
-#include "litm.h"
+#include <litm.h>
 #include "logger.h"
 
 /**

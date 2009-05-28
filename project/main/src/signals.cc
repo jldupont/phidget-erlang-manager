@@ -17,7 +17,7 @@
 #include "signals.h"
 #include "helpers.h"
 #include "messages.h"
-#include "litm.h"
+#include <litm.h>
 #include "utils.h"
 
 
@@ -102,13 +102,16 @@ void *__signals_handler_thread(void* params) {
 			break;
 
 		 case SIGVTALRM:
+				// this won't get triggered as setitimer cannot
+				// be used in conjunction with the sleep/usleep functions.
+				// Since phidget21 already relies on usleep/sleep, we can't
+				// mess around with alarms, unfortunately.
 			 DEBUG_LOG(LOG_DEBUG, "signals: received SIGVTALRM");
 				if (NULL!=conn)
 					litm_send( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner, LITM_MESSAGE_TYPE_TIMER );
 			 break;
 
 		 case SIGALRM:
-			// TODO generate timer message on litm
 			DEBUG_LOG(LOG_DEBUG, "signals: received SIGALRM");
 			break;
 

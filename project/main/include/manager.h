@@ -9,7 +9,7 @@
 #define MANAGER_THREAD_H_
 
 #include <phidget21.h>
-#include "litm.h"
+#include <litm.h>
 
 	/**
 	 * Device status
