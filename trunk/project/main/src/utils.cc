@@ -7,12 +7,14 @@
 #include <ctype.h>
 #include <string.h>
 #include "utils.h"
+#include "logger.h"
+#include "helpers.h"
 
 /**
  * Do nothing
  */
 void void_cleaner(void *msg) {
-	//
+	//DEBUG_LOG(LOG_INFO, "void_cleaner: running on msg[%x]", msg);
 }
 
 void string_tolower(char *string) {

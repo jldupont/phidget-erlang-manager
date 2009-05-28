@@ -22,6 +22,7 @@
 #	define LITM_ID_SERVER    3
 #	define LITM_ID_MANAGER   4
 #	define LITM_ID_MESSAGES  5
+#	define LITM_ID_STIMER    6
 
 #	define MESSAGE_MAX_DEVICES 32
 
