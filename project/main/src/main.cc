@@ -24,6 +24,7 @@
  *
  *
  * \todo add ref counter to messages/states
+ * \todo exit daemon gracefully when error hooking to LITM, opening socket etc.
  *
  */
 
