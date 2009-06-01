@@ -11,6 +11,9 @@
 #include <phidget21.h>
 #include <litm.h>
 
+	#define MANAGER_TIME_WHEEL 240
+
+
 	/**
 	 * Device status
 	 */

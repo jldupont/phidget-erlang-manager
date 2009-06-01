@@ -64,6 +64,7 @@ void *__stimer_thread_function(void *params) {
 		usleep(250*1000);
 
 		litm_send( conn, LITM_BUS_SYSTEM, &alarm_message, &void_cleaner, LITM_MESSAGE_TYPE_TIMER );
+		alarm_message.message_body.mt.counter += 1;
 
 	}//while
 
