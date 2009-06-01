@@ -4,10 +4,9 @@
  * @date   2009-04-21
  * @author Jean-Lou Dupont
  *
- * States:
- *  - Waiting to  Publish
- *  - Waiting to  Accept
- *  - Waiting to  Receive
+ * Connects to an Erlang server node
+ *  and bridges messages to/from the LITM bus.
+ *
  *
  */
 #include <fcntl.h>
@@ -23,7 +22,8 @@
 // PRIVATE
 pthread_t sThread;
 void *server_thread(void *params);
-int server_open_port(int port);
+
+//int server_open_port(int port);
 
 bool server_get_bus_message(litm_connection *conn, bus_message **msg, int *counter);
 void server_process_bus_message(ei_cnode *node, bus_message *msg, int counter);
@@ -83,12 +83,14 @@ void *server_thread(void *params) {
 		return NULL;
 	}
 
+	/*
 	// open server socket
 	listen_socket = server_open_port( parameters->port );
 	if (listen_socket <= 0) {
 		doLog(LOG_ERR, "cannot open server socket");
 		return NULL;
 	}
+	*/
 
 	// connect to the Erlang subsystem
 	ei_cnode node;
@@ -99,10 +101,12 @@ void *server_thread(void *params) {
 	}
 
 	// publish our server port through Erlang EPMD
+	/*
 	if (ei_publish(&node, parameters->port) == -1) {
 		doLog(LOG_ERR, "cannot publish server port with Erlang EPMD");
 		return NULL;
 	}
+	*/
 
 	//if ((fd = erl_accept(listen, &conn)) == ERL_ERROR) {
 	//	doLog(LOG_ERR, "cannot publish server port with Erlang EPMD");
@@ -163,7 +167,10 @@ bool server_get_bus_message(litm_connection *conn, bus_message **msg, int *count
 
 
 /**
- * If a message is present, send it across to the Erlang client
+ * If a message is present:
+ * - adapt it to the target client
+ * - send it across to the target client
+ *
  */
 void server_process_bus_message(ei_cnode *node, bus_message *msg, int counter) {
 
@@ -189,6 +196,7 @@ void server_process_conn_message(litm_connection *conn, server_message *msg) {
  * @return -1 on error
  * @return listed file descriptor
  */
+/*
 int server_open_port(int port) {
 
   int listen_fd;
@@ -217,4 +225,4 @@ int server_open_port(int port) {
 
   return listen_fd;
 }//[/open_port]
-
+*/
