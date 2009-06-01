@@ -62,4 +62,5 @@
 	// ==========
 	void manager_init(void);
 
+
 #endif /* MANAGER_THREAD_H_ */

@@ -38,6 +38,16 @@
 	} server_params;
 
 
+	/**
+	 * Messages destined to this server
+	 */
+	typedef struct {
+
+		int type;
+
+	} server_message;
+
+
 	// PROTOTYPES
 	void server_init(server_params *params);
 
