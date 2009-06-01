@@ -26,6 +26,10 @@
 #include "logger.h"
 #include "manager.h"  //for PhidgetManagerMessage type
 
+
+	//#define SERVER_RETRY_COUNT 20  // assuming 250ms timebase => 5secs
+
+
 	typedef struct {
 
 		int port;
