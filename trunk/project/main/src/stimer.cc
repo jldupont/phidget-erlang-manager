@@ -81,7 +81,8 @@ int stimer_init(void) {
 	pthread_t __stimer_thread;
 	pthread_create( &__stimer_thread, NULL, __stimer_thread_function, NULL );
 
-	/*
+	/* CANNOT USE SIGVTALARM with the sleep functions
+
 	struct itimerval itimer;
 
 	itimer.it_interval.tv_sec=1;

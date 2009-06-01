@@ -218,7 +218,7 @@ void __manager_clean_message_phidget_device(void *msg) {
 	*/
 
 	manager_destroy_device(m->message_body.mpd.device);
-	free( m );
+	//free( m );
 
 }//
 
@@ -291,7 +291,9 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim, i
 	}
 
 	// circular
-	if (count>=counter) {
+	int ccount = counter % MANAGER_TIME_WHEEL;
+	if (ccount>=count) {
+		CPhidgetManager_freeAttachedDevicesArray( *devices );
 		return;
 	}
 
@@ -317,7 +319,7 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim, i
 	msg->message_body.mpd.count = done;
 	*/
 
-	hdevice = *devices[counter];
+	hdevice = *devices[ccount];
 	device  = manager_create_device_info( hdevice );
 	msg->message_body.mpd.device = device;
 
