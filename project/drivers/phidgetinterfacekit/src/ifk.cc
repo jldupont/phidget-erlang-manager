@@ -187,6 +187,7 @@ void handleOpen(driver_thread_params *params, bus_message *msg) {
 	int index;
 	IFKMap::iterator it;
 
+	/*
 	for (index=0; index<msg->message_body.mpd.count; index++) {
 		serial = msg->message_body.mpd.devices[index]->serial;
 		it = _activeSerials.find(serial);
@@ -195,6 +196,14 @@ void handleOpen(driver_thread_params *params, bus_message *msg) {
 			openDevice( params, serial );
 		}
 	}
+	*/
+
+	serial = msg->message_body.mpd.device->serial;
+	it = _activeSerials.find(serial);
+	if (it==_activeSerials.end()) {
+		openDevice( params, serial );
+	}
+
 
 }//
 

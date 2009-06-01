@@ -22,6 +22,9 @@
  *
  *				phidget_manager [start|stop]
  *
+ *
+ * \todo add ref counter to messages/states
+ *
  */
 
 #include <errno.h>

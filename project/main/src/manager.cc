@@ -51,7 +51,7 @@ void __manager_send_message(litm_connection *conn, PhidgetDevice *pd,  phidget_d
 bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_device_state state);
 void __manager_clean_message_phidget_device(void *msg);
 
-void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim);
+void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim, int count);
 
 
 // ==========================================================
@@ -96,6 +96,7 @@ void *__manager_thread_function(void *params) {
 	bus_message   *msg;
 	int type;
 	bool __exit = 0;
+	int count;
 
 	while(!__exit) {
 
@@ -111,7 +112,8 @@ void *__manager_thread_function(void *params) {
 			}
 
 			if (LITM_MESSAGE_TYPE_TIMER==type) {
-				__manager_handle_timer(conn, phidm);
+				count = msg->message_body.mt.counter;
+				__manager_handle_timer(conn, phidm, count);
 			}
 
 			litm_release( conn, e);
@@ -191,8 +193,7 @@ bus_message *__manager_create_message_phidget_device(PhidgetDevice *pd, phidget_
 		return NULL;
 
 	pd->state = state;
-	msg->message_body.mpd.count = 1;
-	msg->message_body.mpd.devices[0] = pd;
+	msg->message_body.mpd.device = pd;
 
 	return msg;
 }
@@ -209,11 +210,14 @@ void __manager_clean_message_phidget_device(void *msg) {
 
 	int i,count;
 
+	/*
 	count = m->message_body.mpd.count;
 
 	for (i=0;i<count;i++)
 		manager_destroy_device(m->message_body.mpd.devices[i]);
+	*/
 
+	manager_destroy_device(m->message_body.mpd.device);
 	free( m );
 
 }//
@@ -275,7 +279,7 @@ void manager_destroy_device(PhidgetDevice *pd) {
 }//[/manager_destroy_device]
 
 
-void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
+void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim, int counter) {
 
 	int count, result;
 	CPhidgetHandle (*devices[MESSAGE_MAX_DEVICES]);
@@ -286,16 +290,23 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 		return;
 	}
 
+	// circular
+	if (count>=counter) {
+		return;
+	}
+
+
 	bus_message *msg = (bus_message *) malloc( sizeof(bus_message) );
 	if (NULL==msg) {
 		CPhidgetManager_freeAttachedDevicesArray( *devices );
 		return;
 	}
 
-	int i, done = 0;
 	PhidgetDevice *device;
 	CPhidgetHandle hdevice;
 
+	/*
+	int i, done = 0;
 	for (i=0; (i<count) && (i<MESSAGE_MAX_DEVICES) ; i++ ) {
 		hdevice = *devices[i];
 		device = manager_create_device_info( hdevice );
@@ -304,6 +315,12 @@ void __manager_handle_timer(litm_connection *conn, CPhidgetManagerHandle phim) {
 	}
 
 	msg->message_body.mpd.count = done;
+	*/
+
+	hdevice = *devices[counter];
+	device  = manager_create_device_info( hdevice );
+	msg->message_body.mpd.device = device;
+
 
 	litm_code code;
 	code = litm_send( conn, LITM_BUS_MESSAGES, msg, __manager_clean_message_phidget_device, MESSAGE_PHIDGET_DEVICE );

@@ -78,7 +78,7 @@
 			 * TODO define timer message
 			 */
 			typedef struct {
-
+				int counter;
 			} message_timer;
 
 
@@ -89,8 +89,7 @@
 			 *
 			 */
 			typedef struct {
-				int count;
-				PhidgetDevice* devices[MESSAGE_MAX_DEVICES];
+				PhidgetDevice *device;
 			} message_phidget_device;
 
 
