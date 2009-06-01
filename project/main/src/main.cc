@@ -20,7 +20,7 @@
  *
  * \section Usage Usage
  *
- *				phidget_manager [start|stop]
+ *				phidget_manager -c cookie -s server_name [start|stop]
  *
  *
  * \todo add ref counter to messages/states
@@ -66,8 +66,8 @@ typedef enum _CMDLINE_ERRORS {
 } CmdLineError;
 
 // PRIVATE
-int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char **command);
-int validatePortCookie(int port, char *cookie);
+int getOptionsAndCommand(int argc, char **argv, char **server, char **cookie, char **command);
+int validateServerCookie(char *server, char *cookie);
 void handleDaemonErrorCode(DaemonErrorCode code);
 int codeToMsg(DaemonErrorCode code);
 void showHelp(int msg_id);
@@ -82,16 +82,16 @@ void showMessageEx(int msg_id, ...);
 int main(int argc, char **argv) {
 
 	int result;
-	int port=0;
+	int *server;
 	char *cookie, *command;
 
 
-	result = getOptionsAndCommand(argc, argv, &port, &cookie, &command);
+	result = getOptionsAndCommand(argc, argv, &server, &cookie, &command);
 	if (0!=result) {
 		return 1;
 	}
 
-	DEBUG_MSG("DEBUG: port    [%u]\n", port);
+	DEBUG_MSG("DEBUG: server  [%s]\n", server);
 	DEBUG_MSG("DEBUG: cookie  [%s]\n", cookie);
 	DEBUG_MSG("DEBUG: command [%s]\n", command);
 
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
 	// if we have a ``start`` command, we need parameters:
 	if (daemon_is_start_command(command)) {
-		result = validatePortCookie(port, cookie);
+		result = validateSeverCookie(server, cookie);
 		if (0!=result) {
 			return 1;
 		}
@@ -189,8 +189,8 @@ int main(int argc, char **argv) {
 	/*
 	server_params params;
 
-	params.port   = port;
-	params.cookie = cookie;
+	params.server_name = server;
+	params.cookie      = cookie;
 
 	server_init( &params );
 	*/
@@ -289,11 +289,11 @@ void showMessageEx(int msg_id, ...) {
  *  from the command line
  *
  */
-int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char **command) {
+int getOptionsAndCommand(int argc, char **argv, char **server, char **cookie, char **command) {
 
 	//worst case
-	*port = 0;
-	*cookie = NULL;
+	*server  = NULL;
+	*cookie  = NULL;
 	*command = NULL;
 
 	int c;
@@ -302,11 +302,11 @@ int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char *
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "p:c:")) != -1)
+	while ((c = getopt (argc, argv, "s:c:")) != -1)
 	   switch (c)	{
-	   case 'p':
+	   case 's':
 		   if (NULL!=optarg)
-			   *port = atoi( optarg );
+			   *server = optarg;
 		   break;
 	   case 'c':
 		   if (NULL!=optarg)
@@ -321,7 +321,7 @@ int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char *
 	   }
 
 	if (0!=_options_scanning) {
-		if (('p' == _current_option) || ('c' == _current_option)) {
+		if (('s' == _current_option) || ('c' == _current_option)) {
 			showMessageEx( MSG_MISSING_OPTION_ARGUMENT, _current_option);
 		} else {
 			showMessageEx( MSG_INVALID_OPTION, _current_option );
@@ -343,10 +343,10 @@ int getOptionsAndCommand(int argc, char **argv, int *port, char **cookie, char *
 /**
  * Crude validation of parameters
  */
-int validatePortCookie(int port, char *cookie) {
+int validateServerCookie(char *server, char *cookie) {
 
-	if (0 == port) {
-		showHelp( MSG_PORT_INTEGER );
+	if (NULL == server) {
+		showHelp( MSG_SERVER_INTEGER );
 		return 1;
 	}
 

@@ -32,7 +32,7 @@
 
 	typedef struct {
 
-		int port;
+		char *server_name;
 		char *cookie;
 
 	} server_params;
