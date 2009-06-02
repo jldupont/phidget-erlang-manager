@@ -149,8 +149,6 @@ bool server_get_bus_message(litm_connection *conn, litm_envelope **e, int *count
 	litm_code code;
 	int type;
 
-	*counter = -1;
-
 	code = litm_receive_wait_timer( conn, e, 10*1000 );
 	if (LITM_CODE_OK==code) {
 		msg  = (bus_message *) litm_get_message( *e, &type );
@@ -166,6 +164,10 @@ bool server_get_bus_message(litm_connection *conn, litm_envelope **e, int *count
 			litm_release( conn, *e);
 			*e = NULL;
 		}
+	} else {
+
+		// no message
+		*e = NULL;
 	}
 
 	return returnCode;
@@ -183,17 +185,34 @@ bool server_get_bus_message(litm_connection *conn, litm_envelope **e, int *count
  */
 void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_params *node_params, int counter) {
 
+	//DEBUG_LOG(LOG_DEBUG, "server: BEGIN server_process_bus_message, env[%x] counter[%i]", e, counter);
+
+	bool new_count = false;
+	static int current_counter = -1;
 	int type;
 	bus_message *msg;
+
+	if (current_counter != counter) {
+		current_counter = counter;
+		new_count = true;
+	}
 
 	switch(node_params->state) {
 
 	//try/retry connection to server
 	case SS_WAIT_CONNECT:
-		if (0==counter % SERVER_CONNECT_RETRY_COUNT) {
+
+		//no TIMER message
+		if (0>current_counter)
+			break;
+
+		if (!new_count)
+			break;
+
+		if (0!=current_counter % SERVER_CONNECT_RETRY_COUNT) {
 			node_params->fd = ei_connect_tmo( &(node_params->node), node_params->server_name, SERVER_CONNECT_TIMEOUT );
 			if (node_params->fd<0) {
-				//error
+				DEBUG_LOG(LOG_DEBUG, "server: attempt to connect FAILED, counter[%i]", current_counter);
 				break;
 			} else {
 				node_params->state = SS_CONNECTED;
@@ -215,9 +234,13 @@ void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_pa
 
 
 	//always release
-	if (NULL!=e)
-		litm_release( conn, e);
+	if (NULL!=e) {
+		litm_release( conn, e );
+	}
 
+	new_count = false;
+
+	//DEBUG_LOG(LOG_DEBUG, "server: END server_process_bus_message, env[%x] counter[%i]", e, counter);
 }//
 
 /**
