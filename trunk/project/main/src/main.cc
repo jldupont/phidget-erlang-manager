@@ -181,20 +181,12 @@ int main(int argc, char **argv) {
 	 */
 
 	//{
-
-
-
-
-	//{
-	/*
 	server_params params;
 
 	params.server_name = server;
 	params.cookie      = cookie;
 
 	server_init( &params );
-	*/
-	//}
 
 
 	doLog(LOG_INFO, "main: STARTING loop, pid[%u]", getpid() );
