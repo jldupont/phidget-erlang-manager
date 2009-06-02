@@ -17,8 +17,12 @@
 #include <litm.h>
 #include "messages.h"
 #include "server.h"
+#include "logger.h"
+#include "helpers.h"
 
 #define SERVER_CONNECT_TIMEOUT     25
+#define SERVER_RX_TIMEOUT          10
+#define SERVER_TX_TIMEOUT          25
 #define SERVER_CONNECT_RETRY_COUNT 8
 
 
@@ -43,6 +47,7 @@ bool server_get_bus_message(litm_connection *conn, litm_envelope **e, int *count
 void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_params *node, int counter);
 
 void server_send_message_to_server(node_params *node_params, bus_message *msg, int type);
+void server_send_to_server_phidget_device(node_params *node_params, bus_message *msg);
 
 void server_get_conn_message(node_params *node, server_message **msg);
 void server_process_conn_message(litm_connection *conn, server_message *msg);
@@ -63,7 +68,7 @@ enum _server_states {
  */
 void server_init(server_params *params) {
 
-	pthread_create(&sThread, NULL, &server_thread, (void *) &params);
+	pthread_create(&sThread, NULL, &server_thread, (void *) params);
 
 }//
 
@@ -101,18 +106,19 @@ void *server_thread(void *params) {
 		return NULL;
 	}
 
+	node_params node_params;
+	node_params.fd = 0;
+	node_params.state = SS_WAIT_CONNECT;
+	node_params.server_name = parameters->server_name;
+
 	// connect to the Erlang subsystem
 	int eicode;
-	eicode = ei_connect_init(&node_params.node, "phidgetmanager", parameters->cookie, 0);
+	eicode = ei_connect_init(&(node_params.node), "phidgetmanager", parameters->cookie, 0);
 	if (eicode<0) {
 		doLog(LOG_ERR, "server: error initializing c-node");
 		return NULL;
 	}
 
-	node_params node_params;
-	node_params.fd = 0;
-	node_params.state = SS_WAIT_CONNECT;
-	node_params.server_name = parameters->server_name;
 
 	int counter;
 	int __exit=0;
@@ -191,6 +197,7 @@ void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_pa
 				break;
 			} else {
 				node_params->state = SS_CONNECTED;
+				doLog(LOG_INFO, "server: CONNECTED to erlang server");
 				//pass-through
 			}
 		}
@@ -199,7 +206,7 @@ void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_pa
 	case SS_CONNECTED:
 		if (NULL!=e) {
 
-			msg = litm_get_message(e, &type);
+			msg = (bus_message *)litm_get_message(e, &type);
 			server_send_message_to_server(node_params, msg, type);
 		}
 
@@ -218,13 +225,107 @@ void server_process_bus_message(litm_connection *conn, litm_envelope *e, node_pa
  */
 void server_send_message_to_server(node_params *node_params, bus_message *msg, int type) {
 
+	switch(type) {
+	case MESSAGE_PHIDGET_DEVICE:
+		server_send_to_server_phidget_device(node_params, msg);
+		break;
+
+	case MESSAGE_PHIDGET_DIGITAL_STATE:
+		// TODO implement MESSAGE_PHIDGET_DIGITAL_STATE
+		break;
+
+	default:
+		doLog(LOG_ERR, "server: unsupported message for server");
+		break;
+	}
+
+}//
+
+/**
+ * Encodes the message "Phidget Device" and sends it along
+ *
+ * erlang tuple:  { device, serial, type }
+ * where 'device' is an atom, 'serial' is an int, 'type' is an atom
+ *
+ */
+void server_send_to_server_phidget_device(node_params *node_params, bus_message *msg) {
+
+	int r;
+	ei_x_buff x;
+
+	int serial = (msg->message_body.mpd.device)->serial;
+	char *type = (msg->message_body.mpd.device)->type;
+
+	r=ei_x_new_with_version(&x);
+	if (r) {
+		doLog(LOG_ERR, "server: CANNOT create new element");
+		goto cleanup;
+	}
+
+	r=ei_x_encode_atom(&x, "device");
+	if (r) {
+		doLog(LOG_ERR, "server: CANNOT encode atom");
+		goto cleanup;
+	}
+
+	r=ei_x_encode_ulong(&x, (unsigned long) serial);
+	if (r) {
+		doLog(LOG_ERR, "server: CANNOT encode atom");
+		goto cleanup;
+	}
+
+	r=ei_x_encode_atom(&x, type);
+	if (r) {
+		doLog(LOG_ERR, "server: CANNOT encode atom for 'type'");
+		goto cleanup;
+	}
+
+	r=ei_reg_send_tmo(&node_params->node, node_params->fd, node_params->server_name, x.buff, x.index, SERVER_TX_TIMEOUT);
+	if (r) {
+		doLog(LOG_ERR, "server: CANNOT send message to Erlang server");
+		goto cleanup;
+	}
+
+cleanup:
+	ei_x_free(&x);
+
+	DEBUG_LOG(LOG_DEBUG, "server: sent message to Erlang server {PhidgetDevice, %i, %s}", serial, type);
 }//
 
 
+/**
+ * Receives a message from the Erlang server
+ */
+void server_get_conn_message(node_params *node_params, server_message **msg) {
 
-void server_get_conn_message(node_params *node, server_message **msg) {
+	int code;
+	static erlang_msg emsg;
+	static ei_x_buff buf;
 
-}
+	// do we have a connection at all?
+	if (node_params->state!=SS_CONNECTED) {
+		return;
+	}
+
+	code = ei_xreceive_msg_tmo( node_params->fd, &emsg, &buf, SERVER_RX_TIMEOUT );
+
+	//just a poll... get out
+	if (ERL_TICK==code)
+		return;
+
+	//probably no messages
+	if (EAGAIN==code || ETIMEDOUT==code) {
+		return;
+	}
+
+	if (0>code) {
+		doLog(LOG_ERR,"server: error whilst receiving from Erlang server");
+		return;
+	}
+
+	//from here on, we should have a valid message
+	// TODO implement message receive from Erlang server
+}//
 
 
 
