@@ -82,7 +82,7 @@ void showMessageEx(int msg_id, ...);
 int main(int argc, char **argv) {
 
 	int result;
-	int *server;
+	char *server;
 	char *cookie, *command;
 
 
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
 	// if we have a ``start`` command, we need parameters:
 	if (daemon_is_start_command(command)) {
-		result = validateSeverCookie(server, cookie);
+		result = validateServerCookie(server, cookie);
 		if (0!=result) {
 			return 1;
 		}
@@ -346,7 +346,7 @@ int getOptionsAndCommand(int argc, char **argv, char **server, char **cookie, ch
 int validateServerCookie(char *server, char *cookie) {
 
 	if (NULL == server) {
-		showHelp( MSG_SERVER_INTEGER );
+		showHelp( MSG_SERVER_STRING );
 		return 1;
 	}
 
