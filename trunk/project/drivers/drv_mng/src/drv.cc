@@ -101,7 +101,9 @@ int manager_gotAttach(CPhidgetHandle phid, void *fd) {
 
 	doLog(LOG_DEBUG, "drv_mng: device attached [%x][%s]", phid, pd->type);
 
-	__manager_send_message( *((int *)fd), pd, PHIDGET_DEVICE_STATUS_ACTIVE );
+	__manager_send_message( (int)fd, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
+
+	manager_destroy_device( pd );
 
 	return 0;
 }//[/manager_gotAttach]
@@ -117,7 +119,9 @@ int manager_gotDetach(CPhidgetHandle phid, void *fd) {
 
 	doLog(LOG_INFO, "drv_mng: device detached [%x]", phid);
 
-	__manager_send_message( *((int *)fd), pd, PHIDGET_DEVICE_STATUS_INACTIVE );
+	__manager_send_message( (int)fd, pd, PHIDGET_DEVICE_STATUS_INACTIVE );
+
+	manager_destroy_device( pd );
 
 	return 0;
 }//[/manager_gotDetach]
@@ -219,6 +223,13 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int counter) {
  */
 void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state state ) {
 
+	DEBUG_LOG(LOG_DEBUG, "drv_mng: BEGIN send");
+
+	if (NULL==pd) {
+		doLog(LOG_ERR, "drv_mng: NULL pointer for [pd] in send");
+		return;
+	}
+
 	 ei_x_buff result;
 	 if (ei_x_new_with_version(&result)) {
 		 doLog(LOG_ERR, "drv_mng: CANNOT create new result buffer");
@@ -265,6 +276,12 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 		 return;
 	 }
 
+	 int code;
+	 code = write_msg(fd, &result);
+	 if (code<0) {
+		 doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", code);
+	 }
 
+	 DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
 }//
 
