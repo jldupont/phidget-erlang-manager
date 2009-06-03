@@ -50,12 +50,14 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int count);
 //MAIN
 //####
 int main() {
-	DEBUG_LOG(LOG_DEBUG,"drv_mng: BEGIN");
+
 
 	int dout, din;
 
 	dout=fileno(stdout);
 	din=fileno(stdin);
+
+	DEBUG_LOG(LOG_DEBUG,"drv_mng: BEGIN, stdout[%i]", dout);
 
 #ifdef _WIN32
 	/* Attention Windows programmers: you need to explicitly set
@@ -276,10 +278,8 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 		 return;
 	 }
 
-	 int code;
-	 code = write_msg(fd, &result);
-	 if (code<0) {
-		 doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", code);
+	 if (write_msg(fd, &result)<0) {
+		 doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
 	 }
 
 	 DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
