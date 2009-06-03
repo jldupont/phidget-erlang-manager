@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <ei.h>
 #include <phidget21.h>
@@ -46,6 +47,9 @@ void __manager_clean_message_phidget_device(void *msg);
 
 void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int count);
 
+void pipe_action_function(int num);
+
+volatile bool _terminate = false;
 
 //MAIN
 //####
@@ -59,14 +63,6 @@ int main() {
 
 	DEBUG_LOG(LOG_DEBUG,"drv_mng: BEGIN, stdout[%i]", dout);
 
-#ifdef _WIN32
-	/* Attention Windows programmers: you need to explicitly set
-	 * mode of stdin/stdout to binary or else the port program won't work
-	 */
-	//setmode(dout, O_BINARY);
-	//setmode(din,  O_BINARY);
-#endif
-
 	CPhidgetManagerHandle phidm;
 
 	// open up the Phidget Manager
@@ -77,7 +73,20 @@ int main() {
 	CPhidgetManager_open(phidm);
 
 	int counter=0;
-	while(1) {
+	int signals;
+	sigset_t set;
+	struct sigaction pipe_action;
+
+	pipe_action.sa_handler = pipe_action_function;
+	pipe_action.sa_flags=0;
+	sigaction( SIGPIPE, &pipe_action, NULL);
+
+	sigfillset( &set );
+	sigaddset( &set, SIGPIPE );
+	sigprocmask( SIG_UNBLOCK, &set, NULL );
+
+
+	while(!_terminate) {
 		usleep( TIMEOUT );
 		__manager_handle_timer(dout, phidm, counter++);
 	}//
@@ -85,7 +94,9 @@ int main() {
 	DEBUG_LOG(LOG_DEBUG,"drv_mng: END");
 }//
 
-
+void pipe_action_function(int num) {
+	_terminate = true;
+}
 
 // ==========================================================
 // ==========================================================
@@ -225,7 +236,7 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int counter) {
  */
 void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state state ) {
 
-	DEBUG_LOG(LOG_DEBUG, "drv_mng: BEGIN send");
+	//DEBUG_LOG(LOG_DEBUG, "drv_mng: BEGIN send");
 
 	if (NULL==pd) {
 		doLog(LOG_ERR, "drv_mng: NULL pointer for [pd] in send");
@@ -279,9 +290,9 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 	 }
 
 	 if (write_msg(fd, &result)<0) {
-		 doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
+			 //doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
 	 }
 
-	 DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
+	 //DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
 }//
 
