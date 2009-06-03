@@ -1,0 +1,19 @@
+"""
+scons build file
+
+@author: Jean-Lou Dupont
+"""
+
+Import('env')
+
+d = env.Dictionary()
+
+#no difference at this point
+if d.get('_DEBUG', False):
+	libs=['pthread','phidget21','ei']
+else:
+	libs=['pthread','phidget21','ei']
+
+pr = env.Program('drv_mng', Glob("src/*.cc"), LIBS=libs )
+Default(pr)
+	
