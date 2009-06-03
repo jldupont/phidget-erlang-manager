@@ -1,0 +1,12 @@
+"""
+scons build file
+
+@author: Jean-Lou Dupont
+"""
+
+# Create an environment.
+env = Environment(tools = ["default", "erlang"], toolpath = ["./"])
+
+beams = env.Erlang("./src/server.erl")
+
+Default(beams)
