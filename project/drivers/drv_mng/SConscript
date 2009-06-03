@@ -1,8 +1,11 @@
 """
-scons build file
+scons build file for
+
+	pem_drv_mng
 
 @author: Jean-Lou Dupont
 """
+import os
 
 Import('env')
 
@@ -10,10 +13,18 @@ d = env.Dictionary()
 
 #no difference at this point
 if d.get('_DEBUG', False):
-	libs=['pthread','phidget21','ei', 'libdrv_common']
+	#DEBUG
+	libs=['pthread','phidget21','ei', 'pem_drv_common_debug']
+	libp='../../common/debug'
+	pr = env.Program('pem_drv_mng_debug', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_mng/debug/pem_drv_mng_debug')	
 else:
-	libs=['pthread','phidget21','ei', 'libdrv_common']
-
-pr = env.Program('drv_mng', Glob("src/*.cc"), LIBS=libs )
+	#RELEASE
+	libs=['pthread','phidget21','ei', 'pem_drv_common']
+	libp='../../common/release'
+	pr = env.Program('pem_drv_mng', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_mng/release/pem_drv_mng')
+	
 Default(pr)
 	
+env.Alias('install', '/usr/local/bin')
