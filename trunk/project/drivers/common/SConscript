@@ -1,6 +1,8 @@
 """
 scons build file
 
+	p
+
 @author: Jean-Lou Dupont
 """
 
@@ -10,10 +12,16 @@ d = env.Dictionary()
 
 #no difference at this point
 if d.get('_DEBUG', False):
+	#DEBUG
 	libs=[]
+	pr = env.SharedLibrary('pem_drv_common_debug', Glob("src/*.cc"), LIBS=libs )	
+	env.Install('/usr/local/lib', '#drivers/common/debug/libpem_drv_common_debug.so')
 else:
+	#RELEASE
 	libs=[]
-
-pr = env.SharedLibrary('drv_common', Glob("src/*.cc"), LIBS=libs )
+	pr = env.SharedLibrary('pem_drv_common', Glob("src/*.cc"), LIBS=libs )
+	env.Install('/usr/local/lib', '#drivers/common/release/libpem_drv_common.so')
+	
 Default(pr)
 	
+env.Alias('installlib', '/usr/local/lib')

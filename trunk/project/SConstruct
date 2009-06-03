@@ -18,6 +18,7 @@ Help("""\
    'scons deb' to build the .deb package
    'scons release' to release the package to tags/debian repository
    'scons install' to install on local machine
+   'scons installlib' to install the libraries on local machine
 """)
 
 # LIST MODULES
@@ -41,10 +42,4 @@ for module in modules:
 	SConscript(module['script'], build_dir=module['build']+'/release', exports={'env':module['release']})
 	SConscript(module['script'], build_dir=module['build']+'/debug',   exports={'env':module['debug']})
 
-
-
-# INSTALLING on LOCAL MACHINE
-if 'install' in COMMAND_LINE_TARGETS:
-	print "scons: INSTALLING LOCALLY"
-	shutil.copy("./project/drivers/phidgetinterfacekit/debug/libphidgetinterfacekit.so", "/usr/lib/libpmphidgetinterfacekit.so")
 
