@@ -37,8 +37,12 @@ init(ExtPrg) ->
 loop(Port) ->
     receive
 		stop ->
+			io:format("called [stop]"),
 			erlang:port_close(Port),
 			exit(normal);
 		Result ->
+			io:format("message ~p~n]", [Result]),
 			Result
-    end.
+    end,
+	loop(Port).
+
