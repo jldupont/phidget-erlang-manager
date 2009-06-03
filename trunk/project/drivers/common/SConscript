@@ -10,10 +10,10 @@ d = env.Dictionary()
 
 #no difference at this point
 if d.get('_DEBUG', False):
-	libs=['pthread','phidget21','ei', 'libdrv_common']
+	libs=[]
 else:
-	libs=['pthread','phidget21','ei', 'libdrv_common']
+	libs=[]
 
-pr = env.Program('drv_mng', Glob("src/*.cc"), LIBS=libs )
+pr = env.SharedLibrary('drv_common', Glob("src/*.cc"), LIBS=libs )
 Default(pr)
 	
