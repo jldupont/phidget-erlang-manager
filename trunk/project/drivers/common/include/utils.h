@@ -8,6 +8,9 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <signal.h>
+
+
 	typedef unsigned char byte;
 
 	/**

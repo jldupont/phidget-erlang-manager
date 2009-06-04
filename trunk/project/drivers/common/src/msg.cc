@@ -28,7 +28,9 @@
 //PROTOTYPES
 ei_x_buff *_msg_build(int size);
 const char *_msg_type_to_atom(EventType type);
-
+ei_x_buff *_msg_build(int size, EventType type, int serial);
+int _msg_send1(int fd, EventType type, Event *event);
+int _msg_send2(int fd, EventType type, Event *event);
 
 /**
  * Synchronous message sending
@@ -61,10 +63,53 @@ int msg_send(int fd, Event *event) {
 
 /**
  * Handles EVENT_ATTACH & EVENT_DETACH
+ *
+ * {ATOM(msg_type), INT(Serial), INT(Version), STRING(type), STRING(name), STRING(label)}
+ *
+ * @return 0 FAILURE
+ * @return 1 SUCCESS
+ *
  */
 int _msg_send1(int fd, EventType type, Event *event) {
 
+	int serial = event->body.pd->serial;
+	ei_x_buff *r;
+	r= _msg_build( 6, type, serial );
+	if (NULL==r) {
+		return 0;
+	}
 
+	 if (ei_x_encode_long(r, (long) event->body.pd->version)) {
+		 doLog(LOG_ERR, "_msg_send1: CANNOT encode LONG(Version)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 if (ei_x_encode_string(r, event->body.pd->type)) {
+		 doLog(LOG_ERR, "_msg_send1: CANNOT encode STRING(Type)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 if (ei_x_encode_string(r, event->body.pd->name)) {
+		 doLog(LOG_ERR, "_msg_send1: CANNOT encode STRING(Name)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 if (ei_x_encode_string(r, event->body.pd->label)) {
+		 doLog(LOG_ERR, "_msg_send1: CANNOT encode STRING(Label)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 if (write_msg(fd, r)<0) {
+		doLog(LOG_ERR, "_msg_send1: ERROR writing to output, code[%i]", errno);
+	 }
+
+	 ei_x_free( r );
+
+	 return 1;
 }//
 
 /**
@@ -76,9 +121,9 @@ int _msg_send2(int fd, EventType type, Event *event) {
 }//
 
 /**
- *
+ *  {ATOM(msg_type), INT(Serial), ... }
  */
-ei_x_buff *_msg_build(int size) {
+ei_x_buff *_msg_build(int size, EventType type, int serial) {
 
 	ei_x_buff *result;
 
@@ -93,6 +138,20 @@ ei_x_buff *_msg_build(int size) {
 
 	 if (ei_x_encode_tuple_header(result, size)) {
 		 doLog(LOG_ERR, "_msg_build: CANNOT create tuple header");
+		 ei_x_free(result);
+		 return NULL;
+	 }
+
+	 const char *en;
+	 en = _msg_type_to_atom(type);
+
+	 if (ei_x_encode_atom(result, en)) {
+		 doLog(LOG_ERR, "_msg_build: CANNOT encode ATOM(msg_type)");
+		 ei_x_free(result);
+		 return NULL;
+	 }
+	 if (ei_x_encode_long(result, serial)) {
+		 doLog(LOG_ERR, "_msg_build: CANNOT encode INT(Serial)");
 		 ei_x_free(result);
 		 return NULL;
 	 }
@@ -112,27 +171,27 @@ const char *_msg_type_to_atom(EventType type) {
 	switch(type) {
 	case EVENT_ATTACH:
 		static const char *a = "attach";
-		result = (const char *) a;
+		result = (char *) a;
 		break;
 
 	case EVENT_DETACH:
 		static const char *d = "detach";
-		result = (const char *) d;
+		result = (char *) d;
 		break;
 
 	case EVENT_DIN:
 		static const char *i = "din";
-		result = (const char *) i;
+		result = (char *) i;
 		break;
 
 	case EVENT_DOUT:
 		static const char *o = "dout";
-		result = (const char *) o;
+		result = (char *) o;
 		break;
 
 	case EVENT_ERROR:
 		static const char *e = "error";
-		result = (const char *) e;
+		result = (char *) e;
 		break;
 
 	}
@@ -140,45 +199,3 @@ const char *_msg_type_to_atom(EventType type) {
 	return (const char *) result;
 }//
 
-	 if (ei_x_encode_atom(&result, "phidgetdevice")) {
-		 doLog(LOG_ERR, "drv_mng: CANNOT encode ATOM(phidgetdevice)");
-		 return;
-	 }
-	 int serial=pd->serial;
-
-	 if (ei_x_encode_long(&result, serial)) {
-		 doLog(LOG_ERR, "drv_mng: CANNOT encode LONG(serial)");
-		 return;
-	 }
-
-	 char *type=pd->type;
-	 if (ei_x_encode_atom(&result, type)) {
-		 doLog(LOG_ERR, "drv_mng: CANNOT encode ATOM(device_type)");
-		 return;
-	 }
-
-	 static const char _deviceActive[]="device_active";
-	 static const char _deviceInactive[]="device_inactive";
-	 char *st;
-
-	 switch(state) {
-	 case PHIDGET_DEVICE_STATUS_ACTIVE:
-		 st=(char *) &_deviceActive;
-		 break;
-	 default:
-		 st=(char *) &_deviceInactive;
-		 break;
-	 }
-
-	 if (ei_x_encode_atom(&result, st)) {
-		 doLog(LOG_ERR, "drv_mng: CANNOT encode ATOM(device_state)");
-		 return;
-	 }
-
-	 if (write_msg(fd, &result)<0) {
-		doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
-	 }
-
-	 //DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
-
-}//

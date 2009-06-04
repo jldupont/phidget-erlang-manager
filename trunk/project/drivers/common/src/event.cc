@@ -110,7 +110,7 @@ bool event_validate(Event *e) {
 	if (NULL==e) {
 		return false;
 	}
-	if ((_EVENT_LAST<=event->type) || (0>=event->type))
+	if ((_EVENT_LAST<=e->type) || (0>=e->type))
 		return false;
 
 	return true;

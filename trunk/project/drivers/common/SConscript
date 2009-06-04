@@ -13,12 +13,12 @@ d = env.Dictionary()
 #no difference at this point
 if d.get('_DEBUG', False):
 	#DEBUG
-	libs=[]
+	libs=['ei', 'phidget21']
 	pr = env.SharedLibrary('pem_drv_common_debug', Glob("src/*.cc"), LIBS=libs )	
 	env.Install('/usr/local/lib', '#drivers/common/debug/libpem_drv_common_debug.so')
 else:
 	#RELEASE
-	libs=[]
+	libs=['ei', 'phidget21']
 	pr = env.SharedLibrary('pem_drv_common', Glob("src/*.cc"), LIBS=libs )
 	env.Install('/usr/local/lib', '#drivers/common/release/libpem_drv_common.so')
 	
