@@ -38,6 +38,8 @@
 // PROTOTYPES
 void pipe_action_function(int num);
 int genEvent(CPhidgetHandle IFK, EventType type, void *equeue);
+int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int index, int value);
+int queue_event(Event *e, queue *q, const char *en);
 
 	//PHIDGET RELATED
 bool openDevice(queue *equeue, int serial);
@@ -190,12 +192,8 @@ int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
 	if (NULL!=pd) {
 
 		e = event_create( type, pd);
-		result = queue_put((queue *)equeue, (void*) e);
-		if (!result) {
-			event_destroy( e );
-			doLog(LOG_ERR, "could not queue event, type[%s]", en);
-			return 0;
-		}
+
+		queue_event(e, (queue *)equeue, en);
 
 	} else {
 		doLog(LOG_ERR, "CANNOT create device, type[%s]", en);
@@ -207,11 +205,46 @@ int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
 
 }//
 
-int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown)
-{
+/**
+ * @return 0 ERROR
+ * @return 1 SUCCESS
+ */
+int queue_event(Event *e, queue *q, const char *en) {
+
+	if (NULL==e) {
+		doLog(LOG_ERR, "attempt to queue NULL event");
+		return 0;
+	}
+
+	int result = queue_put((queue *)q, (void*) e);
+	if (!result) {
+		event_destroy( e );
+		doLog(LOG_ERR, "could not queue event, type[%s]", en);
+		return 0;
+	}
+
+	return 1;
+}//
+
+
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown) {
+
+	const char *en;
+
+	en = event_translate(EVENT_ERROR);
+
+	if (NULL==equeue) {
+		doLog(LOG_ERR, "invalid queue pointer, type[%s]", en);
+		return 0;
+	}
 	queue *q = (queue *) equeue;
-	doLog(LOG_ERR, "ERROR, code[%i]", ErrorCode);
-	return 0;
+	int serial;
+
+	CPhidget_getSerialNumber(IFK, &serial);
+
+	Event *e = event_create( EVENT_ERROR, ErrorCode );
+	queue_event( e, (queue *) equeue, en);
+
 }
 
 int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Index, int Value)
@@ -220,6 +253,9 @@ int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int In
 	int serial, result;
 
 	result = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+
+	genIOEvent(IFK, EVENT_DOUT, equeue, Index, Value);
+
 	doLog(LOG_ERR, "OUTPUT CHANGED, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
 	return 0;
 }
@@ -230,7 +266,45 @@ int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Ind
 	int serial;
 	CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
 
+	genIOEvent(IFK, EVENT_DIN, equeue, Index, Value);
+
 	doLog(LOG_ERR, "INPUT CHANGED, serial[%i] index[%i] value[%i]", serial, Index, Value);
 
 	return 0;
 }
+
+
+int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int index, int value) {
+
+	const char *en;
+
+	en = event_translate(type);
+
+	if (NULL==equeue) {
+		doLog(LOG_ERR, "invalid queue pointer, type[%s]", en);
+		return 0;
+	}
+	queue *q = (queue *) equeue;
+	int serial;
+
+	CPhidget_getSerialNumber((CPhidgetHandle) IFK, &serial);
+
+	int result;
+	Event *e;
+	PhidgetDevice *pd;
+	pd = create_device_info( (CPhidgetHandle) IFK );
+	if (NULL!=pd) {
+
+		e = event_create( type, index, value );
+
+		queue_event(e, (queue *)equeue, en);
+
+	} else {
+		doLog(LOG_ERR, "CANNOT create device, type[%s]", en);
+		return 0;
+	}
+
+	DEBUG_LOG(LOG_INFO, "serial[%i] event[%x] type[%s]", serial, e, en);
+	return 0;
+
+}//
