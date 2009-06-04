@@ -100,16 +100,21 @@ int main(int argc, char **argv) {
 
 	setup_signal_action(SIGPIPE, pipe_action_function);
 
+	int waiting;
 	Event *e;
 	const char *en;
 	while(!_terminate) {
+
 		//read
-		e = (Event *) queue_get( equeue );
-		if (NULL!=e) {
-			en = event_translate(e->type);
-			doLog(LOG_INFO, "dequeued event, type[%s]",en);
-			msg_send( dout, e );
-			event_destroy( e );
+		waiting = queue_wait_timer(equeue, 10*1000 );
+		if (!waiting) {
+			e = (Event *) queue_get_nb( equeue );
+			if (NULL!=e) {
+				en = event_translate(e->type);
+				doLog(LOG_INFO, "dequeued event, type[%s]",en);
+				msg_send( dout, e );
+				event_destroy( e );
+			}
 		}
 		//write
 	}//
@@ -121,7 +126,6 @@ int main(int argc, char **argv) {
 void pipe_action_function(int num) {
 	_terminate = true;
 }
-
 
 
 

@@ -17,6 +17,7 @@
  *   {ATOM(msg_type), INT(code)}
  *
  */
+#include <sys/epoll.h>
 #include <stdlib.h>
 #include <ei.h>
 #include "msg.h"
@@ -233,3 +234,34 @@ const char *_msg_type_to_atom(EventType type) {
 	return (const char *) result;
 }//
 
+
+int msg_setup_read(int fd, int *epfd, epoll_event **epv) {
+
+	*epfd = epoll_create(1);
+	if (epfd < 0)
+		return 2;
+
+	*event = (epoll_event *) malloc(sizeof(epoll_event));
+	if (NULL==event)
+		return 1;
+
+	int ret;
+
+	*event->data.fd = fd;
+	*event->events = EPOLLIN;
+
+	ret = epoll_ctl( *epfd, EPOLL_CTL_MOD, fd, *epv );
+
+	return ret;
+}//
+
+int msg_read_wait(int epfd, epoll_event *events, int usec_timeout) {
+
+	int nr_events = epoll_wait (epfd, events, 1, usec_timeout);
+	  if (nr_events < 0) {
+			  perror ("epoll_wait");
+			  free (events);
+			  return 1;
+	  }
+
+}//

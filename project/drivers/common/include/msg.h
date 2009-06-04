@@ -22,5 +22,18 @@
 	 */
 	int msg_send(int fd, Event *event);
 
+	/**
+	 * Setup the 'read' (input) pipe
+	 *
+	 * @param fd file descriptor
+	 * @param *epfd epoll_create id
+	 * @param **epv epoll_event
+	 *
+	 * @return >=1 ERROR
+	 * @return 1 malloc error
+	 * @return 2 epoll_create error
+	 */
+	int msg_setup_read(int fd, int *epfd, epoll_event **epv);
+
 
 #endif /* MSG_H_ */
