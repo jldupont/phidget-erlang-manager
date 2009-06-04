@@ -231,8 +231,8 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 	 }
 
 	 char *type=pd->type;
-	 if (ei_x_encode_atom(&result, type)) {
-		 doLog(LOG_ERR, "drv_mng: CANNOT encode ATOM(device_type)");
+	 if (ei_x_encode_string(&result, type)) {
+		 doLog(LOG_ERR, "drv_mng: CANNOT encode STRING(device_type)");
 		 return;
 	 }
 
@@ -257,6 +257,8 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 	 if (write_msg(fd, &result)<0) {
 		doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
 	 }
+
+	 ei_x_free(&result);
 
 	 //DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");
 }//
