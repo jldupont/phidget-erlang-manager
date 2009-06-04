@@ -93,7 +93,7 @@ const char *event_details[] = {
 
 const char *event_translate(EventType type) {
 
-	if ((_EVENT_LAST<=type) || (0<=type)){
+	if ((_EVENT_LAST<=type) || (0>=type)){
 		return event_details[0];
 	}
 
