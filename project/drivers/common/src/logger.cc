@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include "logger.h"
 
+static const char *defaultId = "???";
 char *_LOGGER_IDENTITY = NULL;
 
 void loggerSetIdentity(const char *ident) {
@@ -19,8 +20,6 @@ void loggerSetIdentity(const char *ident) {
  * Crude logging function
  */
 void doLog(int priority, const char *message, ...) {
-
-	static const char *defaultId = "???";
 
 	if (NULL==_LOGGER_IDENTITY)
 		openlog(defaultId, LOG_PID, LOG_LOCAL1);
@@ -39,3 +38,25 @@ void doLog(int priority, const char *message, ...) {
 	closelog();
 
 }
+
+void doLogEx(int priority, const char *message, ...) {
+
+	va_list ap;
+
+	if (NULL==_LOGGER_IDENTITY)
+		openlog(defaultId, LOG_PID, LOG_LOCAL1);
+	else
+		openlog(_LOGGER_IDENTITY, LOG_PID, LOG_LOCAL1);
+
+	char buffer[2048];
+
+	va_start(ap, message);
+		vfprintf (stderr, message, ap);
+		vsnprintf (buffer, sizeof(buffer), message, ap);
+	va_end(ap);
+
+	syslog(priority, buffer, NULL);
+
+	closelog();
+
+}//
