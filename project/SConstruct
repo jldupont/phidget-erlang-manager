@@ -27,6 +27,7 @@ includes = ['#drivers/common/include',]
 
 list_modules = [	'#drivers/common',
 					'#drivers/drv_mng',
+					'#drivers/drv_ifk',
 				]
 
 

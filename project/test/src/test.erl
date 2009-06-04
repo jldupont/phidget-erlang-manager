@@ -12,25 +12,25 @@
 -export([start/0, start/1, stop/0]).
 
 %% internal
--export([init/1]).
+-export([init/2, loop/1]).
 
 %%
 %% Local Functions
 %%
 
 start() ->
-    start("/usr/local/bin/pem_drv_mng_debug").
+    start("").
 
-start(ExtPrg) ->
-    spawn_link(?MODULE, init, [ExtPrg]).
+start(Param) ->
+    spawn_link(?MODULE, init, ["/usr/local/bin/pem_drv_mng_debug", Param]).
 
 stop() ->
     ?MODULE ! stop.
 
-init(ExtPrg) ->
+init(ExtPrg, Param) ->
     register(?MODULE, self()),
     process_flag(trap_exit, true),
-    Port = open_port({spawn, ExtPrg}, [{packet, 2}, binary, exit_status]),
+    Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
     loop(Port).
 
 loop(Port) ->
@@ -43,7 +43,7 @@ loop(Port) ->
 		
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
-			io:format("Message! Decoded[~p]~n", [Decoded]);
+			io:format("Message! Decoded[~p]~n", [Decoded])
 					
     end,
 	loop(Port).

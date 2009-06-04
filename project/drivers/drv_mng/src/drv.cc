@@ -55,7 +55,7 @@ volatile bool _terminate = false;
 
 //MAIN
 //####
-int main() {
+int main(int argc, char **argv) {
 
 	int dout, din;
 
@@ -63,6 +63,12 @@ int main() {
 	din=fileno(stdin);
 
 	DEBUG_LOG(LOG_DEBUG,"drv_mng: BEGIN, stdout[%i]", dout);
+
+	DEBUG_BEGIN
+		int i;
+		for (i=0; i<argc;i++)
+			doLog(LOG_DEBUG, "parameter [%i] value[%s]", i, argv[i]);
+	DEBUG_END
 
 	CPhidgetManagerHandle phidm;
 
