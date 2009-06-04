@@ -49,6 +49,7 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int count);
 
 void pipe_action_function(int num);
 
+
 volatile bool _terminate = false;
 
 //MAIN
@@ -74,17 +75,8 @@ int main() {
 
 	int counter=0;
 	int signals;
-	sigset_t set;
-	struct sigaction pipe_action;
 
-	pipe_action.sa_handler = pipe_action_function;
-	pipe_action.sa_flags=0;
-	sigaction( SIGPIPE, &pipe_action, NULL);
-
-	sigfillset( &set );
-	sigaddset( &set, SIGPIPE );
-	sigprocmask( SIG_UNBLOCK, &set, NULL );
-
+	setup_signal_action(SIGPIPE, pipe_action_function);
 
 	while(!_terminate) {
 		usleep( TIMEOUT );
@@ -97,6 +89,7 @@ int main() {
 void pipe_action_function(int num) {
 	_terminate = true;
 }
+
 
 // ==========================================================
 // ==========================================================
