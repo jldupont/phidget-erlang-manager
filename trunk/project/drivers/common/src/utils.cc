@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <ei.h>
+#include <signal.h>
 #include "utils.h"
 
 /**
@@ -89,3 +90,19 @@ int write_exact(int fd, byte *buf, int len) {
 
   return len;
 }
+
+
+void setup_signal_action( int signum, __sighandler_t fnc ) {
+
+	sigset_t set;
+	struct sigaction action;
+
+	action.sa_handler = fnc;
+	action.sa_flags=0;
+	sigaction( signum, &action, NULL);
+
+	sigfillset( &set );
+	sigaddset( &set, signum );
+	sigprocmask( SIG_UNBLOCK, &set, NULL );
+
+}//
