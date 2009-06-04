@@ -53,6 +53,11 @@
 	void   queue_destroy(queue *queue);
 
 	int   queue_put_nb(queue *q, void *msg);
+
+	/**
+	 * @return 1 => success
+	 * @return 0 => failure
+	 */
 	int   queue_put(queue *q, void *msg);
 	int	  queue_put_wait(queue *q, void *node);
 

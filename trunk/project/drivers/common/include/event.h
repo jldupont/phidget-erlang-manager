@@ -12,5 +12,6 @@
 
 	Event *event_create(EventType type, ...);
 	void event_destroy(Event *ev);
+	const char *event_translate(EventType type);
 
 #endif /* EVENT_H_ */

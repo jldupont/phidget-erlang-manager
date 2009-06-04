@@ -82,3 +82,20 @@ void event_destroy(Event *ev) {
 	}
 
 }//
+
+const char *event_details[] = {
+	"INVALID",
+	"EVENT_ATTACH",
+	"EVENT_DETACH",
+	"EVENT_DIN",
+	"EVENT_DOUT"
+};
+
+const char *event_translate(EventType type) {
+
+	if ((_EVENT_LAST<=type) || (0<=type)){
+		return event_details[0];
+	}
+
+	return event_details[type];
+}//
