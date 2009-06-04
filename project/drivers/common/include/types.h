@@ -50,6 +50,7 @@
 		EVENT_DETACH,
 		EVENT_DIN,
 		EVENT_DOUT,
+		EVENT_ERROR,
 		_EVENT_LAST
 
 	} EventType;
@@ -65,6 +66,7 @@
 		union {
 			DigitalState ds;
 			PhidgetDevice *pd;
+			int error;
 		} body;
 
 	} Event;

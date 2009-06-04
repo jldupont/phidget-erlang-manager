@@ -34,6 +34,10 @@ Event *event_create(EventType type, ...) {
 	e->type = type;
 
 		switch(type) {
+		case EVENT_ERROR:
+			e->body.error = va_arg(args, int);
+			break;
+
 		case EVENT_ATTACH:
 		case EVENT_DETACH:
 			e->body.pd = va_arg(args, PhidgetDevice *);
@@ -88,7 +92,8 @@ const char *event_details[] = {
 	"EVENT_ATTACH",
 	"EVENT_DETACH",
 	"EVENT_DIN",
-	"EVENT_DOUT"
+	"EVENT_DOUT",
+	"EVENT_ERROR"
 };
 
 const char *event_translate(EventType type) {
