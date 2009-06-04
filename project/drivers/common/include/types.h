@@ -63,7 +63,7 @@
 
 		EventType type;
 
-		union {
+		union _body {
 			DigitalState ds;
 			PhidgetDevice *pd;
 			int error;
