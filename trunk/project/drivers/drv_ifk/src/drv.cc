@@ -4,7 +4,9 @@
  *  Created on: 2009-06-03
  *      Author: Jean-Lou Dupont
  *
- *
+ *  - Read msg from stdin
+ *    - Decode msg
+ *    -
  */
 
 #include <pthread.h>
@@ -31,7 +33,12 @@ volatile bool _terminate = false;
 
 //MAIN
 //####
-int main() {
+int main(int argc, char **argv) {
+
+	if (1!=argc) {
+		perror("missing argument [serial]\n");
+		return 0;
+	}
 
 	int dout, din;
 
@@ -46,7 +53,9 @@ int main() {
 	setup_signal_action(SIGPIPE, pipe_action_function);
 
 	while(!_terminate) {
+		//read
 
+		//write
 	}//
 
 	DEBUG_LOG(LOG_DEBUG,"drv_PhidgetInterfaceKit: END");
@@ -55,3 +64,4 @@ int main() {
 void pipe_action_function(int num) {
 	_terminate = true;
 }
+
