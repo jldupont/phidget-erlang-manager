@@ -9,14 +9,23 @@
 #include <stdarg.h>
 #include "logger.h"
 
-const char *_LOGGER_IDENTITY = "phidgetmanager";
+char *_LOGGER_IDENTITY = NULL;
+
+void loggerSetIdentity(const char *ident) {
+	_LOGGER_IDENTITY = (char *) ident;
+}
 
 /**
  * Crude logging function
  */
 void doLog(int priority, const char *message, ...) {
 
-	openlog(_LOGGER_IDENTITY, LOG_PID, LOG_LOCAL1);
+	static const char *defaultId = "???";
+
+	if (NULL==_LOGGER_IDENTITY)
+		openlog(defaultId, LOG_PID, LOG_LOCAL1);
+	else
+		openlog(_LOGGER_IDENTITY, LOG_PID, LOG_LOCAL1);
 
 	char buffer[2048];
 	va_list ap;
