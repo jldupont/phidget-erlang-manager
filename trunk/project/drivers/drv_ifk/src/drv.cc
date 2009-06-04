@@ -45,15 +45,15 @@ int main(int argc, char **argv) {
 
 	if (2!=argc) {
 		const char *msg_missing = "*** missing argument [serial] argc[%i]\n";
-		fprintf(stderr, msg_missing, argc );
-		doLog(LOG_ERR, msg_missing, argc);
+		//fprintf(stderr, msg_missing, argc );
+		doLogEx(LOG_ERR, msg_missing, argc);
 		return 1;
 	}
 	int serial = atoi( argv[1] );
 	if (0==serial) {
 		const char *msg_invalid = "*** invalid argument [serial] [%s]\n";
-		fprintf(stderr, msg_invalid, argv[1]);
-		doLog(LOG_ERR, msg_invalid, argv[1]);
+		//fprintf(stderr, msg_invalid, argv[1]);
+		doLogEx(LOG_ERR, msg_invalid, argv[1]);
 		return 1;
 	}
 
