@@ -34,6 +34,7 @@
 
 		// Prototypes
 		// ==========
+		void loggerSetIdentity(const char *ident);
 		void doLog(int priority, const char *message, ...);
 
 	#ifdef __cplusplus
