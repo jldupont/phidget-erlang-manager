@@ -20,8 +20,9 @@
 	} phidget_device_state;
 
 
-	// Device Information structure
-	// ============================
+	/*
+	 * Device Information structure
+	 */
 	typedef struct _PhidgetDevice {
 
 		int version;
@@ -31,6 +32,42 @@
 		char *label;
 
 	} PhidgetDevice;
+
+	/**
+	 * Digital State
+	 */
+	typedef struct {
+
+		int index;
+		int value;
+
+	} DigitalState;
+
+	typedef enum {
+
+		EVENT_INVALID = 0,
+		EVENT_ATTACH,
+		EVENT_DETACH,
+		EVENT_DIN,
+		EVENT_DOUT,
+		_EVENT_LAST
+
+	} EventType;
+
+
+	/**
+	 * Event type
+	 */
+	typedef struct {
+
+		EventType type;
+
+		union {
+			DigitalState ds;
+			PhidgetDevice *pd;
+		} body;
+
+	} Event;
 
 
 #endif /* TYPES_H_ */

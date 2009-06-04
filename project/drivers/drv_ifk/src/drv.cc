@@ -35,7 +35,7 @@
 void pipe_action_function(int num);
 
 	//PHIDGET RELATED
-void openDevice(queue *equeue, int serial);
+bool openDevice(queue *equeue, int serial);
 int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue);
 int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue);
 int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown);
@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+
 	int dout, din;
 
 	dout=fileno(stdout);
@@ -80,6 +81,10 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	bool response = openDevice(equeue, serial);
+	if (!response) {
+		return 1;
+	}
 
 	int counter=0;
 	int signals;
@@ -93,6 +98,7 @@ int main(int argc, char **argv) {
 	}//
 
 	DEBUG_LOG(LOG_DEBUG,"drv_PhidgetInterfaceKit: END");
+	return 0;
 }//
 
 void pipe_action_function(int num) {
@@ -102,14 +108,23 @@ void pipe_action_function(int num) {
 
 
 
+/**
+ * @return true if SUCCESS
+ * @return false if FAILURE
+ */
+bool openDevice(queue *equeue, int serial) {
 
-void openDevice(queue *equeue, int serial) {
-
-	DEBUG_LOG(LOG_INFO,"drivers:ifk:openDevice, serial[%i]", serial);
+	//DEBUG_LOG(LOG_INFO,"openDevice, serial[%i]", serial);
 
 	CPhidgetInterfaceKitHandle IFK=0;
 
-	CPhidgetInterfaceKit_create(&IFK);
+	int result;
+	result = CPhidgetInterfaceKit_create(&IFK);
+	if (EPHIDGET_OK!=result) {
+
+		doLog(LOG_ERR, "CANNOT create device, serial[%i]", serial);
+		return false;
+	}
 
 	CPhidgetInterfaceKit_set_OnInputChange_Handler(IFK, IFK_InputChangeHandler, (void*)equeue);
 	CPhidgetInterfaceKit_set_OnOutputChange_Handler(IFK, IFK_OutputChangeHandler, (void*)equeue);
@@ -118,67 +133,65 @@ void openDevice(queue *equeue, int serial) {
 	CPhidget_set_OnDetach_Handler((CPhidgetHandle)IFK, IFK_DetachHandler, (void*)equeue);
 	CPhidget_set_OnError_Handler((CPhidgetHandle)IFK, IFK_ErrorHandler, (void*)equeue);
 
-	CPhidget_open((CPhidgetHandle)IFK, serial);
+	result = CPhidget_open((CPhidgetHandle)IFK, serial);
+	if (EPHIDGET_OK!=result) {
 
+		doLog(LOG_ERR, "CANNOT open device, serial[%i]", serial);
+		return false;
+	}
+
+	return true;
 }//
 
 
 
 int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue)
 {
+	queue *q = (queue *) equeue;
 	int serial;
 
 	CPhidget_getSerialNumber(IFK, &serial);
 
-	DEBUG_LOG(LOG_INFO, "drivers:ifk: AttachHandler, serial[%i]", serial);
+	DEBUG_LOG(LOG_INFO, "ATTACH, serial[%i]", serial);
 	return 0;
 }
 
 int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue)
 {
+	queue *q = (queue *) equeue;
 	int serial;
-	IFKMap::iterator it;
 
 	CPhidget_getSerialNumber(IFK, &serial);
 
-	it = _activeSerials.find( serial );
-	if (it!=_activeSerials.end()) {
-
-		_activeSerials.erase( it );
-		DEBUG_LOG(LOG_INFO, "drivers:ifk: DetachHandler, serial[%i]", serial);
-	} else {
-		DEBUG_LOG(LOG_ERR, "drivers:ifk: DetachHandler, serial[%i] NOT FOUND", serial);
-	}
-
+	DEBUG_LOG(LOG_INFO, "DETACH, serial[%i]", serial);
 
 	return 0;
 }
 
 int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown)
 {
-	doLog(LOG_ERR, "drivers:ifk: error[%i]", ErrorCode);
+	queue *q = (queue *) equeue;
+	doLog(LOG_ERR, "ERROR, code[%i]", ErrorCode);
 	return 0;
 }
 
 int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Index, int Value)
 {
+	queue *q = (queue *) equeue;
 	int serial, result;
+
 	result = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
-	doLog(LOG_ERR, "drivers:ifk: output changed, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
+	doLog(LOG_ERR, "OUTPUT CHANGED, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
 	return 0;
 }
 
 int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Index, int Value)
 {
-	if (NULL==IFK) {
-		doLog(LOG_ERR, "drivers:ifk: input changed handler: NULL");
-		return 0;
-	}
+	queue *q = (queue *) equeue;
 	int serial;
 	CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
 
-	doLog(LOG_ERR, "drivers:ifk: input changed, serial[%i] index[%i] value[%i]", serial, Index, Value);
+	doLog(LOG_ERR, "INPUT CHANGED, serial[%i] index[%i] value[%i]", serial, Index, Value);
 
-	IFK_SendDigitalState((driver_thread_params *)params, serial, Index, Value);
 	return 0;
 }

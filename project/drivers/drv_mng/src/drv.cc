@@ -31,14 +31,13 @@
 #include "types.h"
 #include "logger.h"
 #include "utils.h"
+#include "device.h"
 
 #define  MESSAGE_MAX_DEVICES  32
 #define  TIMEOUT              250*1000
 #define  TIME_WHEEL           20
 
 //PROTOS
-PhidgetDevice* manager_create_device_info(CPhidgetHandle phid);
-
 void manager_destroy_device(PhidgetDevice *pd);
 int manager_gotAttach(CPhidgetHandle phid, void *conn);
 int manager_gotDetach(CPhidgetHandle phid, void *conn);
@@ -51,11 +50,14 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int count);
 void pipe_action_function(int num);
 
 
+const char *ident = "drv_mng";
 volatile bool _terminate = false;
 
 //MAIN
 //####
 int main(int argc, char **argv) {
+
+	loggerSetIdentity(ident);
 
 	int dout, din;
 
@@ -122,13 +124,17 @@ int manager_gotAttach(CPhidgetHandle phid, void *fd) {
 
 	PhidgetDevice *pd;
 
-	pd = manager_create_device_info(phid);
+	pd = create_device_info(phid);
+	if (NULL==pd) {
+		doLog(LOG_ERR, "ATTACH: NULL device");
+		return 0;
+	}
 
-	doLog(LOG_DEBUG, "drv_mng: device attached [%x][%s]", phid, pd->type);
+	doLog(LOG_DEBUG, "ATTACH [%x][%s]", phid, pd->type);
 
 	__manager_send_message( (int)fd, pd, PHIDGET_DEVICE_STATUS_ACTIVE );
 
-	manager_destroy_device( pd );
+	destroy_device_info( pd );
 
 	return 0;
 }//[/manager_gotAttach]
@@ -140,71 +146,18 @@ int manager_gotDetach(CPhidgetHandle phid, void *fd) {
 
 	PhidgetDevice *pd;
 
-	pd = manager_create_device_info(phid);
+	pd = create_device_info(phid);
 
 	doLog(LOG_INFO, "drv_mng: device detached [%x]", phid);
 
 	__manager_send_message( (int)fd, pd, PHIDGET_DEVICE_STATUS_INACTIVE );
 
-	manager_destroy_device( pd );
+	destroy_device_info( pd );
 
 	return 0;
 }//[/manager_gotDetach]
 
 
-/**
- * Creates a device description object
- */
-PhidgetDevice* manager_create_device_info(CPhidgetHandle phid) {
-
-	PhidgetDevice *pd;
-	const char *type, *name, *label;
-
-	// if malloc fails, we have a much bigger problem
-	pd = (PhidgetDevice *) malloc(sizeof(PhidgetDevice));
-
-	CPhidget_getSerialNumber(phid, &pd->serial);
-  	CPhidget_getDeviceVersion(phid, &pd->version);
-	CPhidget_getDeviceType(phid, (const char **) &type);
-	CPhidget_getDeviceName(phid, (const char **) &name);
-	CPhidget_getDeviceLabel(phid, (const char **)&label);
-
-	//perform copies
-	size_t sz_char = sizeof(char);
-
-	size_t sz_type  = strlen( type )  + sz_char;
-	size_t sz_name  = strlen( name )  + sz_char;
-	size_t sz_label = strlen( label ) + sz_char;
-
-	pd->type  = (char *) malloc( sz_type  * sizeof(char) );
-	pd->name  = (char *) malloc( sz_name  * sizeof(char) );
-	pd->label = (char *) malloc( sz_label * sizeof(char) );
-
-	strncpy( pd->type,  type,  sz_type  );
-	strncpy( pd->name,  name,  sz_name  );
-	strncpy( pd->label, label, sz_label );
-
-	DEBUG_LOG(LOG_DEBUG, "drv_mng: created device, type[%s]", pd->type);
-
-	return pd;
-}//[/manager_create_device]
-
-
-/**
- * Destroys a ``PhidgetDevice`` structure
- */
-void manager_destroy_device(PhidgetDevice *pd) {
-
-	//DEBUG_LOG(LOG_DEBUG, "manager: destroying device");
-
-	free( pd->type );
-	free( pd->name );
-	free( pd->label );
-	free( pd );
-
-	//DEBUG_LOG(LOG_DEBUG, "manager: finished destroying device");
-
-}//[/manager_destroy_device]
 
 
 void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int counter) {
@@ -229,12 +182,12 @@ void __manager_handle_timer(int fd, CPhidgetManagerHandle phim, int counter) {
 	CPhidgetHandle hdevice;
 
 	hdevice = *devices[ccount];
-	device  = manager_create_device_info( hdevice );
+	device  = create_device_info( hdevice );
 
 	//send message
 	__manager_send_message(fd, device, PHIDGET_DEVICE_STATUS_ACTIVE);
 
-	manager_destroy_device( device );
+	destroy_device_info( device );
 	CPhidgetManager_freeAttachedDevicesArray( *devices );
 }//
 
