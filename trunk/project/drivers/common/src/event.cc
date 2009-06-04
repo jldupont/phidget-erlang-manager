@@ -104,3 +104,14 @@ const char *event_translate(EventType type) {
 
 	return event_details[type];
 }//
+
+bool event_validate(Event *e) {
+
+	if (NULL==e) {
+		return false;
+	}
+	if ((_EVENT_LAST<=event->type) || (0>=event->type))
+		return false;
+
+	return true;
+}
