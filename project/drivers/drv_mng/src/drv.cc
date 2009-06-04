@@ -9,10 +9,11 @@
  * This driver only sources to an Erlang process.
  * One message is defined:
  *
- * 'device' : device description
- *            This message is sent in response to:
- *            - 'attach' event
- *            - periodic enumeration of attached devices
+ * 'phidgetdevice' : device description
+ *
+ * This message is sent in response to:
+ * - 'attach' event
+ * - periodic enumeration of attached devices
  *
  * This driver uses the default 'stdout' to communicate.
  */
@@ -56,7 +57,6 @@ volatile bool _terminate = false;
 //####
 int main() {
 
-
 	int dout, din;
 
 	dout=fileno(stdout);
@@ -74,12 +74,25 @@ int main() {
 	CPhidgetManager_open(phidm);
 
 	int counter=0;
-	int signals;
 
 	setup_signal_action(SIGPIPE, pipe_action_function);
 
+	struct timespec ts;
+
+	ts.tv_sec  = 0;
+	ts.tv_nsec = 250*1000*1000;
+
+	int signal;
+	sigset_t set;
+	sigaddset( &set, SIGPIPE );
+
 	while(!_terminate) {
-		usleep( TIMEOUT );
+
+		signal = sigtimedwait( &set, NULL, &ts);
+		if (SIGPIPE==signal) {
+			doLog(LOG_ERR, "drv_mng: caught SIGPIPE");
+			break;
+		}
 		__manager_handle_timer(dout, phidm, counter++);
 	}//
 
@@ -283,7 +296,7 @@ void __manager_send_message(int fd, PhidgetDevice *pd,  phidget_device_state sta
 	 }
 
 	 if (write_msg(fd, &result)<0) {
-			 //doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
+		doLog(LOG_ERR, "drv_mng: ERROR writing to output, code[%i]", errno);
 	 }
 
 	 //DEBUG_LOG(LOG_DEBUG, "drv_mng: END send");

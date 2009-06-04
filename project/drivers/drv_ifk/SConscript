@@ -1,0 +1,30 @@
+"""
+scons build file for
+
+	pem_drv_PhidgetInterfaceKit
+
+@author: Jean-Lou Dupont
+"""
+import os
+
+Import('env')
+
+d = env.Dictionary()
+
+#no difference at this point
+if d.get('_DEBUG', False):
+	#DEBUG
+	libs=['pthread','phidget21','ei', 'pem_drv_common_debug']
+	libp='../../common/debug'
+	pr = env.Program('pem_drv_PhidgetInterfaceKit_debug', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_mng/debug/pem_drv_PhidgetInterfaceKit_debug')	
+else:
+	#RELEASE
+	libs=['pthread','phidget21','ei', 'pem_drv_common']
+	libp='../../common/release'
+	pr = env.Program('pem_drv_PhidgetInterfaceKit', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_mng/release/pem_drv_PhidgetInterfaceKit')
+	
+Default(pr)
+	
+env.Alias('install', '/usr/local/bin')
