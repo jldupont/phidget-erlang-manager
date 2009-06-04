@@ -34,6 +34,8 @@
 #include "queue.h"
 #include "event.h"
 #include "device.h"
+#include "msg.h"
+
 
 // PROTOTYPES
 void pipe_action_function(int num);
@@ -106,6 +108,7 @@ int main(int argc, char **argv) {
 		if (NULL!=e) {
 			en = event_translate(e->type);
 			doLog(LOG_INFO, "dequeued event, type[%s]",en);
+			msg_send( dout, e );
 			event_destroy( e );
 		}
 		//write
@@ -296,6 +299,7 @@ int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int
 	if (NULL!=pd) {
 
 		e = event_create( type, index, value );
+		e->serial = serial;
 
 		queue_event(e, (queue *)equeue, en);
 

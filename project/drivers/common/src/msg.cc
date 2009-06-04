@@ -103,20 +103,54 @@ int _msg_send1(int fd, EventType type, Event *event) {
 		 return 0;
 	 }
 
+	 int returnCode=1;
+
 	 if (write_msg(fd, r)<0) {
 		doLog(LOG_ERR, "_msg_send1: ERROR writing to output, code[%i]", errno);
+		returnCode = 0;
 	 }
 
 	 ei_x_free( r );
 
-	 return 1;
+	 return returnCode;
 }//
 
 /**
  * Handles EVENT_DIN & EVENT_DOUT
+ *
+ * {ATOM(msg_type), INT(Serial), INT(index), INT(value)}
  */
 int _msg_send2(int fd, EventType type, Event *event) {
 
+	int serial = event->serial;
+	ei_x_buff *r;
+	r= _msg_build( 4, type, serial );
+	if (NULL==r) {
+		return 0;
+	}
+
+	 if (ei_x_encode_long(r, (long) event->body.ds.index)) {
+		 doLog(LOG_ERR, "_msg_send2: CANNOT encode LONG(Index)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 if (ei_x_encode_long(r, (long) event->body.ds.value)) {
+		 doLog(LOG_ERR, "_msg_send2: CANNOT encode LONG(Value)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 int returnCode=1;
+
+	 if (write_msg(fd, r)<0) {
+		doLog(LOG_ERR, "_msg_send2: ERROR writing to output, code[%i]", errno);
+		returnCode = 0;
+	 }
+
+	 ei_x_free( r );
+
+	 return returnCode;
 
 }//
 

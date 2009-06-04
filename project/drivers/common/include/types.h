@@ -62,6 +62,7 @@
 	typedef struct {
 
 		EventType type;
+		int serial;
 
 		union _body {
 			DigitalState ds;

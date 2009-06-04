@@ -45,6 +45,7 @@ Event *event_create(EventType type, ...) {
 
 		case EVENT_DIN:
 		case EVENT_DOUT:
+			e->serial =
 			e->body.ds.index = va_arg(args, int);
 			e->body.ds.value = va_arg(args, int);
 			break;
