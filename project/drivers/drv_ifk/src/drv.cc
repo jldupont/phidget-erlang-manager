@@ -12,7 +12,9 @@
  *  MAIN LOOP:
  *  - Read msg from stdin
  *    - Decode msg
- *    -
+ *      - Msg "dout"
+ *      - other -> error
+ *
  */
 
 #include <pthread.h>
@@ -30,9 +32,12 @@
 #include "logger.h"
 #include "utils.h"
 #include "queue.h"
+#include "event.h"
+#include "device.h"
 
 // PROTOTYPES
 void pipe_action_function(int num);
+int genEvent(CPhidgetHandle IFK, EventType type, void *equeue);
 
 	//PHIDGET RELATED
 bool openDevice(queue *equeue, int serial);
@@ -145,28 +150,55 @@ bool openDevice(queue *equeue, int serial) {
 
 
 
-int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue)
-{
+int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue) {
+
+	return genEvent(IFK, EVENT_ATTACH, equeue);
+}
+
+int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue) {
+
+	return genEvent(IFK, EVENT_DETACH, equeue);
+
+}
+
+int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
+
+	const char *en;
+
+	en = event_translate(type);
+
+	if (NULL==equeue) {
+		doLog(LOG_ERR, "invalid queue pointer, type[%s]", en);
+		return 0;
+	}
 	queue *q = (queue *) equeue;
 	int serial;
 
 	CPhidget_getSerialNumber(IFK, &serial);
 
-	DEBUG_LOG(LOG_INFO, "ATTACH, serial[%i]", serial);
+	int result;
+	Event *e;
+	PhidgetDevice *pd;
+	pd = create_device_info( IFK );
+	if (NULL!=pd) {
+
+		e = event_create( type, pd);
+		result = queue_put((queue *)equeue, (void*) e);
+		if (!result) {
+			event_destroy( e );
+			doLog(LOG_ERR, "could not queue event, type[%s]", en);
+			return 0;
+		}
+
+	} else {
+		doLog(LOG_ERR, "CANNOT create device, type[%s]", en);
+		return 0;
+	}
+
+	DEBUG_LOG(LOG_INFO, "serial[%i] event[%x] type[%s]", serial, e, en);
 	return 0;
-}
 
-int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue)
-{
-	queue *q = (queue *) equeue;
-	int serial;
-
-	CPhidget_getSerialNumber(IFK, &serial);
-
-	DEBUG_LOG(LOG_INFO, "DETACH, serial[%i]", serial);
-
-	return 0;
-}
+}//
 
 int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown)
 {
