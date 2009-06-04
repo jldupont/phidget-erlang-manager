@@ -69,6 +69,7 @@
 	void *queue_get(queue *q);
 	void *queue_get_nb(queue *q);
 	int   queue_wait(queue *q);
+	int queue_wait_timer(queue *q, int usec_timer);
 
 	int   queue_peek(queue *q);
 	void  queue_signal(queue *q);
