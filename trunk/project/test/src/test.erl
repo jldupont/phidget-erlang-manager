@@ -1,6 +1,5 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-03
-%% Description: TODO: Add description to test
 -module(test).
 
 %%
