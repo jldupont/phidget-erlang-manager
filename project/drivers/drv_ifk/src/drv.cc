@@ -96,9 +96,16 @@ int main(int argc, char **argv) {
 
 	setup_signal_action(SIGPIPE, pipe_action_function);
 
+	Event *e;
+	const char *en;
 	while(!_terminate) {
 		//read
-
+		e = (Event *) queue_get( equeue );
+		if (NULL!=e) {
+			en = event_translate(e->type);
+			doLog(LOG_INFO, "dequeued event, type[%s]",en);
+			event_destroy( e );
+		}
 		//write
 	}//
 
