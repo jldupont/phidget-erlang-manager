@@ -13,7 +13,7 @@
  * to a node element inside a queue.
  *
  */
-
+#include <sys/time.h>
 #include <pthread.h>
 #include <errno.h>
 
@@ -33,15 +33,15 @@ int queue_put_safe( queue *q, void *node );
  */
 queue *queue_create(int id) {
 
-	pthread_cond_t *cond = malloc( sizeof (pthread_cond_t) );
+	pthread_cond_t *cond = (pthread_cond_t *) malloc( sizeof (pthread_cond_t) );
 	if (NULL == cond) {
 		return NULL;
 	}
 
 	// if this malloc fails,
 	//  there are much bigger problems that loom
-	pthread_mutex_t *mutex = malloc( sizeof(pthread_mutex_t) );
-	queue *q = malloc( sizeof(queue) );
+	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc( sizeof(pthread_mutex_t) );
+	queue *q = (queue *) malloc( sizeof(queue) );
 
 	if ((NULL != q) && (NULL != mutex)){
 
