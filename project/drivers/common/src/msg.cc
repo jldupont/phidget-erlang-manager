@@ -4,6 +4,8 @@
  * @date   2009-06-04
  * @author Jean-Lou Dupont
  *
+ * \section messages_out Messages generated
+ *
  * ATTACH / DETACH:
  *
  *   {ATOM(msg_type), INT(Serial), INT(Version), STRING(type), STRING(name), STRING(label)}
@@ -16,14 +18,45 @@
  *
  *   {ATOM(msg_type), INT(code)}
  *
+ *
+ * \section messages_in Messages Supported
+ *
+ * DOUT:
+ *
+ *    {ATOM(msg_type), INT(Serial), INT(index), INT(value)}
+ *
  */
 #include <sys/epoll.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ei.h>
 #include "msg.h"
 #include "event.h"
 #include "logger.h"
 #include "utils.h"
+
+#define MSG_MAX_TYPE_SIZE  16
+
+
+//PRIVATE
+
+typedef struct {
+
+	//message type
+	char type[MSG_MAX_TYPE_SIZE];
+
+	//phidget serial
+	long int serial;
+
+	//internal
+	int version;
+	int arity;
+	int index;
+
+	int size;
+	byte *buf;
+
+} mbuf;
 
 
 //PROTOTYPES
@@ -32,6 +65,12 @@ const char *_msg_type_to_atom(EventType type);
 ei_x_buff *_msg_build(int size, EventType type, int serial);
 int _msg_send1(int fd, EventType type, Event *event);
 int _msg_send2(int fd, EventType type, Event *event);
+
+msg *_msg_factory(msg_type type);
+int _msg_read_wait(msg_read_context *c);
+int _msg_read_decode_header(mbuf *b);
+int _msg_translate_type(char *etype);
+int _msg_read_decode_variant1(mbuf *b, int *i1, int *i2);
 
 /**
  * Synchronous message sending
@@ -235,33 +274,247 @@ const char *_msg_type_to_atom(EventType type) {
 }//
 
 
-int msg_setup_read(int fd, int *epfd, epoll_event **epv) {
+/**
+ * @return >=1 FAILURE
+ */
+int msg_setup_read(int fd, int usec_timeout, msg_read_context **c) {
 
-	*epfd = epoll_create(1);
-	if (epfd < 0)
-		return 2;
-
-	*event = (epoll_event *) malloc(sizeof(epoll_event));
-	if (NULL==event)
+	*c = (msg_read_context *) malloc(sizeof(msg_read_context));
+	if (NULL==*c) {
+		DEBUG_LOG(LOG_ERR, "msg_setup_read: CANNOT malloc for msg_read_context");
 		return 1;
+	}
+
+	(*c)->fd = fd;
+	(*c)->usec_timeout = usec_timeout;
+
+	(*c)->epfd = epoll_create(1);
+	if ((*c)->epfd < 0) {
+		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR with epoll_create");
+		free(*c);
+		return 2;
+	}
 
 	int ret;
 
-	*event->data.fd = fd;
-	*event->events = EPOLLIN;
+	(*c)->epv.data.fd = fd;
+	(*c)->epv.events = EPOLLIN;
 
-	ret = epoll_ctl( *epfd, EPOLL_CTL_MOD, fd, *epv );
+	ret = epoll_ctl( (*c)->epfd, EPOLL_CTL_MOD, fd, &((*c)->epv) );
+	if (ret) {
+		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR during epoll_ctl");
+		free(*c);
+	}
 
 	return ret;
 }//
 
-int msg_read_wait(int epfd, epoll_event *events, int usec_timeout) {
+int _msg_read_wait(msg_read_context *c) {
 
-	int nr_events = epoll_wait (epfd, events, 1, usec_timeout);
-	  if (nr_events < 0) {
-			  perror ("epoll_wait");
-			  free (events);
-			  return 1;
-	  }
+	int nr_events = epoll_wait (c->epfd, &(c->epv), 1, c->usec_timeout);
+	if (nr_events < 0) {
+		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR during epoll_wait");
+		return 1;
+	}
 
+	return nr_events;
 }//
+
+
+/**
+ * Wait for a message
+ *
+ * @return 1   SUCCESS
+ * @return 0   no message ready
+ * @return -1  ERROR
+ * @return -2  MALLOC ERROR
+ * @return -3  ERROR packet header
+ * @return -4  ERROR unsupported message type
+ */
+int msg_rx_wait(msg_read_context *c, msg **m) {
+
+	int count = _msg_read_wait( c );
+	if (0==count)
+		return 0;
+
+	mbuf *mb = (mbuf *) malloc(sizeof(mbuf));
+	if (NULL==mb) {
+		return -2;
+	}
+
+	// something happened on the 'wire'...
+	int r=read_packet(c->fd, &(mb->buf), &(mb->size));
+	if (r<=0) {
+		doLog(LOG_ERR, "msg_rx_wait: ERROR receiving packet");
+		free(mb);
+		return -1;
+	}
+
+	// we've got the packet ok... let's start decoding it
+	int r2=_msg_read_decode_header( mb );
+	if (r2<0) {
+		doLog(LOG_ERR, "msg_rx_wait: ERROR decoding packet header");
+		free(mb);
+		return -3;
+	}
+
+	return _msg_decode_body(mb, m);
+}//
+
+/**
+ * Decodes a message based on type
+ *
+ * @return  1  SUCCESS
+ * @return  0  no message ready
+ * @return -1  ERROR
+ * @return -2  MALLOC ERROR
+ * @return -3  ERROR packet header
+ * @return -4  ERROR unsupported message type
+ */
+int _msg_decode_body(mbuf *mb, msg **m) {
+
+	*m = (msg *) malloc( sizeof(msg) );
+	if (NULL==(*m)) {
+		DEBUG_LOG(LOG_ERR, "_msg_decode_body: MALLOC ERROR");
+		free(mb);
+		return -2;
+	}
+
+	int r;
+	switch(_msg_translate_type(mb->type)) {
+	case MSG_DOUT:
+		r=_msg_read_decode_variant1( mb, &((*m)->dout.index), &((*m)->dout.value) );
+		break;
+
+	default:
+		doLog(LOG_ERR, "unsupported message type");
+		free(mb);
+	}//switch
+
+	if (r<0) {
+		free(mb);
+		msg_destroy( *m );
+		return -1;
+	}
+
+	return 1;
+}//
+
+/**
+ * Decodes a message variant
+ * {... INT, INT }
+ *
+ * @return 0  SUCCESS
+ * @return <0 FAILURE
+ */
+int _msg_read_decode_variant1(mbuf *b, int *i1, int *i2) {
+
+	if (ei_decode_long((const char *) b->buf, &(b->index), i1)) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_variant1: ERROR decoding INT at index 0");
+		return -1;
+	}
+
+	if (ei_decode_long((const char *) b->buf, &(b->index), i2)) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_variant1: ERROR decoding INT at index 1");
+		return -2;
+	}
+
+	return 0;
+}//
+
+
+/**
+ * @return 0  SUCCESS
+ * @return <0 ERROR
+ */
+int _msg_read_decode_header(mbuf *b) {
+
+	if (ei_decode_version((const char *) b->buf, &(b->index), &(b->version))) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_header: ERROR decoding version");
+		return -1;
+	}
+
+	if (ei_decode_tuple_header((const char *)b->buf, &(b->index), &(b->arity))) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_header: ERROR decoding header/arity");
+		return -2;
+	}
+
+	if (ei_decode_atom((const char *)b->buf, &(b->index), (char *) &(b->type))) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_header: ERROR decoding message type");
+		return -3;
+	}
+
+	if (ei_decode_long((const char *) b->buf, &(b->index), &(b->serial))) {
+		DEBUG_LOG(LOG_ERR, "_msg_read_decode_header: ERROR decoding serial");
+		return -4;
+	}
+
+	return 0;
+}//
+
+
+/**
+ * Message Factory
+ *
+ * Basic for now as we have only one message
+ * type to support.
+ *
+ */
+msg *_msg_factory(msg_type type) {
+
+	msg *m= (msg *) malloc(sizeof(msg));
+	if (NULL==m) {
+		doLog(LOG_ERR, "_msg_factory: MALLOC error");
+		return NULL;
+	}
+
+	switch(type) {
+
+	//not much to do more
+	case MSG_DOUT:
+		break;
+
+	default:
+		doLog(LOG_ERR, "_msg_factory: INVALID type");
+		free(m);
+		m=NULL;
+		break;
+	}
+
+	return m;
+}//
+
+
+void msg_destroy(msg *m) {
+
+	if (NULL==m) {
+		doLog(LOG_ERR, "msg_destroy: MALLOC error");
+
+	} else {
+
+	// we might need more sophistication here
+	// when more message types are supported
+		free(m);
+	}
+}//
+
+
+/**
+ * Translates a string representing the message
+ * type to an integer id.
+ *
+ */
+int _msg_translate_type(char *etype) {
+
+	if (NULL==etype) {
+		DEBUG_LOG(LOG_ERR, "_msg_translate_type: NULL pointer");
+		return MSG_INVALID;
+	}
+
+	if (0==strcmp(etype, "dout")) {
+		return MSG_DOUT;
+	}
+
+	return MSG_INVALID;
+}//
+
