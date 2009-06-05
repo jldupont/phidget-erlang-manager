@@ -192,7 +192,7 @@ int _msg_send2(int fd, EventType type, Event *event) {
 	 int returnCode=1;
 
 	 if (write_msg(fd, r)<0) {
-		doLog(LOG_ERR, "_msg_send2: ERROR writing to output, code[%i]", errno);
+		doLog(LOG_ERR, "_msg_send2: ERROR writing to output, code[%i][%s]", errno, strerror(errno));
 		returnCode = 0;
 	 }
 
@@ -212,7 +212,7 @@ int _msg_send3(int fd, EventType type, Event *event) {
 
 	int serial = event->serial;
 	ei_x_buff *r;
-	r= _msg_build( 4, type, serial );
+	r= _msg_build( 3, type, serial );
 	if (NULL==r) {
 		return 0;
 	}

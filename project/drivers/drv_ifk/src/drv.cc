@@ -37,7 +37,7 @@
 #include "msg.h"
 
 #define TIME_BASE          10 //ms
-#define REFRESH_INTERVAL   10
+#define REFRESH_INTERVAL   1000
 
 
 // PROTOTYPES
@@ -165,16 +165,23 @@ void handleTime(int counter, queue *q, CPhidgetHandle ph) {
 
 void handleRefresh(queue *q, CPhidgetHandle ph) {
 
+	int serial;
 	int state;
 	int result = CPhidget_getDeviceStatus(ph, &state);
 	if (EPHIDGET_OK!=result) {
 		doLog(LOG_ERR, "handleRefresh: ERROR whilst getting device status, ph[%x]", ph);
-	} else {
-		Event *e;
-
-		e=event_create( EVENT_STATUS, state);
-		queue_event( e, q );
+		return;
 	}
+
+	CPhidget_getSerialNumber(ph, &serial);
+
+	Event *e;
+
+	e=event_create( EVENT_STATUS, state);
+	e->serial = serial;
+
+	queue_event( e, q );
+
 }//
 
 /**

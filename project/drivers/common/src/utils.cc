@@ -66,7 +66,7 @@ int read_exact(int fd, byte *buf, int len) {
 	int i, got=0;
 
 	do {
-		if ((i = read(fd, buf+got, len-got)) <= 0) {
+		if ((i = read(fd, buf+got, len-got)) < 0) {
 			DEBUG_LOG(LOG_ERR, "read_exact: errno[%i][%s]", errno, strerror(errno));
 			//DEBUG_LOG(LOG_ERR, "read_exact: errno[%i]", errno);
 			//DEBUG_LOG(LOG_ERR, "read_exact: ERROR, i[%i]", i);
