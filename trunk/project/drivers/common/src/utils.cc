@@ -6,9 +6,12 @@
  */
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <ei.h>
 #include <signal.h>
 #include "utils.h"
+#include "logger.h"
 
 /**
  * Reads a 'packet' from the file
@@ -28,11 +31,17 @@ int read_packet(int fd, byte **buf, int *size) {
 
   int len;
 
+  //DEBUG_LOG(LOG_INFO, "read_packet: BEGIN, fd[%i]", fd);
+
   // need at least the packet length!
   if (read_exact(fd, *buf, 2) != 2)
     return(-1);
 
-  len = (*buf[0] << 8) | *buf[1];
+  //DEBUG_LOG(LOG_INFO, "read_packet: BEFORE len");
+
+  len = ((*buf)[0] << 8) | (*buf)[1];
+
+  //DEBUG_LOG(LOG_INFO, "read_packet: len[%i]", len);
 
   if (len > *size) {
     byte* tmp = (byte *) realloc(*buf, len);
@@ -44,19 +53,29 @@ int read_packet(int fd, byte **buf, int *size) {
     *size = len;
   }
 
+  //DEBUG_LOG(LOG_INFO, "read_packet: END");
+
   return read_exact(fd, *buf, len);
 }
 
 
 int read_exact(int fd, byte *buf, int len) {
 
+	//DEBUG_LOG(LOG_INFO, "read_exact: BEGIN, fd[%i]", fd);
+
 	int i, got=0;
 
 	do {
-		if ((i = read(fd, buf+got, len-got)) <= 0)
+		if ((i = read(fd, buf+got, len-got)) <= 0) {
+			DEBUG_LOG(LOG_ERR, "read_exact: errno[%i][%s]", errno, strerror(errno));
+			//DEBUG_LOG(LOG_ERR, "read_exact: errno[%i]", errno);
+			//DEBUG_LOG(LOG_ERR, "read_exact: ERROR, i[%i]", i);
 			return i;
+		}
 		got += i;
 	} while (got<len);
+
+	//DEBUG_LOG(LOG_INFO, "read_exact: END, got[%i]", got);
 
 	return len;
 }//

@@ -29,6 +29,7 @@
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <ei.h>
 #include "msg.h"
 #include "event.h"
@@ -70,7 +71,9 @@ msg *_msg_factory(msg_type type);
 int _msg_read_wait(msg_read_context *c);
 int _msg_read_decode_header(mbuf *b);
 int _msg_translate_type(char *etype);
-int _msg_read_decode_variant1(mbuf *b, int *i1, int *i2);
+int _msg_read_decode_variant1(mbuf *b, long int *i1, long int *i2);
+int _msg_decode_body(mbuf *mb, msg **m);
+void _msg_destroy_mbuf(mbuf *mb);
 
 /**
  * Synchronous message sending
@@ -361,6 +364,46 @@ int msg_rx_wait(msg_read_context *c, msg **m) {
 	return _msg_decode_body(mb, m);
 }//
 
+
+int msg_rx(int fd, msg **m) {
+
+	mbuf *mb = (mbuf *) malloc(sizeof(mbuf));
+	if (NULL==mb) {
+		return -2;
+	}
+
+	DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE read_packet");
+
+	mb->buf = (byte *) malloc(1024*sizeof(byte));
+	if (NULL==mb->buf) {
+		return -2;
+	}
+	mb->size = 1024;
+
+	// something happened on the 'wire'...
+	int r=read_packet(fd, &(mb->buf), &(mb->size));
+	if (r<=0) {
+		doLog(LOG_ERR, "msg_rx: ERROR receiving packet, code[%i]", r);
+		_msg_destroy_mbuf( mb );
+		return -1;
+	}
+
+	DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE decode_header");
+
+
+	// we've got the packet ok... let's start decoding it
+	int r2=_msg_read_decode_header( mb );
+	if (r2<0) {
+		doLog(LOG_ERR, "msg_rx: ERROR decoding packet header");
+		_msg_destroy_mbuf( mb );
+		return -3;
+	}
+
+	return _msg_decode_body(mb, m);
+}//
+
+
+
 /**
  * Decodes a message based on type
  *
@@ -376,26 +419,32 @@ int _msg_decode_body(mbuf *mb, msg **m) {
 	*m = (msg *) malloc( sizeof(msg) );
 	if (NULL==(*m)) {
 		DEBUG_LOG(LOG_ERR, "_msg_decode_body: MALLOC ERROR");
-		free(mb);
+		_msg_destroy_mbuf( mb );
 		return -2;
 	}
 
+	msg_type mt = _msg_translate_type(mb->type);
+	(*m)->type = mt;
+
 	int r;
-	switch(_msg_translate_type(mb->type)) {
+	switch(mt) {
 	case MSG_DOUT:
-		r=_msg_read_decode_variant1( mb, &((*m)->dout.index), &((*m)->dout.value) );
+		(*m)->body.dout.serial = mb->serial;
+		r=_msg_read_decode_variant1( mb, &((*m)->body.dout.index), &((*m)->body.dout.value) );
 		break;
 
 	default:
 		doLog(LOG_ERR, "unsupported message type");
-		free(mb);
+		_msg_destroy_mbuf( mb );
 	}//switch
 
 	if (r<0) {
-		free(mb);
+		_msg_destroy_mbuf( mb );
 		msg_destroy( *m );
 		return -1;
 	}
+
+	_msg_destroy_mbuf( mb );
 
 	return 1;
 }//
@@ -407,7 +456,7 @@ int _msg_decode_body(mbuf *mb, msg **m) {
  * @return 0  SUCCESS
  * @return <0 FAILURE
  */
-int _msg_read_decode_variant1(mbuf *b, int *i1, int *i2) {
+int _msg_read_decode_variant1(mbuf *b, long int *i1, long int *i2) {
 
 	if (ei_decode_long((const char *) b->buf, &(b->index), i1)) {
 		DEBUG_LOG(LOG_ERR, "_msg_read_decode_variant1: ERROR decoding INT at index 0");
@@ -518,3 +567,9 @@ int _msg_translate_type(char *etype) {
 	return MSG_INVALID;
 }//
 
+
+void _msg_destroy_mbuf(mbuf *mb) {
+
+	free(mb->buf);
+	free(mb);
+}
