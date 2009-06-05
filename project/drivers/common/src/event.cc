@@ -34,6 +34,10 @@ Event *event_create(EventType type, ...) {
 	e->type = type;
 
 		switch(type) {
+		case EVENT_STATUS:
+			e->body.state = va_arg(args, int);
+			break;
+
 		case EVENT_ERROR:
 			e->body.error = va_arg(args, int);
 			break;
@@ -90,6 +94,7 @@ void event_destroy(Event *ev) {
 	case EVENT_MSG:
 		free(ev->body.m);
 		//pass through
+	case EVENT_STATUS:
 	case EVENT_READ_THREAD_ERROR:
 		free(ev);
 		break;
@@ -110,7 +115,8 @@ const char *event_details[] = {
 	"EVENT_DETACH",
 	"EVENT_DIN",
 	"EVENT_DOUT",
-	"EVENT_ERROR"
+	"EVENT_ERROR",
+	"EVENT_STATUS"
 };
 
 const char *event_translate(EventType type) {

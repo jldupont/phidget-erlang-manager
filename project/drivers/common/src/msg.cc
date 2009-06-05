@@ -66,6 +66,7 @@ const char *_msg_type_to_atom(EventType type);
 ei_x_buff *_msg_build(int size, EventType type, int serial);
 int _msg_send1(int fd, EventType type, Event *event);
 int _msg_send2(int fd, EventType type, Event *event);
+int _msg_send3(int fd, EventType type, Event *event);
 
 msg *_msg_factory(msg_type type);
 int _msg_read_wait(msg_read_context *c);
@@ -98,6 +99,10 @@ int msg_send(int fd, Event *event) {
 	case EVENT_DIN:
 	case EVENT_DOUT:
 		result=_msg_send2(fd, event->type, event);
+		break;
+
+	case EVENT_STATUS:
+		result=_msg_send3(fd, event->type, event);
 		break;
 	}
 
@@ -197,6 +202,40 @@ int _msg_send2(int fd, EventType type, Event *event) {
 
 }//
 
+
+/**
+ * Handles EVENT_STATUS
+ *
+ * {ATOM(msg_type), INT(Serial), INT(status)}
+ */
+int _msg_send3(int fd, EventType type, Event *event) {
+
+	int serial = event->serial;
+	ei_x_buff *r;
+	r= _msg_build( 4, type, serial );
+	if (NULL==r) {
+		return 0;
+	}
+
+	 if (ei_x_encode_long(r, (long) event->body.state)) {
+		 doLog(LOG_ERR, "_msg_send3: CANNOT encode LONG(state)");
+		 ei_x_free( r );
+		 return 0;
+	 }
+
+	 int returnCode=1;
+
+	 if (write_msg(fd, r)<0) {
+		doLog(LOG_ERR, "_msg_send3: ERROR writing to output, code[%i]", errno);
+		returnCode = 0;
+	 }
+
+	 ei_x_free( r );
+
+	 return returnCode;
+
+}//
+
 /**
  *  {ATOM(msg_type), INT(Serial), ... }
  */
@@ -271,6 +310,10 @@ const char *_msg_type_to_atom(EventType type) {
 		result = (char *) e;
 		break;
 
+	case EVENT_STATUS:
+		static const char *s = "status";
+		result = (char *) s;
+		break;
 	}
 
 	return (const char *) result;
@@ -372,7 +415,7 @@ int msg_rx(int fd, msg **m) {
 		return -2;
 	}
 
-	DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE read_packet");
+	//DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE read_packet");
 
 	mb->buf = (byte *) malloc(1024*sizeof(byte));
 	if (NULL==mb->buf) {
@@ -388,7 +431,7 @@ int msg_rx(int fd, msg **m) {
 		return -1;
 	}
 
-	DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE decode_header");
+	//DEBUG_LOG(LOG_INFO,"msg_rx: BEFORE decode_header");
 
 
 	// we've got the packet ok... let's start decoding it
