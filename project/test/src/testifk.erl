@@ -12,7 +12,7 @@
 -export([start/0, start/1, stop/0]).
 
 %% internal
--export([init/2, loop/1]).
+-export([init/2, loop/1, dout/0]).
 
 %%
 %% Local Functions
@@ -33,8 +33,17 @@ init(ExtPrg, Param) ->
     Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
     loop(Port).
 
+dout() ->
+	?MODULE ! {dout, {666, 777, 888}}.
+
 loop(Port) ->
     receive
+		
+		{dout,Msg} ->
+			{Serial, Index, Value} = Msg,
+			BinMsg = {dout, Serial, Index, Value},
+			io:format("request to send 'DOUT' message [~p]~n", [BinMsg]),
+			erlang:port_command(Port, term_to_binary(BinMsg));
 		
 		stop ->
 			io:format("called [stop]"),

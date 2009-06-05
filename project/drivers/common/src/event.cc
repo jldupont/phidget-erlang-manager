@@ -45,9 +45,16 @@ Event *event_create(EventType type, ...) {
 
 		case EVENT_DIN:
 		case EVENT_DOUT:
-			e->serial =
+			e->serial        = va_arg(args, int);
 			e->body.ds.index = va_arg(args, int);
 			e->body.ds.value = va_arg(args, int);
+			break;
+
+		case EVENT_READ_THREAD_ERROR:
+			break;
+
+		case EVENT_MSG:
+			e->body.m = va_arg(args, msg *);
 			break;
 
 		default:
@@ -80,6 +87,13 @@ void event_destroy(Event *ev) {
 		free(ev);
 		break;
 
+	case EVENT_MSG:
+		free(ev->body.m);
+		//pass through
+	case EVENT_READ_THREAD_ERROR:
+		free(ev);
+		break;
+
 	default:
 		DEBUG_LOG(LOG_ERR, "event_destroy: invalid type[%i]", ev->type);
 		free(ev);
@@ -90,6 +104,8 @@ void event_destroy(Event *ev) {
 
 const char *event_details[] = {
 	"INVALID",
+	"EVENT_READ_THREAD_ERROR",
+	"EVENT_MSG",
 	"EVENT_ATTACH",
 	"EVENT_DETACH",
 	"EVENT_DIN",

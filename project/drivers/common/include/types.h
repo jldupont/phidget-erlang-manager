@@ -8,6 +8,40 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
+
+	typedef int msg_type;
+
+	/**
+	 * Messages supported
+	 */
+	enum _msgs {
+		MSG_INVALID = 0,
+		MSG_DOUT,
+	};
+
+
+
+	/**
+	 * DOUT message from Erlang
+	 */
+	typedef struct {
+
+		long int serial;
+		long int index;
+		long int value;
+
+	} msg_dout;
+
+	typedef struct {
+		msg_type type;
+
+		union {
+			msg_dout dout;
+		} body;
+
+	} msg;
+
+
 	/**
 	 * Device status
 	 */
@@ -46,6 +80,8 @@
 	typedef enum {
 
 		EVENT_INVALID = 0,
+		EVENT_READ_THREAD_ERROR,
+		EVENT_MSG,		// message from Erlang side
 		EVENT_ATTACH,
 		EVENT_DETACH,
 		EVENT_DIN,
@@ -65,7 +101,8 @@
 		int serial;
 
 		union _body {
-			DigitalState ds;
+			msg           *m;
+			DigitalState   ds;
 			PhidgetDevice *pd;
 			int error;
 		} body;

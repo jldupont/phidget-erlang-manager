@@ -22,33 +22,6 @@
 	} msg_read_context;
 
 	/**
-	 * Messages supported
-	 */
-	enum _msgs {
-		MSG_INVALID = 0,
-		MSG_DOUT,
-	};
-
-	typedef int msg_type;
-
-	/**
-	 * DOUT message from Erlang
-	 */
-	typedef struct {
-
-		int index;
-		int value;
-
-	} msg_dout;
-
-	typedef union {
-
-		msg_dout dout;
-
-	} msg;
-
-
-	/**
 	 * Sends an Event message through the
 	 * file pipe
 	 *
@@ -87,6 +60,17 @@
 	 * @return <0  ERROR
 	 */
 	int msg_rx_wait(msg_read_context *c, msg **m);
+
+
+	/**
+	 * Blocking message wait
+	 *
+	 * @return 1   SUCCESS, m is valid
+	 * @return 0   no message
+	 * @return <0  ERROR
+	 */
+	int msg_rx(int fd, msg **m);
+
 
 	/**
 	 * Destroys a message

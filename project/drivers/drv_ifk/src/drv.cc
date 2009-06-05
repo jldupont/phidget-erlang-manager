@@ -42,6 +42,8 @@ void pipe_action_function(int num);
 int genEvent(CPhidgetHandle IFK, EventType type, void *equeue);
 int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int index, int value);
 int queue_event(Event *e, queue *q, const char *en);
+void *read_thread_function(void *queue);
+void handleErlangMessage(msg *m);
 
 	//PHIDGET RELATED
 bool openDevice(queue *equeue, int serial);
@@ -55,6 +57,14 @@ int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Ind
 // STATE
 volatile bool _terminate = false;
 const char *ident = "drv_ifk";
+pthread_t readThread;
+
+typedef struct {
+
+	int fd;
+	queue *q;
+
+} read_thread_params;
 
 //MAIN
 //####
@@ -80,6 +90,7 @@ int main(int argc, char **argv) {
 	dout=fileno(stdout);
 	din=fileno(stdin);
 
+
 	DEBUG_LOG(LOG_DEBUG,"drv_PhidgetInterfaceKit: BEGIN, stdin[%i] stdout[%i] serial[%i]", din, dout, serial);
 
 	queue *equeue;
@@ -89,6 +100,12 @@ int main(int argc, char **argv) {
 		doLogEx(LOG_ERR, msg_invalid, equeue);
 		return 1;
 	}
+
+	read_thread_params params;
+	params.fd = din;
+	params.q  = equeue;
+
+	pthread_create(&readThread, NULL, &read_thread_function, (void *) &params);
 
 	bool response = openDevice(equeue, serial);
 	if (!response) {
@@ -112,7 +129,21 @@ int main(int argc, char **argv) {
 			if (NULL!=e) {
 				en = event_translate(e->type);
 				doLog(LOG_INFO, "dequeued event, type[%s]",en);
-				msg_send( dout, e );
+
+				if (e->type == EVENT_READ_THREAD_ERROR) {
+					event_destroy( e );
+					doLog(LOG_INFO, "received READ_THREAD_ERROR event");
+					break;
+				}
+
+				if (e->type != EVENT_MSG)
+					msg_send( dout, e );
+				else {
+					handleErlangMessage( e->body.m );
+				}
+			}
+
+			if (NULL!=e) {
 				event_destroy( e );
 			}
 		}
@@ -127,6 +158,55 @@ void pipe_action_function(int num) {
 	_terminate = true;
 }
 
+void handleErlangMessage(msg *m) {
+
+	switch(m->type) {
+	case MSG_DOUT:
+		doLog(LOG_INFO,"handleErlangMessage: Serial[%i] Index[%i] Value[%i]", m->body.dout.serial, m->body.dout.index, m->body.dout.value);
+		break;
+
+	default:
+		doLog(LOG_ERR, "handleErlangMessage: unhandled message type[%i]", m->type );
+		break;
+	}
+
+}
+
+
+void *read_thread_function(void *params) {
+
+	read_thread_params *p = (read_thread_params *) params;
+
+	DEBUG_LOG(LOG_DEBUG, "read_thread: BEGIN, fd[%i]", p->fd);
+
+	int r;
+	msg *m;
+	Event *e;
+	const char *en;
+
+	en = event_translate(EVENT_MSG);
+
+	while(1) {
+
+		r = msg_rx(p->fd, &m);
+		if (1==r) {
+
+			e = event_create( EVENT_MSG, m );
+			queue_event(e, p->q, en);
+		}
+
+		if (r<0) {
+			e = event_create( EVENT_READ_THREAD_ERROR );
+			queue_event( e, p->q, en );
+			break;
+		}
+
+	}//while
+
+	DEBUG_LOG(LOG_DEBUG, "read_thread: END");
+
+	return NULL;
+}
 
 
 /**
@@ -198,7 +278,7 @@ int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
 	pd = create_device_info( IFK );
 	if (NULL!=pd) {
 
-		e = event_create( type, pd);
+		e = event_create( type, pd );
 
 		queue_event(e, (queue *)equeue, en);
 
@@ -302,8 +382,7 @@ int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int
 	pd = create_device_info( (CPhidgetHandle) IFK );
 	if (NULL!=pd) {
 
-		e = event_create( type, index, value );
-		e->serial = serial;
+		e = event_create( type, serial, index, value );
 
 		queue_event(e, (queue *)equeue, en);
 
