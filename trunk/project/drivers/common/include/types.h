@@ -87,6 +87,7 @@
 		EVENT_DIN,
 		EVENT_DOUT,
 		EVENT_ERROR,
+		EVENT_STATUS,
 		_EVENT_LAST
 
 	} EventType;
@@ -101,9 +102,10 @@
 		int serial;
 
 		union _body {
-			msg           *m;
-			DigitalState   ds;
-			PhidgetDevice *pd;
+			int           state;  // for EVENT_STATUS
+			msg           *m;     // message received from Erlang
+			DigitalState   ds;    // DIN / DOUT
+			PhidgetDevice *pd;    // ATTACH/DETACH
 			int error;
 		} body;
 

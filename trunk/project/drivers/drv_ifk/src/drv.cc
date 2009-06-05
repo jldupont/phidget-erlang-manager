@@ -36,17 +36,23 @@
 #include "device.h"
 #include "msg.h"
 
+#define TIME_BASE          10 //ms
+#define REFRESH_INTERVAL   10
+
 
 // PROTOTYPES
 void pipe_action_function(int num);
 int genEvent(CPhidgetHandle IFK, EventType type, void *equeue);
 int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int index, int value);
-int queue_event(Event *e, queue *q, const char *en);
+int queue_event(Event *e, queue *q);
 void *read_thread_function(void *queue);
 void handleErlangMessage(msg *m);
+int handleEvent(int dout, Event *e, int count);
+void handleTime(int counter, queue *q, CPhidgetHandle ph);
+void handleRefresh(queue *q, CPhidgetHandle ph);
 
 	//PHIDGET RELATED
-bool openDevice(queue *equeue, int serial);
+bool openDevice(queue *equeue, int serial, CPhidgetHandle *handle);
 int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue);
 int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue);
 int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char *unknown);
@@ -107,7 +113,9 @@ int main(int argc, char **argv) {
 
 	pthread_create(&readThread, NULL, &read_thread_function, (void *) &params);
 
-	bool response = openDevice(equeue, serial);
+	CPhidgetHandle ph;
+
+	bool response = openDevice(equeue, serial, &ph);
 	if (!response) {
 		return 1;
 	}
@@ -119,36 +127,25 @@ int main(int argc, char **argv) {
 
 	int waiting;
 	Event *e;
-	const char *en;
+
+	int err_signal;
+
 	while(!_terminate) {
 
-		//read
-		waiting = queue_wait_timer(equeue, 10*1000 );
+		//wait for events
+		waiting = queue_wait_timer(equeue, TIME_BASE*1000 );
 		if (!waiting) {
 			e = (Event *) queue_get_nb( equeue );
 			if (NULL!=e) {
-				en = event_translate(e->type);
-				doLog(LOG_INFO, "dequeued event, type[%s]",en);
-
-				if (e->type == EVENT_READ_THREAD_ERROR) {
-					event_destroy( e );
-					doLog(LOG_INFO, "received READ_THREAD_ERROR event");
+				err_signal = handleEvent( dout, e, counter );
+				if (err_signal)
 					break;
-				}
-
-				if (e->type != EVENT_MSG)
-					msg_send( dout, e );
-				else {
-					handleErlangMessage( e->body.m );
-				}
-			}
-
-			if (NULL!=e) {
-				event_destroy( e );
 			}
 		}
-		//write
-	}//
+
+		counter++;
+		handleTime(counter, equeue, ph);
+	}//while
 
 	DEBUG_LOG(LOG_DEBUG,"drv_PhidgetInterfaceKit: END");
 	return 0;
@@ -157,6 +154,56 @@ int main(int argc, char **argv) {
 void pipe_action_function(int num) {
 	_terminate = true;
 }
+
+void handleTime(int counter, queue *q, CPhidgetHandle ph) {
+
+	if ((counter % REFRESH_INTERVAL)==0) {
+		handleRefresh(q, ph);
+	}
+
+}//
+
+void handleRefresh(queue *q, CPhidgetHandle ph) {
+
+	int state;
+	int result = CPhidget_getDeviceStatus(ph, &state);
+	if (EPHIDGET_OK!=result) {
+		doLog(LOG_ERR, "handleRefresh: ERROR whilst getting device status, ph[%x]", ph);
+	} else {
+		Event *e;
+
+		e=event_create( EVENT_STATUS, state);
+		queue_event( e, q );
+	}
+}//
+
+/**
+ * @return 0 OK
+ * @return 1 ERROR signal
+ */
+int handleEvent(int dout, Event *e, int count) {
+
+	const char *en;
+	en = event_translate(e->type);
+
+	if (e->type == EVENT_READ_THREAD_ERROR) {
+		event_destroy( e );
+		doLog(LOG_INFO, "received READ_THREAD_ERROR event");
+		return 1;
+	}
+
+	if (e->type != EVENT_MSG)
+		msg_send( dout, e );
+	else {
+		handleErlangMessage( e->body.m );
+	}
+
+	if (NULL!=e) {
+		event_destroy( e );
+	}
+
+	return 0;
+}//
 
 void handleErlangMessage(msg *m) {
 
@@ -170,7 +217,7 @@ void handleErlangMessage(msg *m) {
 		break;
 	}
 
-}
+}//
 
 
 void *read_thread_function(void *params) {
@@ -182,22 +229,18 @@ void *read_thread_function(void *params) {
 	int r;
 	msg *m;
 	Event *e;
-	const char *en;
-
-	en = event_translate(EVENT_MSG);
-
 	while(1) {
 
 		r = msg_rx(p->fd, &m);
 		if (1==r) {
 
 			e = event_create( EVENT_MSG, m );
-			queue_event(e, p->q, en);
+			queue_event(e, p->q);
 		}
 
 		if (r<0) {
 			e = event_create( EVENT_READ_THREAD_ERROR );
-			queue_event( e, p->q, en );
+			queue_event( e, p->q );
 			break;
 		}
 
@@ -213,7 +256,7 @@ void *read_thread_function(void *params) {
  * @return true if SUCCESS
  * @return false if FAILURE
  */
-bool openDevice(queue *equeue, int serial) {
+bool openDevice(queue *equeue, int serial, CPhidgetHandle *handle) {
 
 	//DEBUG_LOG(LOG_INFO,"openDevice, serial[%i]", serial);
 
@@ -240,6 +283,8 @@ bool openDevice(queue *equeue, int serial) {
 		doLog(LOG_ERR, "CANNOT open device, serial[%i]", serial);
 		return false;
 	}
+
+	*handle = (CPhidgetHandle) IFK;
 
 	return true;
 }//
@@ -280,7 +325,7 @@ int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
 
 		e = event_create( type, pd );
 
-		queue_event(e, (queue *)equeue, en);
+		queue_event(e, (queue *)equeue);
 
 	} else {
 		doLog(LOG_ERR, "CANNOT create device, type[%s]", en);
@@ -296,12 +341,16 @@ int genEvent(CPhidgetHandle IFK, EventType type, void *equeue) {
  * @return 0 ERROR
  * @return 1 SUCCESS
  */
-int queue_event(Event *e, queue *q, const char *en) {
+int queue_event(Event *e, queue *q) {
+
+	const char *en;
 
 	if (NULL==e) {
 		doLog(LOG_ERR, "attempt to queue NULL event");
 		return 0;
 	}
+
+	en = event_translate(e->type);
 
 	int result = queue_put((queue *)q, (void*) e);
 	if (!result) {
@@ -330,7 +379,7 @@ int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char
 	CPhidget_getSerialNumber(IFK, &serial);
 
 	Event *e = event_create( EVENT_ERROR, ErrorCode );
-	queue_event( e, (queue *) equeue, en);
+	queue_event( e, (queue *) equeue);
 
 }
 
@@ -384,7 +433,7 @@ int genIOEvent(CPhidgetInterfaceKitHandle IFK, EventType type, void *equeue, int
 
 		e = event_create( type, serial, index, value );
 
-		queue_event(e, (queue *)equeue, en);
+		queue_event(e, (queue *)equeue);
 
 	} else {
 		doLog(LOG_ERR, "CANNOT create device, type[%s]", en);
