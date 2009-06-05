@@ -11,7 +11,7 @@
 #include "utils.h"
 
 /**
- * Reads a 'message' from the file
+ * Reads a 'packet' from the file
  * pointed to by 'fd' descriptor.
  *
  * @param fd file-descriptor
@@ -19,14 +19,16 @@
  * @param size  pointer to size of resulting buffer
  *
  * @return -1 if error reading the 'len' header
+ * @return -2 MALLOC ERROR
  * @return  <0  eg. EAGAIN, EBADF, EFAULT, EINTR, EINVAL, EIO, EISDIR
  * @return  >=0  number of bytes read
  */
 
-int read_msg(int fd, byte **buf, int *size) {
+int read_packet(int fd, byte **buf, int *size) {
 
   int len;
 
+  // need at least the packet length!
   if (read_exact(fd, *buf, 2) != 2)
     return(-1);
 
@@ -35,13 +37,30 @@ int read_msg(int fd, byte **buf, int *size) {
   if (len > *size) {
     byte* tmp = (byte *) realloc(*buf, len);
     if (tmp == NULL)
-      return -1;
+      return -2;
     else
       *buf = tmp;
+
     *size = len;
   }
+
   return read_exact(fd, *buf, len);
 }
+
+
+int read_exact(int fd, byte *buf, int len) {
+
+	int i, got=0;
+
+	do {
+		if ((i = read(fd, buf+got, len-got)) <= 0)
+			return i;
+		got += i;
+	} while (got<len);
+
+	return len;
+}//
+
 
 /**
  * Writes a 'message' to the 'file'
@@ -65,18 +84,9 @@ int write_msg(int fd, ei_x_buff *buff) {
   return write_exact(fd, (byte *)buff->buff, buff->index);
 }
 
-int read_exact(int fd, byte *buf, int len) {
 
-  int i, got=0;
 
-  do {
-    if ((i = read(fd, buf+got, len-got)) <= 0)
-      return i;
-    got += i;
-  } while (got<len);
 
-  return len;
-}
 
 int write_exact(int fd, byte *buf, int len) {
 
