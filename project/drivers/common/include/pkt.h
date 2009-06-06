@@ -70,7 +70,11 @@
 		~PktHandler();
 
 		int rx(Pkt **p);
-		int send(Pkt *p);
+		int tx(Pkt *p);
+
+	protected:
+		int rx_exact(unsigned char *, int len);
+		int tx_exact(unsigned char *, int len);
 	};
 
 

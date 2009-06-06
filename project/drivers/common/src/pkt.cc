@@ -102,3 +102,38 @@ Pkt::getBuf(int size) {
 // PktHandler Class
 // =========================================
 
+PktHandler::PktHandler() {
+
+}//
+
+PktHandler::PktHandler(int _ifd, int _ofd) {
+	ifd = _ifd;
+	ofd = _ofd;
+}
+
+PktHandler::~PktHandler() {
+
+}//
+
+
+int
+PktHandler::rx_exact(unsigned char *, int len) {
+
+}//
+
+int
+PktHandler::tx_exact(unsigned char *, int len) {
+
+}//
+
+
+int
+PktHandler::rx(Pkt **p) {
+
+}//
+
+
+int
+PktHandler::tx(Pkt *p) {
+
+}//
