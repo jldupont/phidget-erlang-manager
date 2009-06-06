@@ -25,6 +25,7 @@ PktBase::error(void) {
 
 const char *
 PktBase::errors[] = {
+
 	"???",           //0
 	"success",       //1
 	"malloc error",  //2
@@ -32,6 +33,8 @@ PktBase::errors[] = {
 	"null pointer",  //4
 	"invalid format",//5
 	"realloc error", //6
+	"check errno",   //7
+
 };
 
 
@@ -39,17 +42,34 @@ PktBase::errors[] = {
 // Pkt Class
 // =========================================
 
+/**
+ * Creates RX packet type
+ */
 Pkt::Pkt() {
 	sz=0;
 	buf=NULL;
+	tbuf=NULL;
 }//
 
+/**
+ * Creates TX packet type
+ */
+Pkt::Pkt(int lenSz) {
+
+}//
 
 Pkt::~Pkt() {
+
 	if (NULL!=buf)
 		free(buf);
+
 }//
 
+ei_x_buff *
+Pkt::getTxBuf(void) {
+
+	return &tbuf;
+}
 
 unsigned char *
 Pkt::getBuf(void) {
@@ -82,6 +102,8 @@ Pkt::getBuf(int size) {
 		}
 	}
 
+	//requested size fits the
+	//current size? else realloc
 	unsigned char *tmp;
 	if (size>sz) {
 		tmp = (unsigned char *) realloc(buf, size);
@@ -95,18 +117,36 @@ Pkt::getBuf(int size) {
 	return buf;
 }//
 
+void
+Pkt::setLength(int _len) {
+	len = _len;
+}
 
-
+int
+Pkt::getLength(void) {
+	return len;
+}
 
 // =========================================
 // PktHandler Class
 // =========================================
 
 PktHandler::PktHandler() {
+	sz = 2;
+}//
 
+PktHandler::PktHandler(int size) {
+	sz = size;
 }//
 
 PktHandler::PktHandler(int _ifd, int _ofd) {
+	sz  = 2;
+	ifd = _ifd;
+	ofd = _ofd;
+}
+
+PktHandler::PktHandler(int size, int _ifd, int _ofd) {
+	sz  = size;
 	ifd = _ifd;
 	ofd = _ofd;
 }
@@ -116,24 +156,94 @@ PktHandler::~PktHandler() {
 }//
 
 
+/**
+ * @return >=0 len retrieved
+ * @return <0  ERROR eg. EPIPE
+ */
 int
-PktHandler::rx_exact(unsigned char *, int len) {
+PktHandler::rx_exact(Pkt **p, int len) {
 
+	unsigned char *buf;
+	buf=(*p)->getBuf();
+
+	int i, got=0;
+
+	do {
+		if ((i = read(ifd, buf+got, len-got)) < 0) {
+			return i;
+		}
+		got += i;
+	} while (got<len);
+
+	//DEBUG_LOG(LOG_INFO, "read_exact: END, got[%i]", got);
+
+	return len;
 }//
 
 int
-PktHandler::tx_exact(unsigned char *, int len) {
+PktHandler::tx_exact(Pkt *p, int len) {
 
+
+	unsigned char *buf = p->getBuf();
+
+	int i, wrote = 0;
+
+	do {
+		if ((i = write(ofd, buf+wrote, len-wrote)) <= 0)
+			return i;
+		wrote += i;
+	} while (wrote<len);
+
+	return len;
 }//
 
-
+/**
+ * @return 0 SUCCESS
+ * @return 1 FAILURE
+ */
 int
 PktHandler::rx(Pkt **p) {
 
+	*p = new Pkt();
+
+	//read length field first
+	int result=rx_exact(p, sz);
+	if (result<0) {
+		last_error = 7; //check errno
+		return 1;
+	}
+
+	int l = ((*buf)[0] << 8) | (*buf)[1];
+	unsigned char *buf = (*p)->getBuf(l);
+
+	// the packet length gave us
+	// the information we needed
+	// to extract the right count
+	// of bytes from the pipe
+	result = rx_exact(p, l);
+	if (result<0) {
+		last_error = 7;
+		return 1;
+	}
+
+	(*p)->setLength( result );
+
+	return 0;
 }//
 
 
 int
 PktHandler::tx(Pkt *p) {
+
+	unsigned char *buf = p->getBuf();
+	unsigned char li;
+	int len = p->getLength();
+
+	li = (len >> 8) & 0xff;
+	write_exact(ofd, &li, 1);
+	li = len & 0xff;
+	write_exact(ofd, &li, 1);
+
+	return write_exact(fd, (byte *)buff->buff, buff->index);
 
 }//
