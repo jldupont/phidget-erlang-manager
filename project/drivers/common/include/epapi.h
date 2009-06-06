@@ -46,6 +46,9 @@ void doLog(int priority, const char *message, ...);
 		EEPAPI_MALLOC,
 		EEPAPI_REALLOC,
 		EEPAPI_NOTFOUND,
+		EEPAPI_NEWEIBUF,
+		EEPAPI_EIENCODE,
+		EEPAPI_EIDECODE,
 		//EEPAPI_,
 		//EEPAPI_
 	};

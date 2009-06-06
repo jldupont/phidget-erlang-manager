@@ -19,23 +19,29 @@ Pkt::Pkt() {
 	buf=NULL;
 }//
 
-/**
- * Creates TX packet type
- */
-Pkt::Pkt(int lenSz) {
-
-}//
-
 Pkt::~Pkt() {
 
 	if (NULL!=buf)
 		free(buf);
+
+	if (NULL!=tbuf)
+		ei_x_free(tbuf);
+
 }//
 
 ei_x_buff *
 Pkt::getTxBuf(void) {
 
-	return &tbuf;
+	if (NULL==tbuf) {
+		tbuf = (ei_x_buf *) malloc(sizeof(ei_x_buff));
+	}
+
+	if (NULL==tbuf) {
+		last_error = EEPAPI_MALLOC;
+		return NULL;
+	}
+
+	return tbuf;
 }
 
 unsigned char *
@@ -195,7 +201,7 @@ PktHandler::tx(Pkt *p) {
 	}
 
 	// write packet body
-	result = PktHandler::tx_exact(buff->buff, buff->index);
+	result = PktHandler::tx_exact(buf->buff, buf->index);
 	if (result<=0) {
 		last_error = EEPAPI_ERRNO;
 		return 1;
