@@ -8,37 +8,6 @@
 
 
 // =========================================
-// PktBase class
-// =========================================
-
-const char *
-PktBase::strerror(void) {
-
-	return (const char *) errors[last_error];
-
-}//
-
-int
-PktBase::error(void) {
-	return last_error;
-}
-
-const char *
-PktBase::errors[] = {
-
-	"???",           //0
-	"success",       //1
-	"malloc error",  //2
-	"invalid index", //3
-	"null pointer",  //4
-	"invalid format",//5
-	"realloc error", //6
-	"check errno",   //7
-
-};
-
-
-// =========================================
 // Pkt Class
 // =========================================
 
@@ -130,11 +99,15 @@ Pkt::getLength(void) {
 // =========================================
 
 PktHandler::PktHandler() {
-	sz = 2;
+	sz = 2;  //default to length field of 2bytes
+	ifd = 0; //usually stdin
+	ofd = 1; //usually stdout
 }//
 
 PktHandler::PktHandler(int size) {
 	sz = size;
+	ifd = 0; //usually stdin
+	ofd = 1; //usually stdout
 }//
 
 PktHandler::PktHandler(int _ifd, int _ofd) {
@@ -172,25 +145,6 @@ PktHandler::rx_exact(Pkt **p, int len) {
 		}
 		got += i;
 	} while (got<len);
-
-	//DEBUG_LOG(LOG_INFO, "read_exact: END, got[%i]", got);
-
-	return len;
-}//
-
-int
-PktHandler::tx_exact(Pkt *p, int len) {
-
-
-	unsigned char *buf = p->getBuf();
-
-	int i, wrote = 0;
-
-	do {
-		if ((i = write(ofd, buf+wrote, len-wrote)) <= 0)
-			return i;
-		wrote += i;
-	} while (wrote<len);
 
 	return len;
 }//
@@ -233,15 +187,50 @@ PktHandler::rx(Pkt **p) {
 int
 PktHandler::tx(Pkt *p) {
 
-	unsigned char *buf = p->getBuf();
+	ei_x_buff *buf = p->getTxBuf();
 	unsigned char li;
-	int len = p->getLength();
 
-	li = (len >> 8) & 0xff;
-	write_exact(ofd, &li, 1);
-	li = len & 0xff;
-	write_exact(ofd, &li, 1);
+	int result;
 
-	return write_exact(fd, (byte *)buff->buff, buff->index);
+	//write packet length
+	//===================
+	int i=sz;
 
+	li = (buf->index >> 8) & 0xff;
+	result = PktHandler::tx_exact((char *)&li, 1);
+	if (result<=0) {
+		last_error = EEPAPI_ERRNO;
+		return 1;
+	}
+
+	li = buf->index & 0xff;
+	result = PktHandler::tx_exact((char *)&li, 1);
+	if (result<=0) {
+		last_error = EEPAPI_ERRNO;
+		return 1;
+	}
+
+	// write packet body
+	result = PktHandler::tx_exact(buff->buff, buff->index);
+	if (result<=0) {
+		last_error = EEPAPI_ERRNO;
+		return 1;
+	}
+
+	return 0;
 }//
+
+int
+PktHandler::tx_exact(char *buf, int len) {
+
+	int i, wrote = 0;
+
+	do {
+		if ((i = write(ofd, buf+wrote, len-wrote)) <= 0)
+			return i;
+		wrote += i;
+	} while (wrote<len);
+
+	return len;
+}//
+
