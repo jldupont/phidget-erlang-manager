@@ -76,12 +76,18 @@
 		/**
 		 * Sets the packet length
 		 * ie. not the buffer length
+		 *
+		 * This method really only
+		 * applies to RX packet type
 		 */
 		void setLength(int len);
 
 		/**
 		 * Returns the length
 		 * of the packet
+		 *
+		 * This method really only
+		 * applies to RX packet type
 		 */
 		int getLength(void);
 	};
@@ -94,21 +100,59 @@
 	protected:
 		int ifd;
 		int ofd;
+
+		/**
+		 * Packet header field
+		 * parameter
+		 */
 		int sz;
 
 	public:
 		PktHandler();
+
+		/**
+		 * @param size [2|4|8]
+		 */
 		PktHandler(int size);
+
+		/**
+		 * @param ifd input file descriptor
+		 * @param ofd output file descriptor
+		 */
 		PktHandler(int ifd, int ofd);
+
+		/**
+		 * @see PktHandler
+		 */
 		PktHandler(int size, int ifd, int ofd);
+
+
 		~PktHandler();
 
+		/**
+		 * @return 0 SUCCESS
+		 * @return 1 FAILURE
+		 */
 		int rx(Pkt **p);
+
+		/**
+		 * @return 0 SUCCESS
+		 * @return 1 FAILURE
+		 */
 		int tx(Pkt *p);
 
 	protected:
+		/**
+		 * @return >0  LEN read
+		 * @return <=0 ERROR, check errno
+		 */
 		int rx_exact(Pkt **p, int len);
-		int tx_exact(Pkt *p, int len);
+
+		/**
+		 * @return >0   LEN written
+		 * @return <=0  ERROR, check errno
+		 */
+		int tx_exact(char *buf, int len);
 	};
 
 

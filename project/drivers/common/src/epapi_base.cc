@@ -9,12 +9,12 @@
 
 const char *
 epapiErr::errors[] = {
-	"OK",
-	"???",
-	"check errno",
-	"null pointer",
-	"bad index",
-	"bad format",
+	"OK",            //EEPAPI_OK
+	"???",           //EEPAPI_ERR
+	"check errno",   //EEPAPI_ERRNO
+	"null pointer",  //EEPAPI_NULL
+	"bad index",     //EEPAPI_BADINDEX
+	"bad format",    //EEPAPI_BADFORMAT
 
 };
 
@@ -37,3 +37,26 @@ epapiErr::strerror(epapiBase *o) {
 
 	return epapiErr::errors[num];
 }//
+
+
+#ifdef _DEBUG
+/**
+ * Crude logging function
+ */
+void doLog(int priority, const char *message, ...) {
+
+	openlog("epapi", LOG_PID, LOG_LOCAL1);
+
+	char buffer[2048];
+	va_list ap;
+
+	va_start(ap, message);
+		vsnprintf (buffer, sizeof(buffer), message, ap);
+	va_end(ap);
+
+	syslog(priority, buffer, NULL);
+
+	closelog();
+
+}
+#endif
