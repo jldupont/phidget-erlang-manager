@@ -50,7 +50,7 @@ Pkt::getBuf(void) {
 	if (NULL!=buf) {
 		sz = Pkt::DSZ;
 	} else {
-		last_error = 2;
+		last_error = EEPAPI_MALLOC;
 	}
 
 	return buf;
@@ -64,7 +64,7 @@ Pkt::getBuf(int size) {
 		if (NULL!=buf)
 			sz=size;
 		else {
-			last_error = 2;
+			last_error = EEPAPI_MALLOC;
 			return NULL;
 		}
 	}
@@ -78,7 +78,7 @@ Pkt::getBuf(int size) {
 			sz = size;
 			buf=tmp;
 		} else {
-			last_error = 6;
+			last_error = EEPAPI_REALLOC;
 		}
 	}
 	return buf;
@@ -147,7 +147,7 @@ PktHandler::rx(Pkt **p) {
 	//read length field first
 	int result=PktHandler::rx_exact(p, sz);
 	if (result<0) {
-		last_error = 7; //check errno
+		last_error = EEPAPI_ERRNO; //check errno
 		return 1;
 	}
 
@@ -160,7 +160,7 @@ PktHandler::rx(Pkt **p) {
 	// of bytes from the pipe
 	result = PktHandler::rx_exact(p, l);
 	if (result<0) {
-		last_error = 7;
+		last_error = EEPAPI_ERRNO;
 		return 1;
 	}
 

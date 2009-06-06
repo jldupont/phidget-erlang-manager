@@ -43,6 +43,9 @@ void doLog(int priority, const char *message, ...);
 		EEPAPI_NULL,
 		EEPAPI_BADINDEX,
 		EEPAPI_BADFORMAT,
+		EEPAPI_MALLOC,
+		EEPAPI_REALLOC,
+		EEPAPI_NOTFOUND,
 		//EEPAPI_,
 		//EEPAPI_
 	};
@@ -50,7 +53,7 @@ void doLog(int priority, const char *message, ...);
 	class epapiBase {
 
 	protected:
-		int last_error;
+		int last_error=0;
 
 	};
 

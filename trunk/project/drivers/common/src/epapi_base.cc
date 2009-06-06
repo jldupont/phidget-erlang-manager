@@ -15,6 +15,9 @@ epapiErr::errors[] = {
 	"null pointer",  //EEPAPI_NULL
 	"bad index",     //EEPAPI_BADINDEX
 	"bad format",    //EEPAPI_BADFORMAT
+	"malloc error",  //EEPAPI_MALLOC
+	"realloc error", //EEPAPI_REALLOC
+	"not found",     //EEPAPI_NOTFOUND
 
 };
 
