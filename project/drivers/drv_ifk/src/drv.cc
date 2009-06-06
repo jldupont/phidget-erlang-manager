@@ -388,6 +388,7 @@ int IFK_ErrorHandler(CPhidgetHandle IFK, void *equeue, int ErrorCode, const char
 	Event *e = event_create( EVENT_ERROR, ErrorCode );
 	queue_event( e, (queue *) equeue);
 
+	return 0;
 }
 
 int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *equeue, int Index, int Value)

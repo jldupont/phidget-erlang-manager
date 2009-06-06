@@ -8,18 +8,159 @@
 #ifndef MSG_H_
 #define MSG_H_
 
+#include <map>
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include "types.h"
 
-	typedef struct {
+	/*********************************************
+	 * MsgBase Class
+	 */
+	class MsgBase {
 
-		int fd;
-		int epfd;
+	private:
+		static const char *errors[];
+
+	protected:
+		int last_error;
+
+	public:
+		/**
+		 * Returns the pointer
+		 * to the human readable
+		 * message corresponding
+		 * to the last error
+		 */
+		const char *strerror(void);
+
+		/**
+		 * Returns the error code
+		 * of the last error
+		 */
+		int error(void);
+
+	};
+
+
+	/**********************************************
+	 * Msg Class
+	 */
+	class Msg: public MsgBase {
+
+	public:
+		static const int MAX_PARAMS = 16;
+
+	protected:
+
+		msg_type type;
+		int size;
+		char mformat[MAX_PARAMS];
+
+		//dirty... but quick!
+		char   *atoms[MAX_PARAMS];
+		long    longs[MAX_PARAMS];
+		char *strings[MAX_PARAMS];
+
+	public:
+		Msg(void);
+		~Msg();
+
+		/**
+		 * Returns the type of the message
+		 */
+		msg_type getType(void);
+
+		/**
+		 * Return size of parameter list
+		 */
+		int getSize(void);
+
+		/**
+		 * Returns the parameter @ index
+		 *
+		 * @param index
+		 * @param **format [A|L|S]
+		 * @param **param  value
+		 */
+		int getParam(int index, char *format, ...);
+
+		/**
+		 * Sets a parameter @ index
+		 *
+		 * Each time a parameter is set,
+		 * the internal 'size' variable
+		 * is incremented: thus, if this
+		 * method is used on a parameter more
+		 * than once, the 'size' count will
+		 * be incorrect.
+		 */
+		int setParam(int index, char format, ...);
+
+	};
+
+	typedef std::pair<msg_type, const char *> PairTypeMap;
+	typedef std::map<msg_type, const char*> TypeMap;
+
+	/**
+	 * Handler for messages to/from Erlang
+	 */
+	class MsgHandler: public MsgBase {
+
+	protected:
+		int ifd;
+		int ofd;
 		int usec_timeout;
-		struct epoll_event epv;
 
-	} msg_read_context;
+		TypeMap map;
+
+
+	public:
+		MsgHandler(int ifd, int ofd, int usec_timeout);
+		~MsgHandler();
+
+		/**
+		 * Registers a message type
+		 *
+		 * @param type
+		 * @param signature (combination of [A|L|S])
+		 */
+		void registerType(msg_type type, const char *signature);
+
+		/**
+		 * Returns the signature corresponding
+		 * to a type
+		 *
+		 * @return NULL not found
+		 */
+		const char *getSignature(msg_type type);
+
+
+		/**
+		 * Generic send message
+		 *
+		 * @param msg_type
+		 *
+		 * @return 0 SUCCESS
+		 * @return 1 FAILURE
+		 */
+		int send(msg_type type, ...);
+
+		/**
+		 * Returns the code of the last error
+		 */
+		int errno(void);
+
+		/**
+		 * Generic receive message
+		 *
+		 * @param **m  Msg
+		 *
+		 * @return 0 SUCCESS
+		 * @return 1 FAILURE
+		 */
+		int rx(Msg **m);
+
+	};
 
 	/**
 	 * Sends an Event message through the
@@ -32,34 +173,6 @@
 	 * @return 1 SUCCESS
 	 */
 	int msg_send(int fd, Event *event);
-
-	/**
-	 * Setup the 'read' (input) pipe
-	 *
-	 * @param fd file descriptor
-	 * @param usec_timeout
-	 * @param **msg_read_context
-	 *
-	 * @return >=1 ERROR
-	 * @return 1 malloc error
-	 * @return 2 epoll_create error
-	 */
-	int msg_setup_read(int fd, int usec_timeout, msg_read_context **c);
-
-
-	/**
-	 * Waits for a message, use a timeout
-	 *
-	 * Message must be destroyed through msg_destroy
-	 *
-	 * @param c    context initialized through msg_setup_read
-	 * @param m    message
-	 *
-	 * @return 1   SUCCESS
-	 * @return 0   No message ready
-	 * @return <0  ERROR
-	 */
-	int msg_rx_wait(msg_read_context *c, msg **m);
 
 
 	/**
@@ -78,5 +191,14 @@
 	void msg_destroy(msg *m);
 
 
+	/**
+	 * Generic message send
+	 *
+	 * Format string:
+	 *  A: Atom
+	 *  S: String
+	 *  L: Long
+	 */
+	int msg_send_generic(int fd,  const char *format, ...);
 
 #endif /* MSG_H_ */

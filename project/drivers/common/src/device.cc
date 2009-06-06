@@ -7,6 +7,7 @@
 #include <phidget21.h>
 #include <stdlib.h>
 #include <string.h>
+#include "msg.h"
 #include "types.h"
 #include "device.h"
 #include "logger.h"
