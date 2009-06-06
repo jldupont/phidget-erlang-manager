@@ -716,15 +716,14 @@ Msg::setParam(int index, char format, ...) {
 // =========================================
 // MsgHandler class
 // =========================================
-
-MsgHandler::MsgHandler(int _ifd, int _ofd, int _usec_timeout) {
-	ifd = _ifd;
-	ofd = _ofd;
-	usec_timeout = _usec_timeout;
+MsgHandler::MsgHandler(PktHandler *_ph) {
+	ph  = _ph;
 }//
 
 MsgHandler::~MsgHandler() {
-
+	if (NULL!=ph) {
+		delete *ph;
+	}
 }//
 
 	void
@@ -763,72 +762,156 @@ MsgHandler::getSignature(msg_type type) {
 MsgHandler::send(msg_type type, ...) {
 
 	//retrieve signature
+	const char *sig = getSignature(type);
+	if (NULL==sig)
+		return 1;
+
+	//get ourselves a Tx packet
+	Pkt *p = new Pkt();
+	ei_x_buff *b = p->getTxBuf();
+	if (NULL==b) {
+		delete *p;
+		last_error = EEPAPI_MALLOC;
+		return 1;
+	}
+
+	//tuple size
+	int len=strlen( sig );
+
+	if (len<=0) {
+		last_error = EEPAPI_BADFORMAT;
+		delete *p;
+		ei_x_free(b);
+		return 1;
+	}
+
+	 if (ei_x_new_with_version(b)) {
+		 last_error = EEPAPI_NEWEIBUF;
+		 delete *p;
+		 ei_x_free(b);
+		 return 1;
+	 }
 
 
+	 if (ei_x_encode_tuple_header(b, len)) {
+		 last_error = EEPAPI_EIENCODE;
+		 delete *p;
+		 ei_x_free(b);
+		 return 1; //<===================
+	 }
 
-		ei_x_buff *r;
-		int index=0, len;
+	int index=0;
+	int result=0; //optimistic
+	va_list args;
 
-		len=strlen( format );
-		if (0>=len) {
-			doLog(LOG_ERR, "msg_send_generic: invalid format string");
-			return 1;
-		}
+	va_start(args, format);
 
-		r=_msg_generic_build_header(len);
-		if (NULL==r) {
-			doLog(LOG_ERR, "msg_send_generic: CANNOT build header");
-			return 1;
-		}
+	for(;index<len;index++) {
+		switch(sig[index]) {
 
-		int result;
-		va_list args;
-
-		va_start(args, format);
-
-		for(;index<len;index++) {
-			switch(format[index]) {
-
-			case 'S':
-				char *string;
-				string=va_arg(args, char *);
-				result= ei_x_encode_string(r, (const char *)string);
-				break;
-			case 'A':
-				char *atom;
-				atom=va_arg(args, char *);
-				result = ei_x_encode_atom(r, atom);
-				break;
-			case 'L':
-				long lint;
-				lint = va_arg(args, long);
-				result = ei_x_encode_long(r, lint);
-				break;
-			default:
-				doLog(LOG_ERR, "msg_send_generic: INVALID format code[%c]", format[index]);
-				result = 1;
-				break;
-			}//switch
-
-			if (result) {
-				doLog(LOG_ERR, "msg_send_generic: CANNOT encode, index[%i]", index);
-				break;
-			}
-
-		}//for
-
-		va_end(args);
-
-		if (!result) {
-			if (write_msg(fd, r)<0) {
-			doLog(LOG_ERR, "msg_send_generic: ERROR writing to output, code[%i]", errno);
+		case 's':
+		case 'S':
+			char *string;
+			string=va_arg(args, char *);
+			result= ei_x_encode_string(b, (const char *)string);
+			break;
+		case 'a':
+		case 'A':
+			char *atom;
+			atom=va_arg(args, char *);
+			result = ei_x_encode_atom(b, atom);
+			break;
+		case 'd':
+		case 'D':
+			double *d;
+			d = va_arg(args, double *);
+			result = ei_x_encode_double(b, d);
+			break;
+		case 'l':
+		case 'L':
+			long lint;
+			lint = va_arg(args, long);
+			result = ei_x_encode_long(b, lint);
+			break;
+		default:
+			last_error = EEPAPI_BADFORMAT;
 			result = 1;
-			}
+			break;
+		}//switch
+
+		if (result) {
+			last_error = EEPAPI_EIENCODE;
+			result = 1; //precaution
+			break;
 		}
+	}//for
 
-		ei_x_free( r );
+	va_end(args);
 
-		return result;
+	if (!result) {
+		int tr = ph->tx( p );
+		if (tr) {
+
+			// the PktHandler layer
+			// will tell us what we need...
+			result = 1;
+			last_error = p->last_error;
+		}
+	}
+
+	delete *p;
+	ei_x_free( b );
+
+	return result;
+}//
+
+int
+MsgHandler::rx(Msg **m) {
+
+	Pkt *p = new Pkt();
+
+	int r = ph->rx(&p);
+	if (r) {
+		last_error = ph->last_error;
+		delete *p;
+		return 1;
+	}
+
+	msg_type type;
+	char stype[MAX_TYPE_LENGTH];
+	int version;
+	int arity;
+	msg_type type;
+
+	int index;
+	char *b = (char *) p->getBuf();
+
+	//we count on the first element of the
+	//received tuple to contain an ATOM
+	//which corresponds to the message type
+	if (ei_decode_version((const char *) b, &index, version)) {
+		delete *p;
+		last_error=EEPAPI_EIDECODE;
+		return 1;
+	}
+	if (ei_decode_tuple_header((const char *)b, &index, arity)) {
+		delete *p;
+		last_error=EEPAPI_EIDECODE;
+		return 1;
+	}
+
+	if (ei_decode_atom((const char *)b, &index, &stype)) {
+		delete *p;
+		last_error=EEPAPI_EIDECODE;
+		return 1;
+	}
+
+	//find a corresponding msg_type
+	//so that we can decode the message
+	const char *sig = getSignature(type);
+	if (NULL==sig)
+		return 1;
+
 
 
 }//

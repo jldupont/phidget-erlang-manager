@@ -92,16 +92,21 @@
 	 */
 	class MsgHandler: public epapiBase {
 
-	protected:
-		int ifd;
-		int ofd;
-		int usec_timeout;
+	public:
+		/**
+		 * Maximum length the 'message type'
+		 * field can be.
+		 */
+		static const int MAX_TYPE_LENGTH = 32;
 
+	protected:
+
+		PktHandler *ph;
 		TypeMap map;
 
 
 	public:
-		MsgHandler(int ifd, int ofd, int usec_timeout);
+		MsgHandler(PktHandler *ph);
 		~MsgHandler();
 
 		/**
@@ -140,7 +145,6 @@
 		 * @return 1 FAILURE
 		 */
 		int rx(Msg **m);
-
 	};
 
 

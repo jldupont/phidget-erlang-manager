@@ -18,6 +18,9 @@ epapiErr::errors[] = {
 	"malloc error",  //EEPAPI_MALLOC
 	"realloc error", //EEPAPI_REALLOC
 	"not found",     //EEPAPI_NOTFOUND
+	"new ei_x_buf",  //EEPAPI_NEWEIBUF
+	"ei encode",     //EEPAPI_EIENCODE
+	"ei decode",     //EEPAPI_EIDECODE
 
 };
 

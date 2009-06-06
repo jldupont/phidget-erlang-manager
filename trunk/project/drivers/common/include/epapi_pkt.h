@@ -31,7 +31,7 @@
 		int len;
 
 		//TX packet type
-		ei_x_buff tbuf;
+		ei_x_buff *tbuf;
 
 	public:
 
@@ -39,13 +39,6 @@
 		 * Creates a RX packet
 		 */
 		Pkt();
-
-		/**
-		 * Creates a TX packet
-		 * with the a fixed
-		 * field for the packet length
-		 */
-		Pkt(int lenSz);
 
 		/**
 		 * Destroys either RX or TX
@@ -78,7 +71,9 @@
 		 * ie. not the buffer length
 		 *
 		 * This method really only
-		 * applies to RX packet type
+		 * applies to RX packet type and usually
+		 * used by the PktHandler.
+		 *
 		 */
 		void setLength(int len);
 
@@ -95,7 +90,7 @@
 	/**
 	 * Packet Handler
 	 */
-	class PktHandler: public PktBase {
+	class PktHandler: public epapiBase {
 
 	protected:
 		int ifd;
