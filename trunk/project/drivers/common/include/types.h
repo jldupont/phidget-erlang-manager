@@ -8,8 +8,11 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
-
+	/**
+	 * Message Type
+	 */
 	typedef int msg_type;
+
 
 	/**
 	 * Messages supported

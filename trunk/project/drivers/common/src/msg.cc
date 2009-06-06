@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <ei.h>
 #include "msg.h"
 #include "event.h"
@@ -69,12 +70,12 @@ int _msg_send2(int fd, EventType type, Event *event);
 int _msg_send3(int fd, EventType type, Event *event);
 
 msg *_msg_factory(msg_type type);
-int _msg_read_wait(msg_read_context *c);
 int _msg_read_decode_header(mbuf *b);
 int _msg_translate_type(char *etype);
-int _msg_read_decode_variant1(mbuf *b, long int *i1, long int *i2);
+int _msg_read_decode_variantII(mbuf *b, long int *i1, long int *i2);
 int _msg_decode_body(mbuf *mb, msg **m);
 void _msg_destroy_mbuf(mbuf *mb);
+ei_x_buff *_msg_generic_build_header(int size);
 
 /**
  * Synchronous message sending
@@ -236,6 +237,7 @@ int _msg_send3(int fd, EventType type, Event *event) {
 
 }//
 
+
 /**
  *  {ATOM(msg_type), INT(Serial), ... }
  */
@@ -320,92 +322,6 @@ const char *_msg_type_to_atom(EventType type) {
 }//
 
 
-/**
- * @return >=1 FAILURE
- */
-int msg_setup_read(int fd, int usec_timeout, msg_read_context **c) {
-
-	*c = (msg_read_context *) malloc(sizeof(msg_read_context));
-	if (NULL==*c) {
-		DEBUG_LOG(LOG_ERR, "msg_setup_read: CANNOT malloc for msg_read_context");
-		return 1;
-	}
-
-	(*c)->fd = fd;
-	(*c)->usec_timeout = usec_timeout;
-
-	(*c)->epfd = epoll_create(1);
-	if ((*c)->epfd < 0) {
-		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR with epoll_create");
-		free(*c);
-		return 2;
-	}
-
-	int ret;
-
-	(*c)->epv.data.fd = fd;
-	(*c)->epv.events = EPOLLIN;
-
-	ret = epoll_ctl( (*c)->epfd, EPOLL_CTL_MOD, fd, &((*c)->epv) );
-	if (ret) {
-		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR during epoll_ctl");
-		free(*c);
-	}
-
-	return ret;
-}//
-
-int _msg_read_wait(msg_read_context *c) {
-
-	int nr_events = epoll_wait (c->epfd, &(c->epv), 1, c->usec_timeout);
-	if (nr_events < 0) {
-		DEBUG_LOG(LOG_ERR, "msg_setup_read: ERROR during epoll_wait");
-		return 1;
-	}
-
-	return nr_events;
-}//
-
-
-/**
- * Wait for a message
- *
- * @return 1   SUCCESS
- * @return 0   no message ready
- * @return -1  ERROR
- * @return -2  MALLOC ERROR
- * @return -3  ERROR packet header
- * @return -4  ERROR unsupported message type
- */
-int msg_rx_wait(msg_read_context *c, msg **m) {
-
-	int count = _msg_read_wait( c );
-	if (0==count)
-		return 0;
-
-	mbuf *mb = (mbuf *) malloc(sizeof(mbuf));
-	if (NULL==mb) {
-		return -2;
-	}
-
-	// something happened on the 'wire'...
-	int r=read_packet(c->fd, &(mb->buf), &(mb->size));
-	if (r<=0) {
-		doLog(LOG_ERR, "msg_rx_wait: ERROR receiving packet");
-		free(mb);
-		return -1;
-	}
-
-	// we've got the packet ok... let's start decoding it
-	int r2=_msg_read_decode_header( mb );
-	if (r2<0) {
-		doLog(LOG_ERR, "msg_rx_wait: ERROR decoding packet header");
-		free(mb);
-		return -3;
-	}
-
-	return _msg_decode_body(mb, m);
-}//
 
 
 int msg_rx(int fd, msg **m) {
@@ -473,7 +389,7 @@ int _msg_decode_body(mbuf *mb, msg **m) {
 	switch(mt) {
 	case MSG_DOUT:
 		(*m)->body.dout.serial = mb->serial;
-		r=_msg_read_decode_variant1( mb, &((*m)->body.dout.index), &((*m)->body.dout.value) );
+		r=_msg_read_decode_variantII( mb, &((*m)->body.dout.index), &((*m)->body.dout.value) );
 		break;
 
 	default:
@@ -499,7 +415,7 @@ int _msg_decode_body(mbuf *mb, msg **m) {
  * @return 0  SUCCESS
  * @return <0 FAILURE
  */
-int _msg_read_decode_variant1(mbuf *b, long int *i1, long int *i2) {
+int _msg_read_decode_variantII(mbuf *b, long int *i1, long int *i2) {
 
 	if (ei_decode_long((const char *) b->buf, &(b->index), i1)) {
 		DEBUG_LOG(LOG_ERR, "_msg_read_decode_variant1: ERROR decoding INT at index 0");
@@ -616,3 +532,299 @@ void _msg_destroy_mbuf(mbuf *mb) {
 	free(mb->buf);
 	free(mb);
 }
+
+
+
+/**
+ * Generic message send
+ *
+ * @param fd
+ * @param format
+ *
+ * @return 0 SUCCESS
+ * @return 1 FAILURE
+ */
+int msg_send_generic(int fd, const char *format, ...) {
+
+	ei_x_buff *r;
+	int index=0, len;
+
+	len=strlen( format );
+	if (0>=len) {
+		doLog(LOG_ERR, "msg_send_generic: invalid format string");
+		return 1;
+	}
+
+	r=_msg_generic_build_header(len);
+	if (NULL==r) {
+		doLog(LOG_ERR, "msg_send_generic: CANNOT build header");
+		return 1;
+	}
+
+	int result;
+	va_list args;
+
+	va_start(args, format);
+
+	for(;index<len;index++) {
+		switch(format[index]) {
+
+		case 'S':
+			char *string;
+			string=va_arg(args, char *);
+			result= ei_x_encode_string(r, (const char *)string);
+			break;
+		case 'A':
+			char *atom;
+			atom=va_arg(args, char *);
+			result = ei_x_encode_atom(r, atom);
+			break;
+		case 'L':
+			long lint;
+			lint = va_arg(args, long);
+			result = ei_x_encode_long(r, lint);
+			break;
+		default:
+			doLog(LOG_ERR, "msg_send_generic: INVALID format code[%c]", format[index]);
+			result = 1;
+			break;
+		}//switch
+
+		if (result) {
+			doLog(LOG_ERR, "msg_send_generic: CANNOT encode, index[%i]", index);
+			break;
+		}
+
+	}//for
+
+	va_end(args);
+
+	if (!result) {
+		if (write_msg(fd, r)<0) {
+		doLog(LOG_ERR, "msg_send_generic: ERROR writing to output, code[%i]", errno);
+		result = 1;
+		}
+	}
+
+	ei_x_free( r );
+
+	return result;
+}//
+
+/**
+ * Generic message header builder
+ *
+ * Should be used in conjunction with
+ * the functions msg_send_variantXYZ
+ *
+ *
+ * @param size tuple size to allocate for
+ * @return ei_x_buff *
+ */
+ei_x_buff *_msg_generic_build_header(int size) {
+
+	ei_x_buff *result;
+
+	result = (ei_x_buff *) malloc(sizeof(ei_x_buff));
+	if (NULL==result)
+		return NULL;
+
+	 if (ei_x_new_with_version(result)) {
+		 doLog(LOG_ERR, "_msg_generic_build: CANNOT create new result buffer");
+		 return NULL;
+	 }
+
+	 return result;
+}//
+
+
+
+// =========================================
+// MsgBase class
+// =========================================
+
+	const char *
+MsgBase::strerror(void) {
+
+	return (const char *) errors[last_error];
+
+}//
+
+	int
+MsgBase::error(void) {
+	return last_error;
+}
+
+	const char *
+MsgBase::errors[] = {
+	"???",           //0
+	"success",       //1
+	"malloc error",  //2
+	"invalid index", //3  x
+	"null pointer",  //4
+	"invalid format" //5  x
+};
+
+// =========================================
+// Msg class
+// =========================================
+
+
+
+Msg::Msg(void) {
+	last_error = 0;
+	type = 0;
+	size = 0;
+
+	for (int i=0;i<MAX_PARAMS;i++) {
+		mformat[i] = '\0';
+		atoms[i]   = NULL;
+		strings[i] = NULL;
+		longs[i]   = 0;
+	}
+
+}//
+
+Msg::~Msg() {
+
+	for (int i=0;i<MAX_PARAMS;i++) {
+		if (NULL!=atoms[i])
+			free(atoms[i]);
+		if (NULL!=strings[i])
+			free(strings[i]);
+	}
+}//
+
+	int
+Msg::getSize(void) {
+	return size;
+}//
+
+	msg_type
+Msg::getType(void) {
+	return type;
+}//
+
+	int
+Msg::getParam(int index, char *format, ...) {
+
+	if ((index>Msg::MAX_PARAMS)|| (index>size)) {
+		last_error = 3;
+		return 1;
+	}
+
+	int result = 0; //optimistic
+
+	*format = mformat[index];
+
+	va_list args;
+	va_start(args, format);
+
+	switch(mformat[index]) {
+	case 'A':
+		char **a;
+		a = va_arg(args, char**);
+		*a = atoms[index];
+		break;
+	case 'L':
+		long *l;
+		l = va_arg(args, long *);
+		*l = longs[index];
+		break;
+	case 'S':
+		char **s;
+		s = va_arg(args, char**);
+		*s = strings[index];
+		break;
+	default:
+		last_error = 5;
+		result = 1;
+		break;
+	}
+	va_end(args);
+
+	return result;
+}//
+
+	int
+Msg::setParam(int index, char format, ...) {
+
+	if ((index>Msg::MAX_PARAMS)|| (index>size)) {
+		last_error = 3;
+		return 1;
+	}
+
+	// careful...
+	size++;
+
+	mformat[index] = format;
+
+	int result = 0;
+
+	va_list args;
+	va_start(args, format);
+
+	switch(format) {
+	case 'A':
+		atoms[index] = va_arg(args, char *);
+		break;
+	case 'L':
+		longs[index] = va_arg(args, long);
+		break;
+	case 'S':
+		strings[index] = va_arg(args, char *);
+		break;
+	default:
+		last_error = 5;
+		result = 1;
+		break;
+	}
+
+	va_end(args);
+
+	return result;
+}//
+
+
+
+// =========================================
+// MsgHandler class
+// =========================================
+
+MsgHandler::MsgHandler(int _ifd, int _ofd, int _usec_timeout) {
+	ifd = _ifd;
+	ofd = _ofd;
+	usec_timeout = _usec_timeout;
+}//
+
+MsgHandler::~MsgHandler() {
+
+}//
+
+	void
+MsgHandler::registerType(msg_type type, const char *signature) {
+
+	map.insert( PairTypeMap(type, signature) );
+
+}//
+
+	const char *
+MsgHandler::getSignature(msg_type type) {
+
+	TypeMap::iterator it;
+
+	it = map.find(type);
+	if (it!=map.end()) {
+		return it->second;
+	}
+
+	return NULL;
+}//
+
+
+	int
+MsgHandler::send(msg_type type, ...) {
+
+}//
+
+
