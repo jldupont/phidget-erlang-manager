@@ -101,31 +101,15 @@
 		int ifd;
 		int ofd;
 
-		/**
-		 * Packet header field
-		 * parameter
-		 */
-		int sz;
 
 	public:
 		PktHandler();
-
-		/**
-		 * @param size [2|4|8]
-		 */
-		PktHandler(int size);
 
 		/**
 		 * @param ifd input file descriptor
 		 * @param ofd output file descriptor
 		 */
 		PktHandler(int ifd, int ofd);
-
-		/**
-		 * @see PktHandler
-		 */
-		PktHandler(int size, int ifd, int ofd);
-
 
 		~PktHandler();
 

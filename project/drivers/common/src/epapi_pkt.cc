@@ -99,25 +99,11 @@ Pkt::getLength(void) {
 // =========================================
 
 PktHandler::PktHandler() {
-	sz = 2;  //default to length field of 2bytes
-	ifd = 0; //usually stdin
-	ofd = 1; //usually stdout
-}//
-
-PktHandler::PktHandler(int size) {
-	sz = size;
 	ifd = 0; //usually stdin
 	ofd = 1; //usually stdout
 }//
 
 PktHandler::PktHandler(int _ifd, int _ofd) {
-	sz  = 2;
-	ifd = _ifd;
-	ofd = _ofd;
-}
-
-PktHandler::PktHandler(int size, int _ifd, int _ofd) {
-	sz  = size;
 	ifd = _ifd;
 	ofd = _ofd;
 }
@@ -135,7 +121,7 @@ int
 PktHandler::rx_exact(Pkt **p, int len) {
 
 	unsigned char *buf;
-	buf=(*p)->getBuf();
+	buf=(*p)->getBuf(len);
 
 	int i, got=0;
 
@@ -159,20 +145,20 @@ PktHandler::rx(Pkt **p) {
 	*p = new Pkt();
 
 	//read length field first
-	int result=rx_exact(p, sz);
+	int result=PktHandler::rx_exact(p, sz);
 	if (result<0) {
 		last_error = 7; //check errno
 		return 1;
 	}
 
+	unsigned char *buf = (*p)->getBuf();
 	int l = ((*buf)[0] << 8) | (*buf)[1];
-	unsigned char *buf = (*p)->getBuf(l);
 
 	// the packet length gave us
 	// the information we needed
 	// to extract the right count
 	// of bytes from the pipe
-	result = rx_exact(p, l);
+	result = PktHandler::rx_exact(p, l);
 	if (result<0) {
 		last_error = 7;
 		return 1;
@@ -194,8 +180,6 @@ PktHandler::tx(Pkt *p) {
 
 	//write packet length
 	//===================
-	int i=sz;
-
 	li = (buf->index >> 8) & 0xff;
 	result = PktHandler::tx_exact((char *)&li, 1);
 	if (result<=0) {
