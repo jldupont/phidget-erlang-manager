@@ -1,11 +1,11 @@
 /**
- * @file pkt.cc
+ * @file epapi_pkt.cc
  *
  * @date   2009-06-06
  * @author Jean-Lou Dupont
  */
-#include "stdlib.h"
-#include "pkt.h"
+#include "epapi.h"
+
 
 // =========================================
 // PktBase class
@@ -48,7 +48,6 @@ PktBase::errors[] = {
 Pkt::Pkt() {
 	sz=0;
 	buf=NULL;
-	tbuf=NULL;
 }//
 
 /**
@@ -62,7 +61,6 @@ Pkt::~Pkt() {
 
 	if (NULL!=buf)
 		free(buf);
-
 }//
 
 ei_x_buff *
