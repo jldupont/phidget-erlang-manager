@@ -8,39 +8,17 @@
 #ifndef PKT_H_
 #define PKT_H_
 
-#include <ei.h>
-
-	/**
-	 * Packet Base
-	 */
-	class PktBase {
-	private:
-		static const char *errors[];
-
-	protected:
-		int last_error;
-
-	public:
-		/**
-		 * Returns the pointer
-		 * to the human readable
-		 * message corresponding
-		 * to the last error
-		 */
-		const char *strerror(void);
-
-		/**
-		 * Returns the error code
-		 * of the last error
-		 */
-		int error(void);
-	};
+//dev support
+#ifndef EPAPI_H_
+	#include "epapi.h"
+#endif
 
 
 	/**
 	 * Packet class
 	 */
-	class Pkt: public PktBase {
+	class Pkt: public epapiBase {
+
 
 	private:
 		static const int DSZ = 128;

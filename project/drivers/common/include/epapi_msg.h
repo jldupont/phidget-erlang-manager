@@ -8,44 +8,23 @@
 #ifndef MSG_H_
 #define MSG_H_
 
-#include <map>
-#include <sys/epoll.h>
-#include <stdlib.h>
-#include "types.h"
+//dev support
+#ifndef EPAPI_H_
+	#include "epapi.h"
+#endif
 
-	/*********************************************
-	 * MsgBase Class
+
+	/**
+	 * Message Type
 	 */
-	class MsgBase {
+	typedef int msg_type;
 
-	private:
-		static const char *errors[];
-
-	protected:
-		int last_error;
-
-	public:
-		/**
-		 * Returns the pointer
-		 * to the human readable
-		 * message corresponding
-		 * to the last error
-		 */
-		const char *strerror(void);
-
-		/**
-		 * Returns the error code
-		 * of the last error
-		 */
-		int error(void);
-
-	};
 
 
 	/**********************************************
 	 * Msg Class
 	 */
-	class Msg: public MsgBase {
+	class Msg: public epapiBase {
 
 	public:
 		static const int MAX_PARAMS = 16;
@@ -71,7 +50,7 @@
 		msg_type getType(void);
 
 		/**
-		 * Return size of parameter list
+		 * Return the size of the parameter list
 		 */
 		int getSize(void);
 
@@ -98,13 +77,19 @@
 
 	};
 
+
+
+
 	typedef std::pair<msg_type, const char *> PairTypeMap;
 	typedef std::map<msg_type, const char*> TypeMap;
+
+
+
 
 	/**
 	 * Handler for messages to/from Erlang
 	 */
-	class MsgHandler: public MsgBase {
+	class MsgHandler: public epapiBase {
 
 	protected:
 		int ifd;
@@ -146,11 +131,6 @@
 		int send(msg_type type, ...);
 
 		/**
-		 * Returns the code of the last error
-		 */
-		int errno(void);
-
-		/**
 		 * Generic receive message
 		 *
 		 * @param **m  Msg
@@ -162,43 +142,5 @@
 
 	};
 
-	/**
-	 * Sends an Event message through the
-	 * file pipe
-	 *
-	 * @param fd    file descriptor
-	 * @param event event pointer
-	 *
-	 * @return 0 FAILURE
-	 * @return 1 SUCCESS
-	 */
-	int msg_send(int fd, Event *event);
-
-
-	/**
-	 * Blocking message wait
-	 *
-	 * @return 1   SUCCESS, m is valid
-	 * @return 0   no message
-	 * @return <0  ERROR
-	 */
-	int msg_rx(int fd, msg **m);
-
-
-	/**
-	 * Destroys a message
-	 */
-	void msg_destroy(msg *m);
-
-
-	/**
-	 * Generic message send
-	 *
-	 * Format string:
-	 *  A: Atom
-	 *  S: String
-	 *  L: Long
-	 */
-	int msg_send_generic(int fd,  const char *format, ...);
 
 #endif /* MSG_H_ */
