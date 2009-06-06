@@ -575,39 +575,12 @@ ei_x_buff *_msg_generic_build_header(int size) {
 
 
 // =========================================
-// MsgBase class
-// =========================================
-
-	const char *
-MsgBase::strerror(void) {
-
-	return (const char *) errors[last_error];
-
-}//
-
-	int
-MsgBase::error(void) {
-	return last_error;
-}
-
-	const char *
-MsgBase::errors[] = {
-	"???",           //0
-	"success",       //1
-	"malloc error",  //2
-	"invalid index", //3  x
-	"null pointer",  //4
-	"invalid format" //5  x
-};
-
-// =========================================
 // Msg class
 // =========================================
 
 
 
 Msg::Msg(void) {
-	last_error = 0;
 	type = 0;
 	size = 0;
 
@@ -616,6 +589,7 @@ Msg::Msg(void) {
 		atoms[i]   = NULL;
 		strings[i] = NULL;
 		longs[i]   = 0;
+		doubles[i] = 0.0;
 	}
 
 }//
@@ -644,7 +618,7 @@ Msg::getType(void) {
 Msg::getParam(int index, char *format, ...) {
 
 	if ((index>Msg::MAX_PARAMS)|| (index>size)) {
-		last_error = 3;
+		last_error = EEPAPI_BADINDEX;
 		return 1;
 	}
 
@@ -656,23 +630,33 @@ Msg::getParam(int index, char *format, ...) {
 	va_start(args, format);
 
 	switch(mformat[index]) {
+	case 'a':
 	case 'A':
 		char **a;
 		a = va_arg(args, char**);
 		*a = atoms[index];
 		break;
+	case 'l':
 	case 'L':
 		long *l;
 		l = va_arg(args, long *);
 		*l = longs[index];
 		break;
+	case 'd':
+	case 'D':
+		double *d;
+		d = va_arg(args, double *);
+		*d = doubles[index];
+		break;
+
+	case 's':
 	case 'S':
 		char **s;
 		s = va_arg(args, char**);
 		*s = strings[index];
 		break;
 	default:
-		last_error = 5;
+		last_error = EEPAPI_BADFORMAT;
 		result = 1;
 		break;
 	}
@@ -685,7 +669,7 @@ Msg::getParam(int index, char *format, ...) {
 Msg::setParam(int index, char format, ...) {
 
 	if ((index>Msg::MAX_PARAMS)|| (index>size)) {
-		last_error = 3;
+		last_error = EEPAPI_BADINDEX;
 		return 1;
 	}
 
@@ -700,17 +684,24 @@ Msg::setParam(int index, char format, ...) {
 	va_start(args, format);
 
 	switch(format) {
+	case 'a':
 	case 'A':
 		atoms[index] = va_arg(args, char *);
 		break;
+	case 'l':
 	case 'L':
 		longs[index] = va_arg(args, long);
 		break;
+	case 'd':
+	case 'D':
+		doubles[index] = va_arg(args, double);
+		break;
+	case 's':
 	case 'S':
 		strings[index] = va_arg(args, char *);
 		break;
 	default:
-		last_error = 5;
+		last_error = EEPAPI_BADFORMAT;
 		result = 1;
 		break;
 	}
@@ -754,6 +745,7 @@ MsgHandler::getSignature(msg_type type) {
 		return it->second;
 	}
 
+	last_error = EEPAPI_NOTFOUND;
 	return NULL;
 }//
 

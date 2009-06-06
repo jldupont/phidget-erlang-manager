@@ -36,9 +36,10 @@
 		char mformat[MAX_PARAMS];
 
 		//dirty... but quick!
-		char   *atoms[MAX_PARAMS];
-		long    longs[MAX_PARAMS];
-		char *strings[MAX_PARAMS];
+		char    *atoms[MAX_PARAMS];
+		long     longs[MAX_PARAMS];
+		double doubles[MAX_PARAMS];
+		char  *strings[MAX_PARAMS];
 
 	public:
 		Msg(void);
