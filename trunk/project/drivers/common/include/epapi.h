@@ -4,6 +4,8 @@
  * @date   2009-06-06
  * @author Jean-Lou Dupont
  *
+ *
+ * \note Only packet header with length field=2 is supported.
  */
 
 #ifndef EPAPI_H_
