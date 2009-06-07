@@ -19,6 +19,13 @@
 	 */
 	typedef int msg_type;
 
+	/**
+	 * Message text as expected
+	 * from the Erlang side.
+	 * Must be in ATOM format
+	 * ie. all lower-case
+	 */
+	typedef const char *msg_type_text;
 
 
 	/**********************************************
@@ -82,7 +89,10 @@
 
 
 	typedef std::pair<msg_type, const char *> PairTypeMap;
+	typedef std::pair<msg_type_text, const char *> PairTypeTextMap;
+
 	typedef std::map<msg_type, const char*> TypeMap;
+	typedef std::map<msg_type_text, const char*> TypeTextMap;
 
 
 
@@ -99,10 +109,16 @@
 		 */
 		static const int MAX_TYPE_LENGTH = 32;
 
+		static const int MAX_ATOM_SIZE   = 32;
+
+		static const int MAX_STRING_SIZE = 4000;
+
+
 	protected:
 
 		PktHandler *ph;
 		TypeMap map;
+		TypeTextMap tmap;
 
 
 	public:
@@ -115,17 +131,27 @@
 		 * @param type
 		 * @param signature (combination of [A|L|S])
 		 */
-		void registerType(msg_type type, const char *signature);
+		void registerType(	msg_type type,
+							msg_type_text *ttype,
+							const char *signature);
 
 		/**
 		 * Returns the signature corresponding
-		 * to a type
+		 * to a type.
+		 *
+		 * Used during message transmission/encoding.
 		 *
 		 * @return NULL not found
 		 */
 		const char *getSignature(msg_type type);
 
-
+		/**
+		 * Returns the signature corresponding
+		 * to a type text.
+		 *
+		 * Used during message reception/decoding.
+		 */
+		const char *getSignatureFromTypeText(msg_type_text *ttype);
 		/**
 		 * Generic send message
 		 *
