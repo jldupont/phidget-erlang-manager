@@ -49,6 +49,7 @@ void doLog(int priority, const char *message, ...);
 		EEPAPI_NEWEIBUF,
 		EEPAPI_EIENCODE,
 		EEPAPI_EIDECODE,
+		EEPAPI_TOOBIG,
 		//EEPAPI_,
 		//EEPAPI_
 	};

@@ -21,6 +21,7 @@ epapiErr::errors[] = {
 	"new ei_x_buf",  //EEPAPI_NEWEIBUF
 	"ei encode",     //EEPAPI_EIENCODE
 	"ei decode",     //EEPAPI_EIDECODE
+	"too many elements", //EEPAPI_TOOBIG
 
 };
 
