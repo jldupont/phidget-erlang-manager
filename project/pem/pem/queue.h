@@ -4,8 +4,6 @@
  * @date   2009-04-23
  * @author Jean-Lou Dupont
  *
- * \note   The definition of the types for this module
- * 		   are located in litm.h
  *
  */
 
@@ -50,7 +48,7 @@
 	// ==========
 	queue *queue_create(int id);
 
-	void   queue_destroy(queue *queue);
+	void  queue_destroy(queue *queue);
 
 	int   queue_put_nb(queue *q, void *msg);
 
@@ -69,7 +67,7 @@
 	void *queue_get(queue *q);
 	void *queue_get_nb(queue *q);
 	int   queue_wait(queue *q);
-	int queue_wait_timer(queue *q, int usec_timer);
+	int   queue_wait_timer(queue *q, int usec_timer);
 
 	int   queue_peek(queue *q);
 	void  queue_signal(queue *q);

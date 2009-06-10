@@ -23,11 +23,9 @@ Help("""\
 
 # LIST MODULES
 # ============
-includes = ['#drivers/common/include',]
+includes = ['#pem',]
 
-list_modules = [	'#drivers/common',
-					'#drivers/drv_mng',
-					'#drivers/drv_ifk',
+list_modules = [	'#pem/common',
 				]
 
 

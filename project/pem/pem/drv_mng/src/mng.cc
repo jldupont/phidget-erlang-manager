@@ -8,6 +8,14 @@
 
 #include "mng.h"
 
+drvMng::drvMng() : drvBase() {
+
+}//
+
+drvMng::~drvMng() {
+
+}//
+
 void
 drvMng::init(void) {
 
