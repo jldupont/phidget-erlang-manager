@@ -4,7 +4,7 @@
  * @date   10-Jun-2009
  * @author Jean-Lou Dupont
  */
-
+#include "base.h"
 
 drvBase::drvBase() {
 
@@ -42,7 +42,7 @@ drvBase::createEvent(eventType type) {
 }//
 
 
-static void *
+void *
 drvBase::readThreadFun( void *params ) {
 
 	DBGLOG(LOG_INFO, "drvBase::readThreadFun: BEGIN");
@@ -50,12 +50,11 @@ drvBase::readThreadFun( void *params ) {
 	drvReadThreadParams *p = (drvReadThreadParams *) params;
 
 	int result;
-	queue *q = params->q;
+	queue *q = p->eq;
 	Msg *m;
-	MsgHandler *mh = params->mh;
+	MsgHandler *mh = p->mh;
 
-	//prepare a "EVENT_READ_ERROR"
-	//just in case
+	//prepare an "EVENT_READ_ERROR" just in case
 	event *ere = (event *) malloc(sizeof(event));
 	ere->type = EVENT_READ_ERROR;
 
@@ -118,7 +117,7 @@ drvBase::waitMsg(Msg **m, int usec_timeout) {
 
 
 int
-drvBase::waitMsg(Msg *m) {
+drvBase::waitMsg(Msg **m) {
 
 	return waitMsg(m, -1);
 }//

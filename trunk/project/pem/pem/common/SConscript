@@ -1,0 +1,25 @@
+"""
+scons build file
+
+@author: Jean-Lou Dupont
+"""
+
+Import('env')
+
+d = env.Dictionary()
+
+#no difference at this point
+if d.get('_DEBUG', False):
+	#DEBUG
+	libs=['epapi_debug', 'phidget21']
+	pr = env.SharedLibrary('pem_common_debug', Glob("src/*.cc"), LIBS=libs )	
+	env.Install('/usr/local/lib', '#pem/common/debug/libpem_common_debug.so')
+else:
+	#RELEASE
+	libs=['epapi', 'phidget21']
+	pr = env.SharedLibrary('pem_common', Glob("src/*.cc"), LIBS=libs )
+	env.Install('/usr/local/lib', '#pem/common/release/libpem_common.so')
+	
+Default(pr)
+	
+env.Alias('installlib', '/usr/local/lib')

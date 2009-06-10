@@ -37,7 +37,7 @@
 	 * Event definition
 	 */
 	typedef struct {
-		event_type type;
+		eventType type;
 		Msg        *m;
 	} event;
 
@@ -49,22 +49,22 @@
 	protected:
 
 		PktHandler *ph;
-		MshHandler *mh;
+		MsgHandler *mh;
 
-		pthread_t readThread;
+		pthread_t   readThread;
 		queue      *eq;
 
 	public:
 		/**
 		 * Constructor
 		 */
-		drvBase::drvBase();
+		drvBase();
 
 
 		/**
 		 * Destructor
 		 */
-		drvBase::~drvBase();
+		~drvBase();
 
 
 	protected:
@@ -73,12 +73,6 @@
 		 * specific initialization
 		 */
 		void init(void);
-
-
-		/**
-		 * Main loop
-		 */
-		void loop(void) = 0;
 
 
 		/**
@@ -107,13 +101,13 @@
 		int waitMsg(Msg **m);
 
 
-	protected:
+	public:
 
 		void startReadThread(void);
 
 		static void *readThreadFun( void *params );
 
-		event *createEvent(eventType type);
+		static event *createEvent(eventType type);
 
 	};
 
@@ -126,12 +120,14 @@
 	#define DBGMSG(...) printf(__VA_ARGS__)
 	#define DBGLOG(...) doLog(__VA_ARGS__)
 	#define DBGLOG_NULL_PTR(ptr, ...) if (NULL==ptr) doLog(__VA_ARGS__)
+	#define DEBUG_LOG DBGLOG
 	#else
 	#define DBGBEGIN if(0){
 	#define DBGEND   }
 	#define DBGMSG(...)
 	#define DBGLOG(...)
 	#define DBGLOG_NULL_PTR(ptr, ...)
+	#define DEBUG_LOG DBGLOG
 	#endif
 
 

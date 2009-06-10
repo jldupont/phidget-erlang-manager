@@ -17,7 +17,7 @@
 #include <pthread.h>
 #include <errno.h>
 
-#include "logger.h"
+#include "base.h"
 #include "queue.h"
 
 // PRIVATE
