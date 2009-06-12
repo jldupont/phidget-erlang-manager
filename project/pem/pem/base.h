@@ -13,6 +13,7 @@
 #include <epapi.h>
 
 #include "queue.h"
+#include "device.h"
 
 	/**
 	 * Class for passing parameters
