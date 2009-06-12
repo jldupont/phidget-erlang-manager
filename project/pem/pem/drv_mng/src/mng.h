@@ -18,8 +18,6 @@
 		~drvMng();
 
 		void init(void);
-
-		void handleMsg(Msg *m);
 	};
 
 #endif /* MNG_H_ */

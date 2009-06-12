@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <epapi.h>
 
+#include "logger.h"
 #include "queue.h"
 #include "device.h"
 
@@ -111,25 +112,5 @@
 		static event *createEvent(eventType type);
 
 	};
-
-
-	#ifdef _DEBUG
-	#include <syslog.h>
-	void doLog(int priority, const char *message, ...);
-	#define DBGBEGIN
-	#define DBGEND
-	#define DBGMSG(...) printf(__VA_ARGS__)
-	#define DBGLOG(...) doLog(__VA_ARGS__)
-	#define DBGLOG_NULL_PTR(ptr, ...) if (NULL==ptr) doLog(__VA_ARGS__)
-	#define DEBUG_LOG DBGLOG
-	#else
-	#define DBGBEGIN if(0){
-	#define DBGEND   }
-	#define DBGMSG(...)
-	#define DBGLOG(...)
-	#define DBGLOG_NULL_PTR(ptr, ...)
-	#define DEBUG_LOG DBGLOG
-	#endif
-
 
 #endif /* BASE_H_ */
