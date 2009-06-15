@@ -7,6 +7,8 @@
 #include "base.h"
 
 phDevice::phDevice(CPhidgetHandle _phid){
+	DEBUG_LOG(LOG_INFO, "phDevice::phDevice");
+
 	phid  = _phid;
 	type  = NULL;
 	name  = NULL;
@@ -14,6 +16,7 @@ phDevice::phDevice(CPhidgetHandle _phid){
 }//
 
 phDevice::~phDevice() {
+	DEBUG_LOG(LOG_INFO, "phDevice::~phDevice");
 
 	if (NULL!=type)
 		free(type);
@@ -28,6 +31,8 @@ phDevice::~phDevice() {
 void
 phDevice::init(void) {
 
+	DEBUG_LOG(LOG_INFO, "phDevice::init() BEGIN");
+
 	const char *_type, *_name, *_label;
 
 	CPhidget_getSerialNumber(phid, &serial);
@@ -39,9 +44,9 @@ phDevice::init(void) {
 	//perform copies
 	size_t sz_char = sizeof(char);
 
-	size_t sz_type  = strlen( type )  + sz_char;
-	size_t sz_name  = strlen( name )  + sz_char;
-	size_t sz_label = strlen( label ) + sz_char;
+	size_t sz_type  = strlen( _type )  + sz_char;
+	size_t sz_name  = strlen( _name )  + sz_char;
+	size_t sz_label = strlen( _label ) + sz_char;
 
 	type  = (char *) malloc( sz_type  * sizeof(char) );
 	name  = (char *) malloc( sz_name  * sizeof(char) );
@@ -51,4 +56,5 @@ phDevice::init(void) {
 	strncpy( name,  _name,  sz_name  );
 	strncpy( label, _label, sz_label );
 
+	DEBUG_LOG(LOG_INFO, "phDevice::init() END");
 }//
