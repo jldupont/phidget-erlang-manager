@@ -64,6 +64,8 @@
 		/**
 		 * Called to perform class
 		 * specific initialization
+		 * e.g. MsgHandler::registerType
+		 *
 		 */
 		virtual void init(void) = 0;
 

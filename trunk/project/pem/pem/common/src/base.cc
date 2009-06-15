@@ -8,7 +8,7 @@
 
 drvBase::drvBase() {
 
-	DEBUG_LOG(LOG_INFO, "drvBase::drvBase()");
+	//DEBUG_LOG(LOG_INFO, "drvBase::drvBase()");
 
 	ph = new PktHandler();
 	mh = new MsgHandler(ph);
@@ -17,7 +17,7 @@ drvBase::drvBase() {
 
 drvBase::~drvBase() {
 
-	DEBUG_LOG(LOG_INFO, "drvBase::~drvBase()");
+	//DEBUG_LOG(LOG_INFO, "drvBase::~drvBase()");
 
 	delete mh;
 	delete ph;
