@@ -45,6 +45,8 @@
 		void txDetach(void);
 
 		void txError(int code, const char *string);
+
+		void setDigitalOut(int index, int value);
 	};
 
 
