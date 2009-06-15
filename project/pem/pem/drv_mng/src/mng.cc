@@ -21,6 +21,7 @@ void
 drvMng::init(void) {
 
 	DEBUG_LOG(LOG_INFO,"drvMng::init()");
+
 	// Message: {phidgetdevice,{Serial, State}}
 	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LL");
 
@@ -33,7 +34,7 @@ drvMng::txPhidgetDeviceMsg(phDevice *phd, bool state) {
 
 	int result = mh->send(MNG_MSG_PHIDGET_DEVICE, phd->serial, (long int) state);
 	if (result) {
-		doLog(LOG_ERR, "drv_mng: ERROR sending message");
+		doLog(LOG_ERR, "drv_mng: ERROR sending message [%s]", mh->strerror());
 		error = true;
 	}
 }//
@@ -53,6 +54,8 @@ int main(int argc, char **argv) {
 
 	drvMng *drv = new drvMng();
 	CPhidgetManagerHandle phidm;
+
+	drv->start();
 
 	// open up the Phidget Manager
 	CPhidgetManager_create(&phidm);
