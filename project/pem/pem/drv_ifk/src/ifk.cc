@@ -5,4 +5,18 @@
  * @author Jean-Lou Dupont
  *
  */
-#include "pem/base.h"
+#include "ifk.h"
+
+drvIfk::drvIfk() : drvBase() {
+
+	error=false;
+}//
+
+drvIfk::~drvIfk() {
+
+}//
+
+void
+drvIfk::init(void) {
+
+}//
