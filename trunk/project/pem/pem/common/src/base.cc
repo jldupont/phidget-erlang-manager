@@ -8,14 +8,16 @@
 
 drvBase::drvBase() {
 
+	DEBUG_LOG(LOG_INFO, "drvBase::drvBase()");
+
 	ph = new PktHandler();
 	mh = new MsgHandler(ph);
 	eq = queue_create(-1);
-
-	startReadThread();
 }//
 
 drvBase::~drvBase() {
+
+	DEBUG_LOG(LOG_INFO, "drvBase::~drvBase()");
 
 	delete mh;
 	delete ph;
@@ -23,11 +25,22 @@ drvBase::~drvBase() {
 }//
 
 void
+drvBase::start(void) {
+
+	init();
+	startReadThread();
+
+}//
+
+void
 drvBase::startReadThread(void) {
+
+	DEBUG_LOG(LOG_INFO, "drvBase::startReadThread()");
 
 	drvReadThreadParams *p = new drvReadThreadParams();
 	p->eq = eq;
 	p->mh = mh;
+	p->drv = this;
 
 	pthread_create( &readThread, NULL, &drvBase::readThreadFun, (void*) p);
 }//
@@ -49,20 +62,21 @@ drvBase::readThreadFun( void *params ) {
 
 	drvReadThreadParams *p = (drvReadThreadParams *) params;
 
-	int result;
-	queue *q = p->eq;
-	Msg *m;
-	MsgHandler *mh = p->mh;
+
+	queue      *q   = p->eq;
+	MsgHandler *mh  = p->mh;
+	drvBase    *drv = p->drv;
 
 	//prepare an "EVENT_READ_ERROR" just in case
 	event *ere = (event *) malloc(sizeof(event));
 	ere->type = EVENT_READ_ERROR;
 
+	Msg   *m;
 	event *me;
 
 	while(1) {
 
-		result=mh->rx( &m );
+		int result=mh->rx( &m );
 
 		//error?
 		if (result) {

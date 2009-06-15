@@ -17,17 +17,6 @@
 #include "device.h"
 
 	/**
-	 * Class for passing parameters
-	 * to the read thread function
-	 */
-	class drvReadThreadParams {
-
-	public:
-		MsgHandler *mh;
-		queue      *eq;
-	};
-
-	/**
 	 * Event type definition
 	 */
 	typedef enum {
@@ -70,11 +59,13 @@
 
 
 	protected:
+
+
 		/**
 		 * Called to perform class
 		 * specific initialization
 		 */
-		void init(void);
+		virtual void init(void) = 0;
 
 
 		/**
@@ -105,12 +96,30 @@
 
 	public:
 
+		/**
+		 * Starts the driver
+		 */
+		void start(void);
+
 		void startReadThread(void);
 
 		static void *readThreadFun( void *params );
 
 		static event *createEvent(eventType type);
 
+	};
+
+
+	/**
+	 * Class for passing parameters
+	 * to the read thread function
+	 */
+	class drvReadThreadParams {
+
+	public:
+		drvBase    *drv;
+		MsgHandler *mh;
+		queue      *eq;
 	};
 
 #endif /* BASE_H_ */
