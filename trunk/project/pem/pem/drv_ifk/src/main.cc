@@ -12,7 +12,11 @@
 
 //PROTOTYPES
 bool openDevice(drvIfk *drv, int serial, CPhidgetHandle *handle);
-
+int IFK_AttachHandler(CPhidgetHandle IFK, void *drv);
+int IFK_DetachHandler(CPhidgetHandle IFK, void *drv);
+int IFK_ErrorHandler(CPhidgetHandle IFK, void *drv, int ErrorCode, const char *unknown);
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value);
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value);
 
 /**
  *
@@ -42,7 +46,7 @@ int main(int argc, char **argv) {
 
 	drv->serial = serial;
 	result = openDevice(drv, serial, &(drv->ph));
-	if (result) {
+	if (!result) {
 		const char *msg_device_error = "*** error opening device, serial[%i]\n";
 		doLogEx(LOG_ERR, msg_device_error, serial);
 		return 1;
@@ -52,9 +56,9 @@ int main(int argc, char **argv) {
 
 	//MAIN LOOP
 	//=========
-	while(true) {
+	while(!drv->error) {
 
-
+		drv->handleMsg();
 
 	}//while
 
@@ -89,46 +93,45 @@ bool openDevice(drvIfk *drv, int serial, CPhidgetHandle *handle) {
 }//
 
 
-int IFK_AttachHandler(CPhidgetHandle IFK, void *equeue) {
+int IFK_AttachHandler(CPhidgetHandle IFK, void *drv) {
 
+	((drvIfk *) drv)->txAttach();
+	return 0;
 }//
 
-int IFK_DetachHandler(CPhidgetHandle IFK, void *equeue) {
+int IFK_DetachHandler(CPhidgetHandle IFK, void *drv) {
 
-
+	((drvIfk *) drv)->txDetach();
+	return 0;
 }//
 
 
 int IFK_ErrorHandler(CPhidgetHandle IFK, void *drv, int ErrorCode, const char *unknown) {
 
-	int serial;
-
-	CPhidget_getSerialNumber(IFK, &serial);
-
+	((drvIfk *) drv)->txError(ErrorCode, unknown);
 
 	return 0;
 }
 
-int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value)
-{
-	queue *q = (queue *) equeue;
-	int serial, result;
+int IFK_OutputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value) {
 
-	result = CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+	int serial;
+	int result=CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
 
+	((drvIfk *) drv)->txOutputChanged(Index, Value);
 
 	doLog(LOG_ERR, "OUTPUT CHANGED, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
 	return 0;
 }
 
-int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value)
-{
-	queue *q = (queue *) equeue;
+int IFK_InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *drv, int Index, int Value) {
+
 	int serial;
-	CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
+	int result=CPhidget_getSerialNumber((CPhidgetHandle)IFK, &serial);
 
+	((drvIfk *) drv)->txInputChanged(Index, Value);
 
-	doLog(LOG_ERR, "INPUT CHANGED, serial[%i] index[%i] value[%i]", serial, Index, Value);
+	doLog(LOG_ERR, "INPUT CHANGED, serial[%i] index[%i] value[%i] result[%i]", serial, Index, Value, result);
 
 	return 0;
 }

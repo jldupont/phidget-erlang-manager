@@ -1,6 +1,6 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-03
--module(test).
+-module(tifk).
 
 %%
 %% Include files
@@ -22,7 +22,7 @@ start() ->
     start("").
 
 start(Param) ->
-    spawn_link(?MODULE, init, ["/usr/bin/pem_drv_mng_debug", Param]).
+    spawn_link(?MODULE, init, ["/usr/bin/pem_drv_ifk_debug", Param]).
 
 stop() ->
     ?MODULE ! stop.

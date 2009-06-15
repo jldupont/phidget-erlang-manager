@@ -27,6 +27,7 @@ includes = ['#pem',]
 
 list_modules = [	'#pem/common',
 					'#pem/drv_mng',
+					'#pem/drv_ifk',
 				]
 
 
