@@ -8,35 +8,90 @@
 
 #include "mng.h"
 
+const char *drvMng::ATOM_ACTIVE   = "active";
+const char *drvMng::ATOM_INACTIVE = "inactive";
+
 drvMng::drvMng() : drvBase() {
-	DEBUG_LOG(LOG_INFO,"drvMng::drvMng()");
+	//DEBUG_LOG(LOG_INFO,"drvMng::drvMng()");
 	error = false;
 }//
 
 drvMng::~drvMng() {
-	DEBUG_LOG(LOG_INFO,"drvMng::~drvMng()");
+	//DEBUG_LOG(LOG_INFO,"drvMng::~drvMng()");
 }//
 
 void
 drvMng::init(void) {
 
-	DEBUG_LOG(LOG_INFO,"drvMng::init()");
+	//DEBUG_LOG(LOG_INFO,"drvMng::init()");
 
 	// Message: {phidgetdevice,{Serial, State}}
-	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LL");
+	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LA");
 
 }//
 
 void
-drvMng::txPhidgetDeviceMsg(phDevice *phd, bool state) {
+drvMng::txPhidgetDeviceMsg(phDevice *phd, int state) {
 
 	DEBUG_LOG(LOG_INFO,"drvMng::txPhidgetDeviceMsg()");
 
-	int result = mh->send(MNG_MSG_PHIDGET_DEVICE, phd->serial, (long int) state);
+	const char *atom;
+	switch(state) {
+	case MNG_STATE_ACTIVE:
+		atom = ATOM_ACTIVE;
+		break;
+	case MNG_STATE_INACTIVE:
+		atom = ATOM_INACTIVE;
+		break;
+	}
+
+	int result = mh->send(MNG_MSG_PHIDGET_DEVICE, phd->serial, atom);
 	if (result) {
 		doLog(LOG_ERR, "drv_mng: ERROR sending message [%s]", mh->strerror());
 		error = true;
 	}
+}//
+
+void
+drvMng::setPhim(CPhidgetManagerHandle _phim) {
+
+	phim = _phim;
+}//
+
+void
+drvMng::handleTimer(int counter) {
+
+	int count, result;
+	CPhidgetHandle (*devices[MESSAGE_MAX_DEVICES]);
+
+	result = CPhidgetManager_getAttachedDevices(phim, devices, &count);
+	if (EPHIDGET_OK!=result) {
+		doLog(LOG_ERR, "drv_mng: error getting attached devices" );
+		return;
+	}
+
+	// circular
+	int ccount = counter % TIME_WHEEL;
+	if (ccount>=count) {
+		CPhidgetManager_freeAttachedDevicesArray( *devices );
+		return;
+	}
+
+	phDevice       *dv;
+	CPhidgetHandle hdevice;
+
+	hdevice = *devices[ccount];
+	dv = new phDevice(hdevice);
+
+	dv->init();
+
+	//send message
+	txPhidgetDeviceMsg(dv,MNG_STATE_ACTIVE);
+
+	delete dv;
+
+	CPhidgetManager_freeAttachedDevicesArray( *devices );
+
 }//
 
 //PROTOTYPES
@@ -63,14 +118,16 @@ int main(int argc, char **argv) {
 	CPhidgetManager_set_OnDetach_Handler(phidm, manager_gotDetach, (void *)drv);
 
 	CPhidgetManager_open(phidm);
+	drv->setPhim(phidm);
 
+	int counter=0;
 	while(1) {
 
 		usleep(250*1000);
 		if (drv->error) {
 			break;
 		}
-
+		drv->handleTimer(counter++);
 	}//
 
 	DEBUG_LOG(LOG_DEBUG,"drv_mng: END");
@@ -114,6 +171,4 @@ int manager_gotDetach(CPhidgetHandle phid, void *drv) {
 
 	return 0;
 }//[/manager_gotDetach]
-
-
 
