@@ -14,14 +14,14 @@ d = env.Dictionary()
 if d.get('_DEBUG', False):
 	#DEBUG
 	libs=['libpem_common_debug', 'phidget21']
-	pr = env.SharedLibrary('pem_drv_mng_debug', Glob("src/*.cc"), LIBS=libs )	
-	env.Install('/usr/local/lib', '#pem/drv_mng/debug/libpem_drv_mng_debug.so')
+	pr = env.Program('pem_drv_mng_debug', Glob("src/*.cc"), LIBS=libs )	
+	env.Install('/usr/local/bin', '#pem/drv_mng/debug/pem_drv_mng_debug')
 else:
 	#RELEASE
 	libs=['libpem_common', 'phidget21']
-	pr = env.SharedLibrary('pem_drv_mng', Glob("src/*.cc"), LIBS=libs )
-	env.Install('/usr/local/lib', '#pem/drv_mng/release/libpem_drv_mng.so')
+	pr = env.Program('pem_drv_mng', Glob("src/*.cc"), LIBS=libs )
+	env.Install('/usr/local/bin', '#pem/drv_mng/release/pem_drv_mng')
 	
 Default(pr)
 
-env.Alias('installlib', '/usr/local/lib')
+env.Alias('install', '/usr/local/bin')
