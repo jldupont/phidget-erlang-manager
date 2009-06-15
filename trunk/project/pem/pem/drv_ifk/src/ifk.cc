@@ -16,7 +16,40 @@ drvIfk::handleMsg(void) {
 	Msg *m;
 	if (waitMsg(&m, 250*1000)==0) {
 
+		switch(m->getType()) {
+
+		case MSG_DOUTPUT_SET:
+			int serial, index, value;
+			int r1,r2, r3;
+			char f1, f2, f3;
+
+			r1 = m->getParam(0, &f1, &serial);
+			r2 = m->getParam(1, &f2, &index);
+			r3 = m->getParam(2, &f3, &value);
+
+			if (r1 || r2 || r3) {
+				doLog(LOG_ERR, "drv_ifk: ERROR retrieving msg [DOUTPUT_SET] parameters");
+				break;
+			}
+
+			setDigitalOut(index, value);
+			break;
+
+		default:
+			doLog(LOG_ERR, "drv_ifk: ERROR, unhandled message, type[%i]", m->getType());
+		}//switch
+
 		delete m;
+	}
+}//
+
+
+void
+drvIfk::setDigitalOut(int index, int value) {
+
+	int result = CPhidgetInterfaceKit_setOutputState((CPhidgetInterfaceKitHandle)ph, index, value);
+	if (EPHIDGET_OK!=result) {
+		doLog(LOG_ERR, "drv_ifk: ERROR setting digital output, serial[%i] index[%i] value[%i]", serial, index, value);
 	}
 }//
 

@@ -9,7 +9,7 @@
 %%
 %% API
 %%
--export([start/0, start/1, stop/0]).
+-export([start/0, start/1, stop/0, sdout/3]).
 
 %% internal
 -export([init/2, loop/1]).
@@ -33,8 +33,17 @@ init(ExtPrg, Param) ->
     Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
     loop(Port).
 
+sdout(Serial, Index, Value) ->
+	?MODULE ! {sdout, {Serial, Index, Value}}.
+
 loop(Port) ->
     receive
+		
+		{sdout,Msg} ->
+			{Serial, Index, Value} = Msg,
+			BinMsg = {sdout, {Serial, Index, Value}},
+			io:format("request to send 'SDOUT' message [~p]~n", [BinMsg]),
+			erlang:port_command(Port, term_to_binary(BinMsg));
 		
 		stop ->
 			io:format("called [stop]"),
