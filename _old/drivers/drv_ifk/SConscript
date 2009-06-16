@@ -16,14 +16,14 @@ if d.get('_DEBUG', False):
 	#DEBUG
 	libs=['pthread','phidget21','ei', 'pem_drv_common_debug']
 	libp='../../common/debug'
-	pr = env.Program('pem_drv_PhidgetInterfaceKit_debug', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
-	env.Install('/usr/local/bin', '#drivers/drv_ifk/debug/pem_drv_PhidgetInterfaceKit_debug')	
+	pr = env.Program('pem_drv_ifk_debug', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_ifk/debug/pem_drv_ifk_debug')	
 else:
 	#RELEASE
 	libs=['pthread','phidget21','ei', 'pem_drv_common']
 	libp='../../common/release'
-	pr = env.Program('pem_drv_PhidgetInterfaceKit', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
-	env.Install('/usr/local/bin', '#drivers/drv_ifk/release/pem_drv_PhidgetInterfaceKit')
+	pr = env.Program('pem_drv_ifk', Glob("src/*.cc"), LIBS=libs, LIBPATH=libp )	
+	env.Install('/usr/local/bin', '#drivers/drv_ifk/release/pem_drv_ifk')
 	
 Default(pr)
 	
