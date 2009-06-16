@@ -8,12 +8,6 @@ PEM
 import os
 import shutil
 
-try:
-	from pyjld.os import recursive_chmod, safe_copytree
-except:
-	print "*** Missing package: use easy_install pyjld.os"
-	exit(1)
-
 from helpers import *
 
 
