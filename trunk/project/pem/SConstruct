@@ -137,4 +137,21 @@ if 'rel' in COMMAND_LINE_TARGETS:
 	os.system("rm -r /tmp/%s/%s/*.pyc" % (this_lib, this_lib))
 	print "scons: creating ZIP archive"
 	os.system("cd /tmp/%s && zip -r /tmp/%s-sources-%s.zip %s -x *.svn* *.os *.so" % (this_lib, this_lib, version, this_lib))
+
+
+if 'up' in COMMAND_LINE_TARGETS:
+	import gcupload as gc
 	
+	version = read_version()
+
+	print "scons: uploading to Google Code"
+	user = get_gcuser()
+	pwd  =  get_gcpwd()
+	
+	#upload(file, project_name, user_name, password, summary, labels=None)
+	src = "/tmp/%s-sources-%s.zip" % (this_lib, version)
+	gc.upload(src, "phidget-erlang-manager", user, pwd, "sources archive", ["sources", "featured"])
+	
+	deb = "/tmp/%s_%s-1_i386.deb" % (this_lib, version)
+	gc.upload(deb, "phidget-erlang-manager", user, pwd, "debian binary-i386", ["Type-Package", "OpSys-Linux", "featured"])
+		
