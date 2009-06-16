@@ -15,52 +15,29 @@
 
 The architecture consists roughly of the major blocks:
 
-  * server:  the Erlang port driver
-  * manager: interface to Phidget21 library
+  * manager: Publishes the state of devices
+  * device drivers: type specific drivers (eg. InterfaceKit)
   
 == Manager ==
 
+  * Implemented as an Erlang Port Driver using stdin/stdout as communication pipe
   * Discovers phidget devices
-  * Opens / closes phidget devices dynamically
-  * Generates *phidget_devices* message
+  * Hooks on _attach_ and _detach_ events
+  * Generates *phidgetdevice* message
   
   
-== Server ==
+== Drivers ==
 
-  * Acts as _server_  for Erlang nodes
-  * Bridges messages to/from _manager_
-
+  * Implemented as an Erlang Port Driver using stdin/stdout as communication pipe
+  * Generate input/output changed messages
+    * eg. InterfaceKit: _din_, _dout_, _sdout_
+  * Generate _device_ message upon _attach_ event
+  * Generate _phidgetdevice_ upon _detach_ event
 
 == Messages ==
 
-  * _phidget_device_    : active device announcement
-  * _phidget_states_    : list of I/O states of a device
-  * _phidget_set_states : request to set the states of a phidget
-  
-=== Format ===
-
-  {{{
-  message_type
-  message_body
-  }}}
-
-  ====Message _phidget_device_:====
-   
-  * phidget_serial
-  * phidget_name
-  * phidget_type
-	  ...
-	  
-  ====Message _phidget_states_====
-
-  * phidget_serial
-  * count
-    * io_type
-    * io_state
-
-    
-  ====io_state====
-  An _io_ can have the following states:
-  * value  (depends on _io type_ eg. [0,1] for digital _io_)
-  * X      (don't care ie. don't change)
-  * I      (invert / toggle: applicable to digital _io_) 
+  * _phidgetdevice_     : active/inactive device announcement
+  * din                 : digital input changed
+  * dout                : digital output changed
+  * sdout               : set digital output (command issued from Erlang side)
+ 
