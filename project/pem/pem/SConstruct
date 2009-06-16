@@ -1,0 +1,29 @@
+"""
+scons file for building & installing PEM from sources 
+
+@author: Jean-Lou Dupont
+"""
+
+env = Environment(CPPPATH="#.")
+
+# LIST MODULES
+# ============
+includes = ['#.',]
+
+list_modules = [	'#common',
+					'#drv_ifk',
+					'#drv_mng',
+				]
+
+modules = []
+for module in list_modules:
+	modules.append( {	'script'  : "%s/SConscript" % module,
+						'build'   : module,
+						'release' : Environment(CPPPATH=[module+'/include']+includes),
+						'debug'   : Environment(CPPPATH=[module+'/include']+includes, CPPFLAGS="-D_DEBUG -g", _DEBUG='1')
+					} )
+
+for module in modules:
+	SConscript(module['script'], build_dir=module['build']+'/release', exports={'env':module['release']})
+	SConscript(module['script'], build_dir=module['build']+'/debug',   exports={'env':module['debug']})
+	
