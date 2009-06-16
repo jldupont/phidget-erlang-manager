@@ -1,0 +1,15 @@
+Phidget Erlang Manager
+======================
+
+For more information, please visit: http://phidget-erlang-manager.googlecode.com/ .
+
+Building from sources archive
+=============================
+Python 'scons' building system is required. This tool is available at http://www.scons.org/ .
+
+  1. Download sources ZIP archive
+  2. unzip pem-sources-X.Y.zip
+  3. cd pem
+  4. scons
+  5. scons install
+  
