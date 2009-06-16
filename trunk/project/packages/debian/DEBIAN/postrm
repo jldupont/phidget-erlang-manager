@@ -45,46 +45,28 @@ except: command =''
 try:    version = sys.argv[2]
 except: version = ''
 
-print "EPAPI: cmd[%s] version[%s]" % (command, version)
+print "%s: cmd[%s] version[%s]" % (this_lib, command, version)
+
+libs  = ['/usr/lib/libpem_common%s.so',]
+execs = [	'/usr/bin/pem_drv_mng%s', 
+			'/usr/bin/pem_drv_ifk%s'
+		]
+
+all = libs+execs
 
 try:
 
-	hdrs = ['epapi.h', 'epapi_msg.h', 'epapi_pkt.h']	
-	dst = '/usr/lib/lib%s.so' % this_lib
-	ddst = '/usr/lib/lib%s_debug.so' % this_lib
-
-	# handle 'PURGE' command
-	# =======================
-	if command == 'purge':
-	
-		try:
-			files = glob.glob('/usr/lib/lib%s*' % this_lib)
-			
-			for file in files:
-				os.remove( file )
-				print "EPAPI: removed [%s]" % file
-		except:
-			pass
-
-	
+	# handle 'PURGE' and 'remove' commands
+	# ====================================
 	if (command == 'remove') or (command == 'purge'):
-			
-		print "EPAPI: removing header files"
-		for hdr in hdrs:
-			path = "/usr/include/%s" % hdr
-			try:    
-				os.remove( path )
-				print "EPAPI: removed [%s]" % path
-			except: 
-				pass
 	
-		print "EPAPI: removing symlinks"
 		try:
-			files = glob.glob('/usr/lib/lib%s.*' % this_lib)
+			for one in all:
+				files = glob.glob( one % "*" )
 			
 			for file in files:
 				os.remove( file )
-				print "EPAPI: removed [%s]" % file
+				print "%s: removed [%s]" % (this_lib, file)
 		except:
 			pass
 	
