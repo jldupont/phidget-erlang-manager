@@ -48,47 +48,51 @@ for module in modules:
 	SConscript(module['script'], build_dir=module['build']+'/release', exports={'env':module['release']})
 	SConscript(module['script'], build_dir=module['build']+'/debug',   exports={'env':module['debug']})
 
+this_lib = "pem"
 
+libs  = [('./pem/common/%s/libpem_common%s.so','../packages/debian/usr/lib/libpem_common%s-%s.so')
+		]
+		
+execs = [('./pem/drv_ifk/%s/pem_drv_ifk%s', '../packages/debian/usr/bin/pem_drv_ifk%s-%s'),
+		 ('./pem/drv_mng/%s/pem_drv_mng%s', '../packages/debian/usr/bin/pem_drv_mng%s-%s')
+		] 
+		
+all = libs + execs
 	
+
+
 # BUILDING .deb PACKAGE
 # =====================
 if 'deb' in COMMAND_LINE_TARGETS:
+
+	env = Environment()
+	
 	print "Preparing .deb package"
 	try:
 		version = read_version()
-		print """scons: building release [%s]""" % version
+		print """scons: building version [%s]""" % version
 		
-		print """scons: cloning release library""" 
-		shutil.copy('./lib/release/lib%s.so' % this_lib, "./packages/debian/usr/lib/lib%s-%s.so" % (this_lib,version) )
+		print """scons: cloning files to packages/debian"""
+		for one in all:
+			src, dst = one
+			#release
+			print "scons: cloning [%s]" % src
+			shutil.copy(	src % ('release', ''), 
+							dst % ('',        version) )
+			#debug
+			shutil.copy(	src % ('debug',  '_debug'), 
+							dst % ('_debug',  version) )
 		
-		print """scons: cloning debug library"""
-		shutil.copy('./lib/debug/lib%s_debug.so' % this_lib, './packages/debian/usr/lib/lib%s_debug-%s.so' % (this_lib,version) )
-		
-		print """scons: cloning header file(s) & adjusting version"""
-		for hdr in headers:
-			frag =  hdr % this_lib
-			spath = "./lib/include/%s" % frag
-			dpath = "./packages/debian/usr/include/%s" % frag
-			shutil.copy(spath, dpath)
-			replace_params(dpath, dpath, {'version':version} )
-		
-		print """scons: removing directory"""
+		print """scons: removing /tmp directory"""
 		shutil.rmtree('/tmp/%s_deb' % this_lib, ignore_errors=True)
 
-		#print """scons: updating debian 'control' with version[%s]""" % version
-		#generate_control(version)
-		
 		print """scons: cloning ./packages/debian to /tmp directory"""
-		safe_copytree('./packages/debian', '/tmp/%s_deb' % this_lib, skip_dirs=['.svn',], dir_mode=0775, make_dirs=True)
+		safe_copytree('../packages/debian', '/tmp/%s_deb' % this_lib, skip_dirs=['.svn',], dir_mode=0775, make_dirs=True)
 
 		print """scons: adjusting version in control files"""
 		c_path = '/tmp/%s_deb/DEBIAN' % this_lib
 		params = {'version':version}
 		adjust_control_files(params, c_path)
-		
-
-		#print """scons: cloning 'Packages.gz'"""
-		#shutil.copy("../dists/stable/main/binary-i386/Packages.gz", "/tmp/%s_deb/Packages.gz" % this_lib)
 		
 		print """scons: adjusting permissions for `dkpg-deb` command-line"""
 		recursive_chmod("/tmp/%s_deb" % this_lib, mode=0775)

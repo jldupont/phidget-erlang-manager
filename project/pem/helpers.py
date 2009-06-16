@@ -5,6 +5,7 @@
 """
 import os
 import sys
+from string import Template
 
 
 def read_version():
