@@ -81,16 +81,28 @@ if command == 'configure':
 		nv  = one % ("-%s"       % this_version)
 		nvd = one % ("_debug-%s" % this_version)
 
-		#base
+		#base ie. symlinks
 		b   = one % ""
 		bd  = one % ""
 		
 		#remove current version
-		try:	os.remove(cv)
+		try:	
+			os.remove(cv)
+			print "%s: removed [%s]" % (this_lib, cv)
 		except:	pass
 		
-		try:	os.remove(cvd)
+		try:	
+			os.remove(cvd)
+			print "%s: removed [%s]" % (this_lib, cvd)
 		except:	pass
+
+		#remove symlinks
+		try:	
+			os.remove(b)
+			print "%s: removed [%s]" % (this_lib, b)
+			os.remove(bd)
+			print "%s: removed [%s]" % (this_lib, bd)
+		except: pass
 
 		code = 0
 		try:
