@@ -60,9 +60,10 @@ try:
 	# ====================================
 	if (command == 'remove') or (command == 'purge'):
 	
+		files=[]
 		try:
 			for one in all:
-				files = glob.glob( one % "*" )
+				files.append( glob.glob( one % "*" ) )
 			
 			for file in files:
 				os.remove( file )
