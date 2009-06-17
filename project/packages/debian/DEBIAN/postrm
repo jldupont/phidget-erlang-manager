@@ -45,7 +45,7 @@ except: command =''
 try:    version = sys.argv[2]
 except: version = ''
 
-print "%s: cmd[%s] version[%s]" % (this_lib, command, version)
+print "%s: postrm: cmd[%s] version[%s]" % (this_lib, command, version)
 
 libs  = ['/usr/lib/libpem_common%s.so',]
 execs = [	'/usr/bin/pem_drv_mng%s', 
@@ -63,7 +63,7 @@ try:
 		files=[]
 		try:
 			for one in all:
-				files.append( glob.glob( one % "*" ) )
+				files.extend( glob.glob( one % "*" ) )
 			
 			for file in files:
 				os.remove( file )

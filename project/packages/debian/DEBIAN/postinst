@@ -89,12 +89,16 @@ if command == 'configure':
 		try:	
 			os.remove(cv)
 			print "%s: removed [%s]" % (this_lib, cv)
-		except:	pass
+		except:
+			print "%s: not found[%s]" % (this_lib, cv)
+			pass
 		
 		try:	
 			os.remove(cvd)
 			print "%s: removed [%s]" % (this_lib, cvd)
-		except:	pass
+		except:
+			print "%s: not found[%s]" % (this_lib, cvd)	
+			pass
 
 		#remove symlinks
 		try:	
@@ -107,10 +111,13 @@ if command == 'configure':
 		code = 0
 		try:
 			#creating symlinks
-			print "%s: creating symlink, src[%s] => dst[%s]" % (this_lib, nv, b)
+			
 			os.symlink( nv,  b)
-			print "%s: creating symlink, src[%s] => dst[%s]" % (this_lib, nvd, bd)
+			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nv, b)
+			
+			
 			os.symlink( nvd, bd)
+			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nvd, bd)
 
 			os.chmod(nv,  0644)
 			os.chmod(nvd, 0644)
