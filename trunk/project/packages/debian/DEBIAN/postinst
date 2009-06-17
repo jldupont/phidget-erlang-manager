@@ -83,22 +83,23 @@ if command == 'configure':
 
 		#base ie. symlinks
 		b   = one % ""
-		bd  = one % ""
+		bd  = one % "_debug"
 		
 		#remove current version
-		try:	
-			os.remove(cv)
-			print "%s: removed [%s]" % (this_lib, cv)
-		except:
-			print "%s: not found[%s]" % (this_lib, cv)
-			pass
-		
-		try:	
-			os.remove(cvd)
-			print "%s: removed [%s]" % (this_lib, cvd)
-		except:
-			print "%s: not found[%s]" % (this_lib, cvd)	
-			pass
+		if version:
+			try:	
+				os.remove(cv)
+				print "%s: removed [%s]" % (this_lib, cv)
+			except:
+				print "%s: not found[%s]" % (this_lib, cv)
+				pass
+			
+			try:	
+				os.remove(cvd)
+				print "%s: removed [%s]" % (this_lib, cvd)
+			except:
+				print "%s: not found[%s]" % (this_lib, cvd)	
+				pass
 
 		#remove symlinks
 		try:	
@@ -114,7 +115,6 @@ if command == 'configure':
 			
 			os.symlink( nv,  b)
 			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nv, b)
-			
 			
 			os.symlink( nvd, bd)
 			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nvd, bd)
