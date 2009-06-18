@@ -48,8 +48,10 @@
 %%          {error, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    AChild = {'AName',{'AModule',start_link,[]},
-	      permanent,2000,worker,['AModule']},
-    {ok,{{one_for_all,0,1}, [AChild]}}.
-
-
+    Child_reflector = {'reflector',{'reflector',start_link,[]},
+	      permanent,2000,worker,['reflector']},
+	
+    Child_manager = {'manager',{'manager',start_link,[]},
+	      permanent,2000,worker,['manager']},
+	
+    {ok,{{one_for_one,0,1}, [Child_reflector, Child_manager]}}.
