@@ -177,7 +177,7 @@ do_publish(Liste, Msgtype, Msg) ->
 			remove_client(Current, Msgtype)
 	catch
 		_:_ ->
-			error_logger:error_msg("~p: do_publish: ERROR sending", [?MODULE])
+			error_logger:error_msg("~p: do_publish: ERROR sending~n", [?MODULE])
 	end,
 	do_publish(Rest, Msgtype, Msg).
 
