@@ -58,6 +58,7 @@ rpc(Q) ->
 start_link() ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
+	error_logger:info_msg("reflector:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
 
 %% --------------------------------------------------------------------
@@ -77,7 +78,8 @@ stop() ->
 loop() ->
 	receive
 		{_From, {stop}} ->
-			exit(ok);
+			error_logger:warning_msg("reflector: received STOP~n"),
+			exit(self(), ok);
 
 		%% SUBSCRIBE command
 		{From, {subscribe, Msgtype}} ->

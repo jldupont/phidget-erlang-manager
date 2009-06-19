@@ -58,4 +58,4 @@ init([]) ->
     Child_manager = {manager,{manager,start_link,[]},
 	      permanent,2000,worker,[manager]},
 	
-    {ok,{{one_for_one,0,1}, [Child_manager, Child_reflector]}}.
+    {ok,{{one_for_one,0,1}, [Child_reflector, Child_manager]}}.

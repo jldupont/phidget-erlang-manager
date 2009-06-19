@@ -49,7 +49,9 @@ start_link() ->
 start_link(Param) ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
-	spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_mng", Param]),
+	error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
+	Pid_drv = spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_mng_debug", Param]),
+	error_logger:info_msg("manager:start_link: PID DRV[~p]~n", [Pid_drv]),
 	{ok, Pid}.
 
 init_drv(ExtPrg, Param) ->
@@ -80,7 +82,9 @@ loop() ->
 	end,
 	loop().
 
-loop_drv(_Port) ->
+%% Message loop for receiving messages from pem_drv_mng
+%% ====================================================
+loop_drv(Port) ->
 	receive
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
@@ -96,16 +100,21 @@ send_to_reflector(M) ->
 
 %% TODO count error etc.
 send_to_reflector(undefined, _) ->
-	error_logger:warning_msg("manager:send_to_reflector: error sending~n"),
+	error_logger:warning_msg("manager:send_to_reflector: reflector not found~n"),
 	ok;
 
 send_to_reflector(Reflector, M) ->
 	error_logger:info_msg("manager:send_to_reflector: BEGIN"),
-	try Reflector ! {self(), M} of
-		ok -> ok
+	Self = self(),
+	try Reflector ! {Self, M} of
+		
+		%% we're echo'ed back the message if everything is OK
+		{Self, M} ->
+			ok;
+		Code ->
+			error_logger:warning_msg("manager:send_to_reflector: error sending to reflector, code[~p]", [Code])
 	catch
 		_:_ -> 
 			error_logger:warning_msg("manager:send_to_reflector: error sending~n"),
 			ok
 	end.
-
