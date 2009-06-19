@@ -25,7 +25,7 @@ drvMng::init(void) {
 
 	//DEBUG_LOG(LOG_INFO,"drvMng::init()");
 
-	// Message: {phidgetdevice,{Serial, state}}
+	// Message: {phidgetdevice,{Serial, Type, state}}
 	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LSA");
 
 }//

@@ -10,10 +10,6 @@
 -module(reflector).
 
 %% --------------------------------------------------------------------
-%% Include files
-%% --------------------------------------------------------------------
-
-%% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
@@ -27,6 +23,8 @@
 %% Internal exports
 %% --------------------------------------------------------------------
 -export([
+		 ilog/2,
+		 elog/2,
 		 loop/0,
 		 rpc/1,
 		 publish/1,
@@ -86,6 +84,12 @@ stop() ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+elog(X,Y) ->
+	error_logger:error_msg("~p: "++X, [?MODULE|Y]).
+
+ilog(X,Y) ->
+	error_logger:info_msg("~p: "++X, [?MODULE|Y]).
 
 %% ==========
 %% Func: loop
@@ -155,19 +159,19 @@ publish(M) ->
 
 
 do_publish([], _Msgtype, _) ->
-	%%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
+	%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
-do_publish(undefined, Msgtype, _) ->
-	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+do_publish(undefined, _Msgtype, _) ->
+	%error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(Liste, Msgtype, Msg) ->
-	%%io:format("reflector:do_publish, liste[~p]~n", [Liste]),
+	%%elog("do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
-	io:format("reflector:do_publish, SENDING TO[~p]~n", [Current]),
+	ilog("reflector:do_publish, SENDING TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
 	try	Current ! {Msgtype, Msg} of
 		{Msgtype, Msg} ->
@@ -176,8 +180,8 @@ do_publish(Liste, Msgtype, Msg) ->
 			error_logger:warning_msg("~p: do_publish: result[~p]~n", [?MODULE, Other]),
 			remove_client(Current, Msgtype)
 	catch
-		_:_ ->
-			error_logger:error_msg("~p: do_publish: ERROR sending~n", [?MODULE])
+		X:Y ->
+			error_logger:error_msg("~p: do_publish: ERROR sending, X[~p] Y[~p]~n", [?MODULE, X, Y])
 	end,
 	do_publish(Rest, Msgtype, Msg).
 
