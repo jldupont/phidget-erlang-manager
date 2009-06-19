@@ -58,14 +58,13 @@ drvBase::createEvent(eventType type) {
 void *
 drvBase::readThreadFun( void *params ) {
 
-	DBGLOG(LOG_INFO, "drvBase::readThreadFun: BEGIN");
-
 	drvReadThreadParams *p = (drvReadThreadParams *) params;
-
 
 	queue      *q   = p->eq;
 	MsgHandler *mh  = p->mh;
 	drvBase    *drv = p->drv;
+
+	DBGLOG(LOG_INFO, "drvBase::readThreadFun: BEGIN, q[%x]", q);
 
 	//prepare an "EVENT_READ_ERROR" just in case
 	event *ere = (event *) malloc(sizeof(event));
@@ -80,6 +79,7 @@ drvBase::readThreadFun( void *params ) {
 
 		//error?
 		if (result) {
+			DBGLOG(LOG_INFO, "drvBase::readThreadFun: got MsgHandler::rx ERROR");
 			queue_put( q, (void *) ere );
 			break;
 		}
@@ -91,7 +91,7 @@ drvBase::readThreadFun( void *params ) {
 
 	}//while
 
-	DBGLOG(LOG_INFO, "drvBase::readThreadFun: END");
+	DBGLOG(LOG_INFO, "drvBase::readThreadFun: END, q[%x]", q);
 }//
 
 
@@ -102,6 +102,8 @@ drvBase::readThreadFun( void *params ) {
  */
 int
 drvBase::waitMsg(Msg **m, int usec_timeout) {
+
+	*m = NULL;
 
 	event *e;
 	int result;
@@ -119,12 +121,27 @@ drvBase::waitMsg(Msg **m, int usec_timeout) {
 
 	 e = (event *) queue_get_nb( eq );
 	 if (NULL==e) {
-		 *m = NULL;
 		 return -1;
+	 }
+
+	 // READ error?
+	 eventType type = e->type;
+	 if (EVENT_READ_ERROR==type) {
+		 DBGLOG(LOG_INFO, "drvBase::waitMsg: got EVENT_READ_ERROR");
+		 free(e);
+		 return 1;
+	 }
+
+	 // anything other...
+	 if (EVENT_MSG!=type) {
+		 free(e);
+		 return 1;
 	 }
 
 	 //extract the 'real' message
 	 *m = e->m;
+
+	 free(e);
 
 	 return 0;
 }//
