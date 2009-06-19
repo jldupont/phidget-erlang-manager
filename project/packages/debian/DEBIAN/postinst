@@ -119,10 +119,10 @@ if command == 'configure':
 			os.symlink( nvd, bd)
 			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nvd, bd)
 
-			os.chmod(nv,  0644)
-			os.chmod(nvd, 0644)
-			os.chmod(b,   0644)
-			os.chmod(bd,  0644)
+			os.chmod(nv,  0700)
+			os.chmod(nvd, 0700)
+			os.chmod(b,   0700)
+			os.chmod(bd,  0700)
 			
 		except Exception,e:
 			print "Exception [%s]" % e
