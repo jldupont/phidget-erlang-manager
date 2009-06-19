@@ -104,7 +104,7 @@ send_to_reflector(undefined, _) ->
 	ok;
 
 send_to_reflector(Reflector, M) ->
-	error_logger:info_msg("manager:send_to_reflector: BEGIN"),
+	error_logger:info_msg("manager:send_to_reflector: BEGIN~n"),
 	Self = self(),
 	try Reflector ! {Self, M} of
 		
