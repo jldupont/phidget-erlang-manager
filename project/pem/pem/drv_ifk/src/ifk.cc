@@ -14,8 +14,10 @@ void
 drvIfk::handleMsg(void) {
 
 	Msg *m;
-	if (waitMsg(&m, 250*1000)==0) {
+	int ret = waitMsg(&m, 250*1000);
 
+	switch(ret) {
+	case 0:
 		switch(m->getType()) {
 
 		case MSG_DOUTPUT_SET:
@@ -40,6 +42,18 @@ drvIfk::handleMsg(void) {
 		}//switch
 
 		delete m;
+		break;
+
+	// no message
+	case -1:
+		break;
+
+	default:
+	case 1:
+		error = true;
+		break;
+
+
 	}
 }//
 
