@@ -35,12 +35,12 @@ drvBase::start(void) {
 void
 drvBase::startReadThread(void) {
 
-	DEBUG_LOG(LOG_INFO, "drvBase::startReadThread()");
-
 	drvReadThreadParams *p = new drvReadThreadParams();
 	p->eq = eq;
 	p->mh = mh;
 	p->drv = this;
+
+	DEBUG_LOG(LOG_INFO, "drvBase::startReadThread, q[%x]", eq);
 
 	pthread_create( &readThread, NULL, &drvBase::readThreadFun, (void*) p);
 }//
