@@ -17,16 +17,17 @@
 
 -export([
 		 loop/1,
-		 loop_handler/0,
+		 loop_handler/1,
 		 sync_reflector/1,
 		 sync_reflector/2,
 		 handle_phidgetdevice/1,
 		 filter_device/3,
 		 handle_ifk/2,
 		 handle_active/1,
-		 handle_active/2,
+		 handle_active/3,
 		 handle_inactive/1,
-		 handle_inactive/2
+		 handle_inactive/3,
+		 init_drv/2
 		 ]).
 
 %%
@@ -38,8 +39,8 @@ start_link() ->
 	error_logger:info_msg("~p:start_link: PID[~p]~n", [?MODULE, Pid]),
 	
 	% devices handler
-	Pid_handler = spawn(fun() -> loop_handler() end),
-	error_logger:info_msg("~p:start_link: PID_handler[~p]~n", [?MODULE, Pid_handler]),
+	%Pid_handler = spawn(fun() -> loop_handler() end),
+	%error_logger:info_msg("~p:start_link: PID_handler[~p]~n", [?MODULE, Pid_handler]),
 	
 	{ok, Pid}.
 
@@ -111,11 +112,13 @@ filter_device(Serial, Type, State) ->
 
 %% Spawn 1 driver for each InterfaceKit device in "active" state
 %%  and get rid of detached device(s)
-handle_ifk(Serial, "inactive") ->
+handle_ifk(Serial, inactive) ->
+	handle_inactive(Serial),
 	ok;
 
-handle_ifk(Serial, "active") ->
+handle_ifk(Serial, active) ->
 	error_logger:info_msg("~p: handle_ifk: Serial[~p] active~n", [?MODULE, Serial]),
+	handle_active(Serial),
 	ok;
 
 handle_ifk(Serial, State) ->
@@ -124,32 +127,87 @@ handle_ifk(Serial, State) ->
 
 %% Open the driver if not already done
 handle_active(Serial) ->
-	Drv_port = get({port, Serial}),
-	handle_active(Serial, Drv_port).
+	Port = get({port, Serial}),
+	Pid  = get({pid,  Serial}),
+	handle_active(Serial, Port, Pid).
 
-% nothing to do it seems
-handle_active(_Serial, undefined) ->
+handle_active(Serial, _, undefined) ->
+	handle_active(Serial, undefined, invalid);
+
+% not sure this one is required
+handle_active(Serial, undefined, undefined) ->
+	handle_active(Serial, undefined, invalid);
+
+
+% Not active... yet
+handle_active(Serial, undefined, invalid) ->
+	Pid = spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_ifk_debug", Serial]),
+	put({pid, Serial}, Pid),
+	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
 	ok;
 
 % Is it really active?
-handle_active(Serial, Port) ->
-	ok.
+handle_active(Serial, _Port, Pid) ->
+	Active = is_process_alive(Pid),
+	case Active of
+		true ->
+			ok;
+		false ->
+			% clean-up required!
+			erase({pid, Serial}),
+			erase({port, Serial}),
+			handle_active(Serial, undefined, undefined)
+	end.
+
 
 %% Close the driver if still active
 handle_inactive(Serial) ->
+	Port = get({port, Serial}),
+	Pid  = get({pid, Serial}),
+	handle_inactive(Serial, Port, Pid),
 	ok.
 
-handle_inactive(_Serial, undefined) ->
+%not even defined it seems... nothing much to do
+handle_inactive(_Serial, undefined, _) ->
 	ok;
 
-handle_inactive(Serial, Port) ->
+handle_inactive(_Serial, _, undefined) ->
+	ok;
+
+handle_inactive(Serial, Port, Pid) ->
+	Active = is_process_alive(Pid),
+	case Active of
+		true ->
+			erlang:port_close(Port),
+			erlang:exit(Pid, ok),
+			erase({port, Serial}),
+			erase({pid, Serial}),
+			ok;
+		false ->
+			ok
+	end,
 	ok.
 
-
+init_drv(ExtPrg, Serial) ->
+	error_logger:info_msg("~p: init_drv: Serial[~p]~n",[?MODULE, Serial]),
+    process_flag(trap_exit, true),
+	Param = erlang:integer_to_list(Serial),
+    Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
+	put({port, Serial}, Port),
+    loop_handler(Port).
 
 %% =====================
 %% IFK loop
 %% =====================
 
-loop_handler() ->
-	ok.
+loop_handler(Port) ->
+	receive
+		{Port, {data, Data}} ->
+			Decoded = binary_to_term(Data),
+			error_logger:info_msg("~p: loop_handler: decoded msg[~p]~n", [?MODULE, Decoded]);
+		
+		Msg ->
+			error_logger:info_msg("~p: loop_handler: msg[~p]~n", [?MODULE, Msg])
+	end,
+	loop_handler(Port).
+
