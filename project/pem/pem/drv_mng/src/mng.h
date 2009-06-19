@@ -23,7 +23,7 @@
 		CPhidgetManagerHandle phim;
 		bool error;
 
-		static const int TIME_WHEEL=20;
+		static const int TIME_WHEEL=240;
 		static const int MESSAGE_MAX_DEVICES = 32;
 
 		static const char *ATOM_ACTIVE;
