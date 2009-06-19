@@ -171,7 +171,7 @@ do_publish(undefined, _Msgtype, _) ->
 do_publish(Liste, Msgtype, Msg) ->
 	%%elog("do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
-	ilog("reflector:do_publish, SENDING TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
+	ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
 	try	Current ! {Msgtype, Msg} of
 		{Msgtype, Msg} ->

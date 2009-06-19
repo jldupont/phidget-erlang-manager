@@ -54,6 +54,9 @@ start_link() ->
 init([]) ->
     Child_reflector = {reflector,{reflector,start_link,[]},
 	      permanent,2000,worker,[reflector]},
+
+    Child_journal = {journal,{journal,start_link,[]},
+	      permanent,2000,worker,[journal]},
 	
     Child_manager = {manager,{manager,start_link,[]},
 	      permanent,2000,worker,[manager]},
@@ -61,4 +64,7 @@ init([]) ->
     Child_ifk = {ifk,{ifk,start_link,[]},
 	      permanent,2000,worker,[ifk]},
 	
-    {ok,{{one_for_one,0,1}, [Child_reflector, Child_manager, Child_ifk]}}.
+    {ok,{{one_for_one,0,1}, [Child_reflector,
+							 Child_journal, 
+							 Child_manager, 
+							 Child_ifk]}}.
