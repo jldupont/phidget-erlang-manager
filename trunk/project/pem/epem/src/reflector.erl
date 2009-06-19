@@ -17,10 +17,11 @@
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 start_link/0,
-	 stop/0,
-	 subscribe/2
-        ]).
+	start_link/0,
+	stop/0,
+	subscribe/2,
+	unsubscribe/2	 
+	]).
 
 %% --------------------------------------------------------------------
 %% Internal exports
@@ -39,11 +40,14 @@
 %% API Functions
 %% --------------------------------------------------------------------
 subscribe(Client, Msgtype) ->
-	error_logger:info_msg("~p: subscribe: BEGIN Client[~p] Msgtype[~p]~n", [?MODULE, Client, Msgtype]),
 	Ret = rpc({subscribe, Client, Msgtype}),
-	error_logger:info_msg("~p: subscribe: END Ret[~p]~n", [?MODULE, Ret]),
+	error_logger:info_msg("~p: subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [?MODULE, Client, Msgtype, Ret]),
 	Ret.
 
+unsubscribe(Client, Msgtype) ->
+	Ret = rpc({unsubscribe, Client, Msgtype}),
+	error_logger:info_msg("~p: unsubscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [?MODULE, Client, Msgtype, Ret]),
+	Ret.
 
 rpc(Q) ->
 	Pid = self(),
@@ -73,7 +77,7 @@ start_link() ->
 	{ok, Pid}.
 
 %% --------------------------------------------------------------------
-%% Func: stop/1
+%% Func: stop/0
 %% Returns: any
 %% --------------------------------------------------------------------
 stop() ->
@@ -95,7 +99,12 @@ loop() ->
 		%% SUBSCRIBE command
 		{From, {subscribe, Client, Msgtype}} ->
 			add_client(Client, Msgtype),
-			From ! {subscribe, ok};
+			From ! {reflector, subscribe, ok};
+
+		%% UNSUBSCRIBE command
+		{From, {unsubscribe, Client, Msgtype}} ->
+			remove_client(Client, Msgtype),
+			From ! {reflector, unsubscribe, ok};
 		
 		%% Message publication
 		{_From, {Msgtype, Msg}} ->
@@ -104,8 +113,13 @@ loop() ->
 		Error ->
 			error_logger:warning_msg("reflector:loop: unsupported message, [~p]~n", [Error]),
 			Error
+
 	end,
 	?MODULE:loop().
+
+%% =======================================================================================
+%% SUBSCRIBE/UNSUBSCRIBE API
+%% =======================================================================================
 
 add_client(Client, Msgtype) ->
 	Liste = get(Msgtype),
@@ -120,7 +134,6 @@ add_client(Liste, Client, Msgtype) ->
 	New_liste = Liste ++ [Client],
 	put(Msgtype, New_liste),
 	ok.
-
 
 remove_client(undefined, _) ->
 	ok;
