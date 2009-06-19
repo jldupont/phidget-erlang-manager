@@ -17,7 +17,7 @@
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 start/0,
+	 start_link/0,
 	 stop/0,
 	 subscribe/2
         ]).
@@ -55,10 +55,10 @@ rpc(Q) ->
 %%          {ok, Pid, State} |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-start() ->
+start_link() ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
-	ok.
+	{ok, Pid}.
 
 %% --------------------------------------------------------------------
 %% Func: stop/1
@@ -91,6 +91,7 @@ loop() ->
 			publish({Msgtype, Msg});
 
 		Error ->
+			error_logger:warning_msg("reflector:loop: unsupported message"),
 			Error
 	end,
 	loop().
@@ -101,16 +102,20 @@ publish(M) ->
 	do_publish(Liste, Msgtype, Msg).
 
 
-do_publish([], _, _) ->
+do_publish([], Msgtype, _) ->
+	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+	ok;
+
+do_publish(undefined, Msgtype, _) ->
+	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(Liste, Msgtype, Msg) ->
+	io:format("reflector:do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
 	
 	%% TODO on error, remove Pid of the target
 	Current ! {Msgtype, Msg},
 	do_publish(Rest, Msgtype, Msg).
-
-
 

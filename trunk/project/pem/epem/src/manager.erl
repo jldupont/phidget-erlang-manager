@@ -11,8 +11,8 @@
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 start/0,
-	 start/1,
+	 start_link/0,
+	 start_link/1,
 	 stop/0
         ]).
 
@@ -23,7 +23,8 @@
 		 loop/0,
 		 loop_drv/1,
 		 init_drv/2,
-		 send_to_reflector/1
+		 send_to_reflector/1,
+		 send_to_reflector/2
 		 ]).
 
 %% --------------------------------------------------------------------
@@ -42,14 +43,14 @@
 %% ====================================================================!
 %% External functions
 %% ====================================================================!
-start() ->
-	start("").
+start_link() ->
+	start_link("").
 
-start(Param) ->
+start_link(Param) ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
 	spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_mng", Param]),
-	ok.
+	{ok, Pid}.
 
 init_drv(ExtPrg, Param) ->
     process_flag(trap_exit, true),
@@ -74,9 +75,10 @@ loop() ->
 			exit(ok);
 		
 		Error ->
+			error_logger:warning_msg("manager:loop: unsupported message"),
 			Error
 	end,
-	ok.
+	loop().
 
 loop_drv(_Port) ->
 	receive
@@ -89,17 +91,21 @@ loop_drv(_Port) ->
 
 send_to_reflector(M) ->
 	Reflector = whereis(reflector),
-	
-		
-	ok.
+	send_to_reflector(Reflector, M).
+
 
 %% TODO count error etc.
 send_to_reflector(undefined, _) ->
-	ok.
+	error_logger:warning_msg("manager:send_to_reflector: error sending~n"),
+	ok;
 
 send_to_reflector(Reflector, M) ->
-	try Reflector ! M of
+	error_logger:info_msg("manager:send_to_reflector: BEGIN"),
+	try Reflector ! {self(), M} of
 		ok -> ok
 	catch
-		
+		_:_ -> 
+			error_logger:warning_msg("manager:send_to_reflector: error sending~n"),
+			ok
 	end.
+
