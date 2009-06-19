@@ -4,8 +4,12 @@
 -module(ifk).
 
 %%
-%% Include files
+%% MACROS
 %%
+-define(ilog(X,Y), error_logger:info_msg("~p:~p: " X,
+                                         [?MODULE, ?LINE | Y])).
+
+-define(DRV_IFK, "pem_drv_ifk_debug").
 
 %%
 %% Exported Functions
@@ -27,7 +31,8 @@
 		 handle_active/3,
 		 handle_inactive/1,
 		 handle_inactive/3,
-		 init_drv/2
+		 init_drv/2,
+		 send_to_reflector/1
 		 ]).
 
 %%
@@ -92,6 +97,7 @@ sync_reflector(Old, Current) when Old /= Current ->
 	%%error_logger:info_msg("~p: sync_reflector: subscription response[~p]~n", [?MODULE, Response]),
 	Current.
 
+
 %% =====================
 %% HANDLER
 %% =====================
@@ -117,7 +123,7 @@ handle_ifk(Serial, inactive) ->
 	ok;
 
 handle_ifk(Serial, active) ->
-	error_logger:info_msg("~p: handle_ifk: Serial[~p] active~n", [?MODULE, Serial]),
+	%error_logger:info_msg("~p: handle_ifk: Serial[~p] active~n", [?MODULE, Serial]),
 	handle_active(Serial),
 	ok;
 
@@ -141,7 +147,7 @@ handle_active(Serial, undefined, undefined) ->
 
 % Not active... yet
 handle_active(Serial, undefined, invalid) ->
-	Pid = spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_ifk_debug", Serial]),
+	Pid = spawn_link(?MODULE, init_drv, [?DRV_IFK, Serial]),
 	put({pid, Serial}, Pid),
 	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
 	ok;
@@ -189,12 +195,13 @@ handle_inactive(Serial, Port, Pid) ->
 	ok.
 
 init_drv(ExtPrg, Serial) ->
-	error_logger:info_msg("~p: init_drv: Serial[~p]~n",[?MODULE, Serial]),
+	
     process_flag(trap_exit, true),
 	Param = erlang:integer_to_list(Serial),
-    Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
+	Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
+	error_logger:info_msg("~p: init_drv: Serial[~p] Port[~p]~n",[?MODULE, Serial, Port]),
 	put({port, Serial}, Port),
-    loop_handler(Port).
+	loop_handler(Port).
 
 %% =====================
 %% IFK loop
@@ -202,12 +209,26 @@ init_drv(ExtPrg, Serial) ->
 
 loop_handler(Port) ->
 	receive
+		{Port, {exit_status, _}} ->
+			error_logger:error_msg("~p: loop_handler: an ifk driver exited/could not load~n", [?MODULE]);
+			
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
-			error_logger:info_msg("~p: loop_handler: decoded msg[~p]~n", [?MODULE, Decoded]);
+			error_logger:info_msg("~p: loop_handler: decoded msg[~p]~n", [?MODULE, Decoded]),
+			send_to_reflector(Decoded);
 		
 		Msg ->
 			error_logger:info_msg("~p: loop_handler: msg[~p]~n", [?MODULE, Msg])
 	end,
 	loop_handler(Port).
+
+
+send_to_reflector(Msg) ->
+	try
+		reflector ! {self(), Msg}
+	catch
+		_:_ -> 
+			err
+	end.
+
 

@@ -82,8 +82,8 @@ drvIfk::init(void) {
 	// {phidgeterror,{Serial, Code, String}}
 	mh->registerType(MSG_PHIDGETERROR, "phidgeterror", "LLS");
 
-	// {phidgetdevice,{Serial, state}}
-	mh->registerType(MSG_PHIDGETDEVICE, "phidgetdevice", "LA");
+	// {phidgetifk,{Serial, state}}
+	mh->registerType(MSG_PHIDGETIFK, "phidgetifk", "LA");
 
 	// {device,{Serial,Version,Type,Name,Label}}
 	mh->registerType(MSG_DEVICE, "device", "LLSSS");
@@ -118,7 +118,7 @@ drvIfk::txOutputChanged(int index, int value) {
 
 void drvIfk::txAttach(void) {
 
-	if (mh->send(MSG_PHIDGETDEVICE, "active")) {
+	if (mh->send(MSG_PHIDGETIFK, serial, "active")) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice ATTACH message");
 		error = true;
 	}
@@ -126,7 +126,7 @@ void drvIfk::txAttach(void) {
 
 void drvIfk::txDetach(void) {
 
-	if (mh->send(MSG_PHIDGETDEVICE, "inactive")) {
+	if (mh->send(MSG_PHIDGETIFK, serial, "inactive")) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice DETACH message");
 		error = true;
 	}
