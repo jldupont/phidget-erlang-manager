@@ -29,21 +29,32 @@
 		 loop/0,
 		 rpc/1,
 		 publish/1,
-		 do_publish/3
+		 do_publish/3,
+		 add_client/2,
+		 add_client/3,
+		 remove_client/2
 		 ]).
 
 %% --------------------------------------------------------------------
 %% API Functions
 %% --------------------------------------------------------------------
 subscribe(Client, Msgtype) ->
-	rpc({subscribe, Client, Msgtype}).
+	error_logger:info_msg("~p: subscribe: BEGIN Client[~p] Msgtype[~p]~n", [?MODULE, Client, Msgtype]),
+	Ret = rpc({subscribe, Client, Msgtype}),
+	error_logger:info_msg("~p: subscribe: END Ret[~p]~n", [?MODULE, Ret]),
+	Ret.
 
 
 rpc(Q) ->
-	?MODULE ! {self(), Q},
-	receive
-		{?MODULE, Reply} ->
-			Reply
+	Pid = self(),
+	try ?MODULE ! {Pid, Q} of
+		{Pid, _} ->
+			ok;
+		Other ->
+			Other
+	catch
+		_:_ ->
+			err
 	end.
 
 %% ====================================================================!
@@ -82,21 +93,47 @@ loop() ->
 			exit(self(), ok);
 
 		%% SUBSCRIBE command
-		{From, {subscribe, Msgtype}} ->
-			Liste = get(Msgtype),
-			New_liste = Liste ++ [From],
-			put(Msgtype, New_liste),
-			ok;
+		{From, {subscribe, Client, Msgtype}} ->
+			add_client(Client, Msgtype),
+			From ! {subscribe, ok};
 		
 		%% Message publication
 		{_From, {Msgtype, Msg}} ->
 			publish({Msgtype, Msg});
 
 		Error ->
-			error_logger:warning_msg("reflector:loop: unsupported message"),
+			error_logger:warning_msg("reflector:loop: unsupported message, [~p]~n", [Error]),
 			Error
 	end,
-	loop().
+	?MODULE:loop().
+
+add_client(Client, Msgtype) ->
+	Liste = get(Msgtype),
+	add_client(Liste, Client, Msgtype).
+
+add_client(undefined, Client, Msgtype) ->
+	New_liste = [Client],
+	put(Msgtype, New_liste),
+	ok;
+
+add_client(Liste, Client, Msgtype) ->
+	New_liste = Liste ++ [Client],
+	put(Msgtype, New_liste),
+	ok.
+
+
+remove_client(undefined, _) ->
+	ok;
+
+remove_client(Client, Msgtype) ->
+	Liste = get(Msgtype),
+	Updated = Liste--[Client],
+	put(Msgtype, Updated),
+	ok.
+
+%% =======================================================================================
+%% PUBLISH API
+%% =======================================================================================
 
 publish(M) ->
 	{Msgtype, Msg} = M,
@@ -104,9 +141,10 @@ publish(M) ->
 	do_publish(Liste, Msgtype, Msg).
 
 
-do_publish([], Msgtype, _) ->
-	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+do_publish([], _Msgtype, _) ->
+	%%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
 	ok;
+
 
 do_publish(undefined, Msgtype, _) ->
 	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
@@ -114,10 +152,19 @@ do_publish(undefined, Msgtype, _) ->
 
 
 do_publish(Liste, Msgtype, Msg) ->
-	io:format("reflector:do_publish, liste[~p]~n", [Liste]),
+	%%io:format("reflector:do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
+	io:format("reflector:do_publish, SENDING TO[~p]~n", [Current]),
 	
-	%% TODO on error, remove Pid of the target
-	Current ! {Msgtype, Msg},
+	try	Current ! {Msgtype, Msg} of
+		{Msgtype, Msg} ->
+			ok;
+		Other ->
+			error_logger:warning_msg("~p: do_publish: result[~p]~n", [?MODULE, Other]),
+			remove_client(Current, Msgtype)
+	catch
+		_:_ ->
+			error_logger:error_msg("~p: do_publish: ERROR sending", [?MODULE])
+	end,
 	do_publish(Rest, Msgtype, Msg).
 

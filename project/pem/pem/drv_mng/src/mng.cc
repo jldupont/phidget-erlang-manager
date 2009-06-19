@@ -26,7 +26,7 @@ drvMng::init(void) {
 	//DEBUG_LOG(LOG_INFO,"drvMng::init()");
 
 	// Message: {phidgetdevice,{Serial, state}}
-	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LA");
+	mh->registerType(MNG_MSG_PHIDGET_DEVICE, "phidgetdevice", "LSA");
 
 }//
 
@@ -45,7 +45,7 @@ drvMng::txPhidgetDeviceMsg(phDevice *phd, int state) {
 		break;
 	}
 
-	int result = mh->send(MNG_MSG_PHIDGET_DEVICE, phd->serial, atom);
+	int result = mh->send(MNG_MSG_PHIDGET_DEVICE, phd->serial, phd->type, atom);
 	if (result) {
 		doLog(LOG_ERR, "drv_mng: ERROR sending message [%s]", mh->strerror());
 		error = true;

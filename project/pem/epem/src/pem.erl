@@ -57,5 +57,8 @@ init([]) ->
 	
     Child_manager = {manager,{manager,start_link,[]},
 	      permanent,2000,worker,[manager]},
+
+    Child_ifk = {ifk,{ifk,start_link,[]},
+	      permanent,2000,worker,[ifk]},
 	
-    {ok,{{one_for_one,0,1}, [Child_reflector, Child_manager]}}.
+    {ok,{{one_for_one,0,1}, [Child_reflector, Child_manager, Child_ifk]}}.
