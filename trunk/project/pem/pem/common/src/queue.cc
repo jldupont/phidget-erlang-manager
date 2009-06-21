@@ -398,12 +398,10 @@ int queue_wait_timer(queue *q, int usec_timer) {
 		timeout.tv_sec  = now.tv_sec;
 		timeout.tv_nsec = now.tv_nsec + (usec_timer*1000);
 
-		struct timespec tmp;
-		tmp.tv_sec  += (long int)((double)timeout.tv_nsec / (double)1000000000);
-		tmp.tv_nsec =  (long int)(fmod((double)tmp.tv_sec, (double)1000000000));
-
-		timeout.tv_nsec  = tmp.tv_nsec;
-		timeout.tv_sec  += tmp.tv_sec;
+		if (timeout.tv_nsec >= (long int)1000000000) {
+			timeout.tv_nsec -= (long int)1000000000;
+			timeout.tv_sec ++;
+		}
 
 		// it seems we need to wait...
 		//DEBUG_LOG(LOG_DEBUG,"queue_wait: BEFORE COND_WAIT on q[%x][%i]",q,q->id);
@@ -411,26 +409,30 @@ int queue_wait_timer(queue *q, int usec_timer) {
 		if ((ETIMEDOUT==rc) || (0==rc)){
 			rc=0;
 		} else {
-			DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: now.tv_sec[%li] now.tv_usec[%li]",
-					now.tv_sec,
-					now.tv_nsec);
+			//clocks are not precise
+			//... the user might also have messed up,
+			//so at least provide a log
+			if (rc==EINVAL){
 
-			DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: timeout.tv_sec[%li] timeout.tv_nsec[%li]",
-					timeout.tv_sec,
-					timeout.tv_nsec);
+				DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: now.tv_sec[%li] now.tv_usec[%li]",
+						now.tv_sec,
+						now.tv_nsec);
 
-			DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: tmp.tv_sec[%li] tmp.tv_nsec[%li]",
-					tmp.tv_sec,
-					tmp.tv_nsec);
+				DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: timeout.tv_sec[%li] timeout.tv_nsec[%li]",
+						timeout.tv_sec,
+						timeout.tv_nsec);
 
-			DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: COND ERROR q[%x][%i] result[%i] sec[%li] nsec[%li] usec[%li]",
-					q,q->id,rc,
-					timeout.tv_sec,
-					timeout.tv_nsec,
-					usec_timer);
-			rc=1;
+				DEBUG_LOG(LOG_DEBUG,"queue_wait_timer: COND ERROR q[%x][%i] result[%i] sec[%li] nsec[%li] usec[%li]",
+						q,q->id,rc,
+						timeout.tv_sec,
+						timeout.tv_nsec,
+						usec_timer);
+				rc=0;
+			} else {
+				//something else is wrong then...
+				rc=1;
+			}
 		}
-
 	pthread_mutex_unlock( q->mutex );
 	//DEBUG_LOG(LOG_DEBUG,"queue_wait: AFTER LOCK on q[%x][%i]",q,q->id);
 
