@@ -95,13 +95,13 @@ bool openDevice(drvIfk *drv, int serial, CPhidgetHandle *handle) {
 
 int IFK_AttachHandler(CPhidgetHandle IFK, void *drv) {
 
-	((drvIfk *) drv)->txAttach();
+	((drvIfk *) drv)->txAttach(IFK);
 	return 0;
 }//
 
 int IFK_DetachHandler(CPhidgetHandle IFK, void *drv) {
 
-	((drvIfk *) drv)->txDetach();
+	((drvIfk *) drv)->txDetach(IFK);
 	return 0;
 }//
 

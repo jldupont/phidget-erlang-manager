@@ -29,6 +29,7 @@
 		bool error;
 		int serial;
 		CPhidgetHandle ph;
+		phDevice *dv;
 
 	public:
 		drvIfk();
@@ -41,8 +42,8 @@
 		void txInputChanged(int index, int value);
 		void txOutputChanged(int index, int value);
 
-		void txAttach(void);
-		void txDetach(void);
+		void txAttach(CPhidgetHandle h);
+		void txDetach(CPhidgetHandle h);
 
 		void txError(int code, const char *string);
 
