@@ -11,12 +11,12 @@ d = env.Dictionary()
 #no difference at this point
 if d.get('_DEBUG', False):
 	#DEBUG
-	libs=['libpem_common_debug', 'phidget21']
+	libs=['libpem_common_debug', 'phidget21', 'rt']
 	pr = env.Program('pem_drv_ifk_debug', Glob("src/*.cc"), LIBS=libs )	
 	env.Install('/usr/bin', '#pem/drv_ifk/debug/pem_drv_ifk_debug')
 else:
 	#RELEASE
-	libs=['libpem_common', 'phidget21']
+	libs=['libpem_common', 'phidget21' , 'rt']
 	pr = env.Program('pem_drv_ifk', Glob("src/*.cc"), LIBS=libs )
 	env.Install('/usr/bin', '#pem/drv_ifk/release/pem_drv_ifk')
 	
