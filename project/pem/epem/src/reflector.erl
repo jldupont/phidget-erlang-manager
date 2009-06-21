@@ -28,7 +28,7 @@
 		 loop/0,
 		 rpc/1,
 		 publish/1,
-		 do_publish/3,
+		 do_publish/4,
 		 add_client/2,
 		 add_client/3,
 		 remove_client/2
@@ -111,8 +111,8 @@ loop() ->
 			From ! {reflector, unsubscribe, ok};
 		
 		%% Message publication
-		{_From, {Msgtype, Msg}} ->
-			publish({Msgtype, Msg});
+		{_From, {Msgtype, Msg, Timestamp}} ->
+			publish({Msgtype, Msg, Timestamp});
 
 		Error ->
 			error_logger:warning_msg("reflector:loop: unsupported message, [~p]~n", [Error]),
@@ -153,27 +153,27 @@ remove_client(Client, Msgtype) ->
 %% =======================================================================================
 
 publish(M) ->
-	{Msgtype, Msg} = M,
+	{Msgtype, Msg, Timestamp} = M,
 	Liste = get(Msgtype),
-	do_publish(Liste, Msgtype, Msg).
+	do_publish(Liste, Msgtype, Msg, Timestamp).
 
 
-do_publish([], _Msgtype, _) ->
+do_publish([], _Msgtype, _, _) ->
 	%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
-do_publish(undefined, _Msgtype, _) ->
+do_publish(undefined, _Msgtype, _, _) ->
 	%error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
-do_publish(Liste, Msgtype, Msg) ->
+do_publish(Liste, Msgtype, Msg, Timestamp) ->
 	%%elog("do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
 	ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
-	try	Current ! {Msgtype, Msg} of
+	try	Current ! {Msgtype, Msg, Timestamp} of
 		{Msgtype, Msg} ->
 			ok;
 		Other ->
@@ -183,5 +183,5 @@ do_publish(Liste, Msgtype, Msg) ->
 		X:Y ->
 			error_logger:error_msg("~p: do_publish: ERROR sending, X[~p] Y[~p]~n", [?MODULE, X, Y])
 	end,
-	do_publish(Rest, Msgtype, Msg).
+	do_publish(Rest, Msgtype, Msg, Timestamp).
 

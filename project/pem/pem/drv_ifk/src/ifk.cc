@@ -85,8 +85,8 @@ drvIfk::init(void) {
 	// {phidgetifk,{Serial, state}}
 	//mh->registerType(MSG_PHIDGETIFK, "phidgetifk", "LA");
 
-	// {device,{Serial,Version,Type,Name,Label}}
-	mh->registerType(MSG_DEVICE, "device", "LLSSS");
+	// {device,{Serial,Type,State, Version,Name,Label}}
+	mh->registerType(MSG_DEVICE, "device", "LSALSS");
 
 	// {din,{Serial, Index, Value}}
 	mh->registerType(MSG_DINPUT_CHANGED, "din", "LLL");
@@ -124,9 +124,10 @@ void drvIfk::txAttach(CPhidgetHandle h) {
 
 	ph = h;
 	dv = new phDevice(h);
+	dv->init();
 
-	// {device,{Serial,Version,Type,Name,Label}}
-	if (mh->send(MSG_DEVICE, serial, dv->version, dv->type, dv->name, dv->label, "active")) {
+	// {device,{Serial,Type,State, Version,Name,Label}}
+	if (mh->send(MSG_DEVICE, serial, dv->type, "active", dv->version, dv->name, dv->label)) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice ATTACH message");
 		error = true;
 	}
@@ -139,8 +140,8 @@ void drvIfk::txDetach(CPhidgetHandle h) {
 	if (NULL==dv)
 		return;
 
-	// {device,{Serial,Version,Type,Name,Label}}
-	if (mh->send(MSG_DEVICE, serial, dv->version, dv->type, dv->name, dv->label, "inactive")) {
+	// {device,{Serial,Type,State, Version,Name,Label}}
+	if (mh->send(MSG_DEVICE, serial, dv->type, "inactive", dv->version, dv->name, dv->label)) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice DETACH message");
 		error = true;
 	}

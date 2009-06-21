@@ -9,7 +9,7 @@
 -define(ilog(X,Y), error_logger:info_msg("~p:~p: " X,
                                          [?MODULE, ?LINE | Y])).
 
--define(DRV_IFK, "pem_drv_ifk_debug").
+-define(DRV_IFK, "/usr/bin/pem_drv_ifk_debug").
 
 %%
 %% Exported Functions
@@ -24,13 +24,13 @@
 		 loop_handler/1,
 		 sync_reflector/1,
 		 sync_reflector/2,
-		 handle_phidgetdevice/1,
-		 filter_device/3,
-		 handle_ifk/2,
-		 handle_active/1,
-		 handle_active/3,
-		 handle_inactive/1,
-		 handle_inactive/3,
+		 handle_phidgetdevice/2,
+		 filter_device/4,
+		 handle_ifk/3,
+		 handle_active/2,
+		 handle_active/4,
+		 handle_inactive/2,
+		 handle_inactive/4,
 		 init_drv/2,
 		 send_to_reflector/1
 		 ]).
@@ -65,12 +65,12 @@ loop(Reflector) ->
 			ok;
 		
 		%%verify that it is an "InterfaceKit" device
-		{phidgetdevice, M} ->
-			handle_phidgetdevice(M);
+		{phidgetdevice, M, Ts} ->
+			handle_phidgetdevice(M, Ts);
 		
 		%%don't know what todo
 		Other ->
-			error_logger:info_msg("~p: received: [~p]", [?MODULE, Other])
+			error_logger:info_msg("~p: received: [~p]~n", [?MODULE, Other])
 	
 	after 2000 ->
 
@@ -101,16 +101,16 @@ sync_reflector(Old, Current) when Old /= Current ->
 %% =====================
 %% HANDLER
 %% =====================
-handle_phidgetdevice(Msg) ->
+handle_phidgetdevice(Msg, Ts) ->
 	%error_logger:info_msg("~p: handle_phidgetdevice, Msg[~p]~n", [?MODULE, Msg]),
 	{Serial, Type, State} = Msg,
-	filter_device(Serial, Type, State).
+	filter_device(Serial, Type, State, Ts).
 
 % we just want the InterfaceKit devices!
-filter_device(Serial, Type, State) ->
+filter_device(Serial, Type, State, Ts) ->
 	case Type of
 		"PhidgetInterfaceKit" ->
-			handle_ifk(Serial, State);
+			handle_ifk(Serial, State,Ts);
 	
 		_ ->
 			notifk
@@ -118,42 +118,42 @@ filter_device(Serial, Type, State) ->
 
 %% Spawn 1 driver for each InterfaceKit device in "active" state
 %%  and get rid of detached device(s)
-handle_ifk(Serial, inactive) ->
-	handle_inactive(Serial),
+handle_ifk(Serial, inactive, Ts) ->
+	handle_inactive(Serial, Ts),
 	ok;
 
-handle_ifk(Serial, active) ->
+handle_ifk(Serial, active, Ts) ->
 	%error_logger:info_msg("~p: handle_ifk: Serial[~p] active~n", [?MODULE, Serial]),
-	handle_active(Serial),
+	handle_active(Serial, Ts),
 	ok;
 
-handle_ifk(Serial, State) ->
+handle_ifk(Serial, State, _) ->
 	error_logger:error_msg("~p: handle_ifk: Serial[~p] INVALID STATE[~p]~n", [?MODULE, Serial, State]),
 	ok.
 
 %% Open the driver if not already done
-handle_active(Serial) ->
+handle_active(Serial, Ts) ->
 	Port = get({port, Serial}),
 	Pid  = get({pid,  Serial}),
-	handle_active(Serial, Port, Pid).
+	handle_active(Serial, Port, Pid, Ts).
 
-handle_active(Serial, _, undefined) ->
-	handle_active(Serial, undefined, invalid);
+handle_active(Serial, _, undefined, Ts) ->
+	handle_active(Serial, undefined, invalid, Ts);
 
 % not sure this one is required
-handle_active(Serial, undefined, undefined) ->
-	handle_active(Serial, undefined, invalid);
+handle_active(Serial, undefined, undefined, Ts) ->
+	handle_active(Serial, undefined, invalid, Ts);
 
 
 % Not active... yet
-handle_active(Serial, undefined, invalid) ->
+handle_active(Serial, undefined, invalid, _Ts) ->
 	Pid = spawn_link(?MODULE, init_drv, [?DRV_IFK, Serial]),
 	put({pid, Serial}, Pid),
 	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
 	ok;
 
 % Is it really active?
-handle_active(Serial, _Port, Pid) ->
+handle_active(Serial, _Port, Pid, Ts) ->
 	Active = is_process_alive(Pid),
 	case Active of
 		true ->
@@ -162,25 +162,25 @@ handle_active(Serial, _Port, Pid) ->
 			% clean-up required!
 			erase({pid, Serial}),
 			erase({port, Serial}),
-			handle_active(Serial, undefined, undefined)
+			handle_active(Serial, undefined, undefined, Ts)
 	end.
 
 
 %% Close the driver if still active
-handle_inactive(Serial) ->
+handle_inactive(Serial, Ts) ->
 	Port = get({port, Serial}),
 	Pid  = get({pid, Serial}),
-	handle_inactive(Serial, Port, Pid),
+	handle_inactive(Serial, Port, Pid, Ts),
 	ok.
 
 %not even defined it seems... nothing much to do
-handle_inactive(_Serial, undefined, _) ->
+handle_inactive(_Serial, undefined, _, _) ->
 	ok;
 
-handle_inactive(_Serial, _, undefined) ->
+handle_inactive(_Serial, _, undefined, _) ->
 	ok;
 
-handle_inactive(Serial, Port, Pid) ->
+handle_inactive(Serial, Port, Pid, _Ts) ->
 	Active = is_process_alive(Pid),
 	case Active of
 		true ->
@@ -223,9 +223,11 @@ loop_handler(Port) ->
 	loop_handler(Port).
 
 
-send_to_reflector(Msg) ->
+send_to_reflector(Decoded) ->
+	{Msgtype, Msg} = Decoded,
+	M = {Msgtype, Msg, {date(), time(), now()}},
 	try
-		reflector ! {self(), Msg}
+		reflector ! {self(), M}
 	catch
 		_:_ -> 
 			err
