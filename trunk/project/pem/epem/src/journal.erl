@@ -3,6 +3,14 @@
 %% Description:  This module logs all device 
 %%               related messages to the database 
 %%
+%%
+%% Messages treated:
+%% =================
+%%
+%%  {phidgetdevice, {Serial,Type, State}}
+%%  {device,        {Serial,Type, State, Version, Name, Label}}
+%%  {din,           {Serial, Index, Value}}
+%%  {dout,          {Serial, Index, Value}}
 
 -module(journal).
 

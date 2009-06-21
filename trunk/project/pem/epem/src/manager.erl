@@ -88,7 +88,11 @@ loop_drv(Port) ->
 	receive
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
-			send_to_reflector(Decoded)
+			%% Decoded:  {Msgtype, Msg}
+			%%            Atom     Tuple
+			{Msgtype, Msg} = Decoded,
+			M = {Msgtype, Msg, {date(), time(), now()}},
+			send_to_reflector(M)
 	end,
 	loop_drv(Port).
 
