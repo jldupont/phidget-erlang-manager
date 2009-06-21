@@ -83,7 +83,7 @@ drvIfk::init(void) {
 	mh->registerType(MSG_PHIDGETERROR, "phidgeterror", "LLS");
 
 	// {phidgetifk,{Serial, state}}
-	mh->registerType(MSG_PHIDGETIFK, "phidgetifk", "LA");
+	//mh->registerType(MSG_PHIDGETIFK, "phidgetifk", "LA");
 
 	// {device,{Serial,Version,Type,Name,Label}}
 	mh->registerType(MSG_DEVICE, "device", "LLSSS");
@@ -116,19 +116,38 @@ drvIfk::txOutputChanged(int index, int value) {
 	}
 }//
 
-void drvIfk::txAttach(void) {
+void drvIfk::txAttach(CPhidgetHandle h) {
 
-	if (mh->send(MSG_PHIDGETIFK, serial, "active")) {
+	//paranoia
+	if (NULL!=dv)
+		delete dv;
+
+	ph = h;
+	dv = new phDevice(h);
+
+	// {device,{Serial,Version,Type,Name,Label}}
+	if (mh->send(MSG_DEVICE, serial, dv->version, dv->type, dv->name, dv->label, "active")) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice ATTACH message");
 		error = true;
 	}
+
 }//
 
-void drvIfk::txDetach(void) {
+void drvIfk::txDetach(CPhidgetHandle h) {
 
-	if (mh->send(MSG_PHIDGETIFK, serial, "inactive")) {
+	//TODO maybe handle this in a better way?
+	if (NULL==dv)
+		return;
+
+	// {device,{Serial,Version,Type,Name,Label}}
+	if (mh->send(MSG_DEVICE, serial, dv->version, dv->type, dv->name, dv->label, "inactive")) {
 		doLog(LOG_ERR, "drv_ifk: ERROR sending phidgetdevice DETACH message");
 		error = true;
+	}
+
+	if (NULL!=dv) {
+		delete dv;
+		dv = NULL;
 	}
 }//
 
