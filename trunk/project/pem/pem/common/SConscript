@@ -11,12 +11,12 @@ d = env.Dictionary()
 #no difference at this point
 if d.get('_DEBUG', False):
 	#DEBUG
-	libs=['epapi_debug', 'phidget21']
+	libs=['epapi_debug', 'phidget21', 'rt']
 	pr = env.SharedLibrary('pem_common_debug', Glob("src/*.cc"), LIBS=libs )	
 	env.Install('/usr/lib', '#pem/common/debug/libpem_common_debug.so')
 else:
 	#RELEASE
-	libs=['epapi', 'phidget21']
+	libs=['epapi', 'phidget21', 'rt']
 	pr = env.SharedLibrary('pem_common', Glob("src/*.cc"), LIBS=libs )
 	env.Install('/usr/lib', '#pem/common/release/libpem_common.so')
 	

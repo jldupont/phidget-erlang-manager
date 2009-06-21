@@ -7,7 +7,7 @@
 #include "base.h"
 
 phDevice::phDevice(CPhidgetHandle _phid){
-	DEBUG_LOG(LOG_INFO, "phDevice::phDevice");
+	//DEBUG_LOG(LOG_INFO, "phDevice::phDevice");
 
 	phid  = _phid;
 	type  = NULL;
@@ -16,7 +16,7 @@ phDevice::phDevice(CPhidgetHandle _phid){
 }//
 
 phDevice::~phDevice() {
-	DEBUG_LOG(LOG_INFO, "phDevice::~phDevice");
+	//DEBUG_LOG(LOG_INFO, "phDevice::~phDevice");
 
 	if (NULL!=type)
 		free(type);
@@ -31,7 +31,7 @@ phDevice::~phDevice() {
 void
 phDevice::init(void) {
 
-	DEBUG_LOG(LOG_INFO, "phDevice::init() BEGIN");
+	//DEBUG_LOG(LOG_INFO, "phDevice::init() BEGIN");
 
 	const char *_type, *_name, *_label;
 
@@ -56,5 +56,5 @@ phDevice::init(void) {
 	strncpy( name,  _name,  sz_name  );
 	strncpy( label, _label, sz_label );
 
-	DEBUG_LOG(LOG_INFO, "phDevice::init() END");
+	//DEBUG_LOG(LOG_INFO, "phDevice::init() END");
 }//
