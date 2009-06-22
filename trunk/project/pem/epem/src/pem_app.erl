@@ -11,6 +11,7 @@
 -export([
 	 stop/1,
 	 start/0,
+	 start/1,
 	 start/2,
 	 loop/0
         ]).
@@ -24,12 +25,15 @@
 %%          {ok, Pid, State} |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-start(_,_) ->
-	start().
-
 start() ->
+	start([]).
+
+start(_,_) ->
+	start([]).
+
+start(Args) ->
 	process_flag(trap_exit,true),
-	pem_sup:start_link(),
+	pem_sup:start_link(Args),
 	loop().
 
 %% --------------------------------------------------------------------

@@ -20,10 +20,8 @@
 %% Internal exports
 %% --------------------------------------------------------------------
 -export([
-	 start/0,
-	 start/2,
 	 init/1,
-	 start_link/0
+	 start_link/1
         ]).
 
 %% --------------------------------------------------------------------
@@ -35,15 +33,9 @@
 %% ====================================================================
 %% Server functions
 %% ====================================================================
-start() ->
-	start_link().
-
-start(_, _) ->
-	start_link().
-
-start_link() ->
+start_link(Args) ->
 	process_flag(trap_exit,true),
-	supervisor:start_link({local, ?MODULE}, ?MODULE, _Arg=[]).
+	supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
 
 %% --------------------------------------------------------------------
 %% Func: init/1
@@ -51,17 +43,17 @@ start_link() ->
 %%          ignore                          |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-init([]) ->
-    Child_reflector = {reflector,{reflector,start_link,[]},
+init(Args) ->
+    Child_reflector = {reflector,{reflector,start_link,Args},
 	      permanent,2000,worker,[reflector]},
 
-    Child_journal = {journal,{journal,start_link,[]},
+    Child_journal = {journal,{journal,start_link,Args},
 	      permanent,2000,worker,[journal]},
 	
-    Child_manager = {manager,{manager,start_link,[]},
+    Child_manager = {manager,{manager,start_link,Args},
 	      permanent,2000,worker,[manager]},
 
-    Child_ifk = {ifk,{ifk,start_link,[]},
+    Child_ifk = {ifk,{ifk,start_link,Args},
 	      permanent,2000,worker,[ifk]},
 	
     {ok,{{one_for_one,5,1}, [Child_reflector,
