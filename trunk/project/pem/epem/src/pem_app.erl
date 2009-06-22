@@ -32,6 +32,7 @@ start(_,_) ->
 	start([]).
 
 start(Args) ->
+	error_logger:info_msg("pem_app: Args[~p]~n", [Args]),
 	process_flag(trap_exit,true),
 	pem_sup:start_link(Args),
 	loop().

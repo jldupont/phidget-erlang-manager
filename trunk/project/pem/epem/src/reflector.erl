@@ -16,6 +16,7 @@
 	init/1,
 	start_link/0,
 	start_link/1,
+	start_link/2,
 	stop/0,
 	subscribe/2,
 	unsubscribe/2	 
@@ -25,8 +26,6 @@
 %% Internal exports
 %% --------------------------------------------------------------------
 -export([
-		 ilog/2,
-		 elog/2,
 		 loop/0,
 		 rpc/1,
 		 publish/1,
@@ -70,7 +69,10 @@ rpc(Q) ->
 %%          {ok, Pid, State} |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-start_link(_Args) ->
+start_link(X, Y) ->
+	base:ilog("start_link: X[~p] Y[~p]~n", [X,Y]).
+
+start_link(_) ->
 	start_link().
 
 start_link() ->
@@ -91,15 +93,6 @@ stop() ->
 	error_logger:error_msg("reflector: STOP CALLED!~n"),
     rpc({stop}).
 
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
-
-elog(X,Y) ->
-	error_logger:error_msg("~p: "++X, [?MODULE|Y]).
-
-ilog(X,Y) ->
-	error_logger:info_msg("~p: "++X, [?MODULE|Y]).
 
 %% ==========
 %% Func: loop
@@ -191,9 +184,9 @@ do_publish(undefined, Msgtype, _, _) ->
 
 
 do_publish(Liste, Msgtype, Msg, Timestamp) ->
-	elog("do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
+	base:elog("do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
 	[Current|Rest] = Liste,
-	ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
+	base:ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
 	try	Current ! {Msgtype, Msg, Timestamp} of
 		{Msgtype, Msg, Timestamp} ->

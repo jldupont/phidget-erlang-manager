@@ -12,7 +12,8 @@
 %%
 -export([
 		 elog/2,
-		 ilog/2
+		 ilog/2,
+		 is_debug/1
 		 ]).
 
 %%
@@ -26,3 +27,25 @@ ilog(X,Y) ->
 	error_logger:info_msg("~p: "++X, [?MODULE|Y]).
 
 
+%% Verifies if an ATOM(debug) is present in Args
+%% The paramter Args can either be a single ATOM
+%% or a list
+is_debug(Args) ->
+	case is_list(Args) of
+		true ->
+			Dbg = Args--[debug],
+			case Dbg of
+				debug ->
+					Debug = true;
+				_ ->
+					Debug = false
+			end;
+		false ->
+			case Args of
+				debug ->
+					Debug = true;
+				_ ->
+					Debug = false
+			end
+	end,
+	Debug.

@@ -48,9 +48,11 @@
 %% External functions
 %% ====================================================================!
 start_link(Args) ->
-	Debug = Args--["debug"],
+	error_logger:info_msg("manager: Args[~p]~n",[Args]),
+	
+	Debug = base:is_debug(Args),
 	case Debug of
-		"debug" ->
+		true ->
 			Driver = ?DRV_MNG_DEBUG;
 		_Other ->
 			Driver = ?DRV_MNG
