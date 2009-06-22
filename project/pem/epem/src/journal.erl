@@ -42,9 +42,9 @@
 %% API Functions
 %%
 start_link() ->
-	Pid = spawn(fun() -> loop() end),
+	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	ilog("start_link: PID[~p]~n", [?MODULE, Pid]),
+	ilog("~p: start_link: PID[~p]~n", [?MODULE, Pid]),
 	?MODULE ! start,
 	{ok, Pid}.
 

@@ -45,15 +45,15 @@
 %% External functions
 %% ====================================================================!
 start_link() ->
-	Pid = spawn(fun() -> loop() end),
+	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
 	?MODULE ! {driver, dostart},
-	error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
+	%%error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
 
 start_drv() ->
-	Pid_drv = spawn(?MODULE, mng_drv, [?DRV_MNG]),
-	error_logger:info_msg("manager:start_drv: Pid[~p]~n", [Pid_drv]),
+	_Pid_drv = spawn(?MODULE, mng_drv, [?DRV_MNG]),
+	%%error_logger:info_msg("manager:start_drv: Pid[~p]~n", [Pid_drv]),
 	ok.
 
 mng_drv(ExtPrg) ->
