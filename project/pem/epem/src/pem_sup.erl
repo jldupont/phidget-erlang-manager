@@ -57,6 +57,6 @@ init(Args) ->
 	      permanent,2000,worker,[ifk]},
 	
     {ok,{{one_for_one,5,1}, [Child_reflector,
-							 Child_journal, 
+							 Child_journal,
 							 Child_manager, 
 							 Child_ifk]}}.

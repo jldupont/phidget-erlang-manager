@@ -44,9 +44,9 @@
 %% API Functions
 %% =============
 start_link(Args) ->
-	Debug = Args--["debug"],
+	Debug = base:is_debug(Args),
 	case Debug of
-		"debug" ->
+		true ->
 			Driver = ?DRV_IFK_DEBUG;
 		_Other ->
 			Driver = ?DRV_IFK
