@@ -41,9 +41,9 @@
 %% API Functions
 %%
 start_link() ->
-	Pid = spawn(fun() -> loop() end),
+	Pid = spawn(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	error_logger:info_msg("~p:start_link: PID[~p]~n", [?MODULE, Pid]),
+	%%error_logger:info_msg("~p:start_link: PID[~p]~n", [?MODULE, Pid]),
 	
 	% devices handler
 	%Pid_handler = spawn(fun() -> loop_handler() end),

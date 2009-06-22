@@ -13,6 +13,7 @@
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
+	init/1,
 	start_link/0,
 	stop/0,
 	subscribe/2,
@@ -69,16 +70,21 @@ rpc(Q) ->
 %%          {error, Reason}
 %% --------------------------------------------------------------------
 start_link() ->
-	Pid = spawn(fun() -> loop() end),
+	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	error_logger:info_msg("reflector:start_link: PID[~p]~n", [Pid]),
+	%%error_logger:info_msg("reflector:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
+
+init(_) ->
+	error_logger:info_msg("reflector: init: STARTING~p"),
+	{ok,0}.
 
 %% --------------------------------------------------------------------
 %% Func: stop/0
 %% Returns: any
 %% --------------------------------------------------------------------
 stop() ->
+	error_logger:error_msg("reflector: STOP CALLED!~n"),
     rpc({stop}).
 
 %% ====================================================================
@@ -105,16 +111,19 @@ loop() ->
 			add_client(Client, Msgtype),
 			
 			%provide feedback to caller
-			From ! {reflector, subscribe, ok};
+			From ! {reflector, subscribe, ok},
+			ok;
 
 		%% UNSUBSCRIBE command
 		{From, {unsubscribe, Client, Msgtype}} ->
 			remove_client(Client, Msgtype),
-			From ! {reflector, unsubscribe, ok};
+			From ! {reflector, unsubscribe, ok},
+			ok;
 		
 		%% Message publication
 		{_From, {Msgtype, Msg, Timestamp}} ->
-			publish({Msgtype, Msg, Timestamp});
+			publish({Msgtype, Msg, Timestamp}),
+			ok;
 
 		Error ->
 			error_logger:warning_msg("reflector:loop: unsupported message, [~p]~n", [Error]),
