@@ -9,7 +9,7 @@
 -define(ilog(X,Y), error_logger:info_msg("~p:~p: " X,
                                          [?MODULE, ?LINE | Y])).
 
--define(DRV_IFK, "/usr/bin/pem_drv_ifk_debug").
+-define(DRV_IFK, "pem_drv_ifk_debug").
 
 %%
 %% Exported Functions

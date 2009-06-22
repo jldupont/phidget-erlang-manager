@@ -32,7 +32,10 @@
 -export([
 		 elog/2,
 		 ilog/2,
-		 loop/0
+		 loop/0,
+		 sync_reflector/0,
+		 sync_reflector/2,
+		 do_subscriptions/0
 		 ]).
 
 %%
@@ -42,6 +45,7 @@ start_link() ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
 	ilog("start_link: PID[~p]~n", [?MODULE, Pid]),
+	?MODULE ! start,
 	{ok, Pid}.
 
 stop() ->
@@ -64,9 +68,46 @@ ilog(X,Y) ->
 %% =========
 loop() ->
 	receive
-		stop ->
-			exit(ok)
-	
+		start ->
+			sync_reflector(),
+			ok;
 		
+		stop ->
+			exit(ok);
+		
+		{reflector, subscribe, ok} ->
+			ok;
+	
+		Other ->
+			error_logger:info_msg("~p: received Msg[~p]~n", [?MODULE, Other])
+
+	after 5000 ->
+		sync_reflector()
+
 	end,
 	loop().
+
+sync_reflector() ->
+	Current = whereis(reflector),
+	Old = get(reflector),
+	sync_reflector(Current, Old).
+
+sync_reflector(Current, Old) when Old == Current ->
+	ok;
+
+sync_reflector(Current, Old) when Old /= Current ->
+	put(reflector, Current),
+	do_subscriptions().
+
+do_subscriptions() ->
+	try 
+		reflector:subscribe(?MODULE, phidgetdevice),
+		reflector:subscribe(?MODULE, device),
+		reflector:subscribe(?MODULE, din),
+		reflector:subscribe(?MODULE, dout)
+	catch
+		X:Y ->
+			error_logger:error_msg("~p: do_subscriptions: ERROR, X[~p] Y[~p]~n", [?MODULE, X, Y])
+	end.
+
+

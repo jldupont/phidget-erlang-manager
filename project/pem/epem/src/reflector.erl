@@ -103,6 +103,8 @@ loop() ->
 		%% SUBSCRIBE command
 		{From, {subscribe, Client, Msgtype}} ->
 			add_client(Client, Msgtype),
+			
+			%provide feedback to caller
 			From ! {reflector, subscribe, ok};
 
 		%% UNSUBSCRIBE command
@@ -129,13 +131,18 @@ add_client(Client, Msgtype) ->
 	Liste = get(Msgtype),
 	add_client(Liste, Client, Msgtype).
 
+%no Client yet for Msgtype
 add_client(undefined, Client, Msgtype) ->
 	New_liste = [Client],
 	put(Msgtype, New_liste),
 	ok;
 
 add_client(Liste, Client, Msgtype) ->
-	New_liste = Liste ++ [Client],
+	
+	% we do not want duplicates
+	Filtered_liste = Liste -- [Client],
+	
+	New_liste = Filtered_liste ++ [Client],
 	put(Msgtype, New_liste),
 	ok.
 
@@ -143,6 +150,7 @@ remove_client(undefined, _) ->
 	ok;
 
 remove_client(Client, Msgtype) ->
+	error_logger:warning_msg("~p: remove_client: Client[~p] Msgtype[~p]~n", [?MODULE, Client, Msgtype]),
 	Liste = get(Msgtype),
 	Updated = Liste--[Client],
 	put(Msgtype, Updated),
@@ -164,13 +172,13 @@ do_publish([], _Msgtype, _, _) ->
 	ok;
 
 
-do_publish(undefined, _Msgtype, _, _) ->
-	%%error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+do_publish(undefined, Msgtype, _, _) ->
+	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(Liste, Msgtype, Msg, Timestamp) ->
-	elog("do_publish, liste[~p]~n", [Liste]),
+	elog("do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
 	[Current|Rest] = Liste,
 	ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
@@ -182,7 +190,8 @@ do_publish(Liste, Msgtype, Msg, Timestamp) ->
 			remove_client(Current, Msgtype)
 	catch
 		X:Y ->
-			error_logger:error_msg("~p: do_publish: ERROR sending, X[~p] Y[~p]~n", [?MODULE, X, Y])
+			error_logger:error_msg("~p: do_publish: ERROR sending, X[~p] Y[~p]~n", [?MODULE, X, Y]),
+			remove_client(Current, Msgtype)
 	end,
 	do_publish(Rest, Msgtype, Msg, Timestamp).
 

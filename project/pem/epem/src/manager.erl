@@ -4,15 +4,15 @@
 -module(manager).
 
 %% --------------------------------------------------------------------
-%% Include files
+%% MACROS
 %% --------------------------------------------------------------------
+-define(DRV_MNG, "pem_drv_mng_debug").
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
 	 start_link/0,
-	 start_link/1,
 	 stop/0
         ]).
 
@@ -22,7 +22,8 @@
 -export([
 		 loop/0,
 		 loop_drv/1,
-		 init_drv/2,
+		 start_drv/0,
+		 mng_drv/1,
 		 send_to_reflector/1,
 		 send_to_reflector/2
 		 ]).
@@ -44,19 +45,20 @@
 %% External functions
 %% ====================================================================!
 start_link() ->
-	start_link("").
-
-start_link(Param) ->
 	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
+	?MODULE ! {driver, dostart},
 	error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
-	Pid_drv = spawn_link(?MODULE, init_drv, ["/usr/bin/pem_drv_mng_debug", Param]),
-	error_logger:info_msg("manager:start_link: PID DRV[~p]~n", [Pid_drv]),
 	{ok, Pid}.
 
-init_drv(ExtPrg, Param) ->
+start_drv() ->
+	Pid_drv = spawn(?MODULE, mng_drv, [?DRV_MNG]),
+	error_logger:info_msg("manager:start_drv: Pid[~p]~n", [Pid_drv]),
+	ok.
+
+mng_drv(ExtPrg) ->
     process_flag(trap_exit, true),
-    Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
+    Port = open_port({spawn, ExtPrg}, [{packet, 2}, binary, exit_status]),
     loop_drv(Port).
 
 
@@ -73,6 +75,14 @@ stop() ->
 
 loop() ->
 	receive
+		
+		{driver, dostart} ->
+			start_drv();
+		
+		{driver, crashed} ->
+			error_logger:error_msg("~p: driver crashed~n", [?MODULE]),
+			start_drv();
+
 		stop ->
 			exit(ok);
 		
@@ -86,6 +96,13 @@ loop() ->
 %% ====================================================
 loop_drv(Port) ->
 	receive
+		
+		% port driver has crashed... propagate failure
+		{Port, {exit_status, _}} ->
+			?MODULE ! {driver, crashed},
+			exit(crashed);
+
+		
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
 			%% Decoded:  {Msgtype, Msg}
@@ -102,13 +119,12 @@ send_to_reflector(M) ->
 	send_to_reflector(Reflector, M).
 
 
-%% TODO count error etc.
 send_to_reflector(undefined, _) ->
 	error_logger:warning_msg("manager:send_to_reflector: reflector not found~n"),
 	ok;
 
 send_to_reflector(Reflector, M) ->
-	error_logger:info_msg("manager:send_to_reflector: Msg[~p]~n", [M]),
+	%%error_logger:info_msg("manager:send_to_reflector: Msg[~p]~n", [M]),
 	Self = self(),
 	try Reflector ! {Self, M} of
 		
