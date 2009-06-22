@@ -9,17 +9,20 @@
 -define(ilog(X,Y), error_logger:info_msg("~p:~p: " X,
                                          [?MODULE, ?LINE | Y])).
 
--define(DRV_IFK, "pem_drv_ifk_debug").
+-define(DRV_IFK_DEBUG, "pem_drv_ifk_debug").
+-define(DRV_IFK,       "pem_drv_ifk").
 
 %%
 %% Exported Functions
 %%
 -export([
 	 start_link/0,
+	 start_link/1,	 
 	 stop/0
         ]).
 
 -export([
+		 start/1,
 		 loop/0,
 		 loop_handler/1,
 		 sync_reflector/0,
@@ -37,18 +40,27 @@
 		 clean_driver/1
 		 ]).
 
-%%
+%% =============
 %% API Functions
-%%
+%% =============
+start_link(Args) ->
+	Debug = Args--["debug"],
+	case Debug of
+		"debug" ->
+			Driver = ?DRV_IFK_DEBUG;
+		_Other ->
+			Driver = ?DRV_IFK
+	end,
+	start(Driver).
+
+
 start_link() ->
+	start(?DRV_IFK).
+	
+start(DriverPath) ->
 	Pid = spawn(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	%%error_logger:info_msg("~p:start_link: PID[~p]~n", [?MODULE, Pid]),
-	
-	% devices handler
-	%Pid_handler = spawn(fun() -> loop_handler() end),
-	%error_logger:info_msg("~p:start_link: PID_handler[~p]~n", [?MODULE, Pid_handler]),
-	
+	?MODULE ! {driver_path, DriverPath},
 	{ok, Pid}.
 
 stop() ->
@@ -59,6 +71,9 @@ stop() ->
 %% =====================================================
 loop() ->
 	receive
+		{driver_path, DriverPath} ->
+			put(driver_path, DriverPath);
+		
 		stop ->
 			error_logger:warning_msg("~p: exiting", [?MODULE]),
 			exit(ok);
@@ -172,8 +187,9 @@ handle_active(Serial, undefined, undefined, Ts) ->
 
 % Not active... yet
 handle_active(Serial, undefined, invalid, _Ts) ->
-	
-	Pid = spawn(?MODULE, ifk_drv, [?DRV_IFK, Serial]),
+	DriverPath = get(driver_path),
+	%%error_logger:info_msg("~p: handle_active: DriverPath[~p]~n", [?MODULE, DriverPath]),
+	Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]),
 	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
 	ok;
 

@@ -6,13 +6,15 @@
 %% --------------------------------------------------------------------
 %% MACROS
 %% --------------------------------------------------------------------
--define(DRV_MNG, "pem_drv_mng_debug").
+-define(DRV_MNG,       "pem_drv_mng").
+-define(DRV_MNG_DEBUG, "pem_drv_mng_debug").
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
 	 start_link/0,
+	 start_link/1,
 	 stop/0
         ]).
 
@@ -20,9 +22,10 @@
 %% Internal exports
 %% --------------------------------------------------------------------
 -export([
+		 start/1,
 		 loop/0,
 		 loop_drv/1,
-		 start_drv/0,
+		 start_drv/1,
 		 mng_drv/1,
 		 send_to_reflector/1,
 		 send_to_reflector/2
@@ -44,15 +47,29 @@
 %% ====================================================================!
 %% External functions
 %% ====================================================================!
+start_link(Args) ->
+	Debug = Args--["debug"],
+	case Debug of
+		"debug" ->
+			Driver = ?DRV_MNG_DEBUG;
+		_Other ->
+			Driver = ?DRV_MNG
+	end,
+	start(Driver).
+
 start_link() ->
+	start(?DRV_MNG).
+
+start(DrvPath) ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	?MODULE ! {driver, dostart},
+	?MODULE ! {driver, dostart, DrvPath},
 	%%error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
+	
 
-start_drv() ->
-	_Pid_drv = spawn(?MODULE, mng_drv, [?DRV_MNG]),
+start_drv(DrvPath) ->
+	_Pid_drv = spawn(?MODULE, mng_drv, [DrvPath]),
 	%%error_logger:info_msg("manager:start_drv: Pid[~p]~n", [Pid_drv]),
 	ok.
 
@@ -76,12 +93,14 @@ stop() ->
 loop() ->
 	receive
 		
-		{driver, dostart} ->
-			start_drv();
+		{driver, dostart, DrvPath} ->
+			put(driver_path, DrvPath),
+			start_drv(DrvPath);
 		
 		{driver, crashed} ->
 			error_logger:error_msg("~p: driver crashed~n", [?MODULE]),
-			start_drv();
+			DriverPath = get(driver_path),
+			start_drv(DriverPath);
 
 		stop ->
 			exit(ok);

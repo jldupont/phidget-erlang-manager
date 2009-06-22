@@ -15,6 +15,7 @@
 -export([
 	init/1,
 	start_link/0,
+	start_link/1,
 	stop/0,
 	subscribe/2,
 	unsubscribe/2	 
@@ -69,6 +70,9 @@ rpc(Q) ->
 %%          {ok, Pid, State} |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
+start_link(_Args) ->
+	start_link().
+
 start_link() ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
