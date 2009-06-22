@@ -153,28 +153,29 @@ remove_client(Client, Msgtype) ->
 %% =======================================================================================
 
 publish(M) ->
+	%%error_logger:info_msg("reflector: publish Msg[~p]~n", [M]),
 	{Msgtype, Msg, Timestamp} = M,
 	Liste = get(Msgtype),
 	do_publish(Liste, Msgtype, Msg, Timestamp).
 
 
 do_publish([], _Msgtype, _, _) ->
-	%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
+	%%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(undefined, _Msgtype, _, _) ->
-	%error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+	%%error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(Liste, Msgtype, Msg, Timestamp) ->
-	%%elog("do_publish, liste[~p]~n", [Liste]),
+	elog("do_publish, liste[~p]~n", [Liste]),
 	[Current|Rest] = Liste,
 	ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
 	try	Current ! {Msgtype, Msg, Timestamp} of
-		{Msgtype, Msg} ->
+		{Msgtype, Msg, Timestamp} ->
 			ok;
 		Other ->
 			error_logger:warning_msg("~p: do_publish: result[~p]~n", [?MODULE, Other]),

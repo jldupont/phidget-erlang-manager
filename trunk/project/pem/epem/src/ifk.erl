@@ -20,9 +20,9 @@
         ]).
 
 -export([
-		 loop/1,
+		 loop/0,
 		 loop_handler/1,
-		 sync_reflector/1,
+		 sync_reflector/0,
 		 sync_reflector/2,
 		 handle_phidgetdevice/2,
 		 filter_device/4,
@@ -31,15 +31,17 @@
 		 handle_active/4,
 		 handle_inactive/2,
 		 handle_inactive/4,
-		 init_drv/2,
-		 send_to_reflector/1
+		 ifk_drv/2,
+		 send_to_reflector/1,
+		 handle_crashed_driver/1,
+		 clean_driver/1
 		 ]).
 
 %%
 %% API Functions
 %%
 start_link() ->
-	Pid = spawn(fun() -> loop(unknown) end),
+	Pid = spawn(fun() -> loop() end),
 	register( ?MODULE, Pid ),
 	error_logger:info_msg("~p:start_link: PID[~p]~n", [?MODULE, Pid]),
 	
@@ -55,7 +57,7 @@ stop() ->
 %% =====================================================
 %% MAIN LOOP
 %% =====================================================
-loop(Reflector) ->
+loop() ->
 	receive
 		stop ->
 			error_logger:warning_msg("~p: exiting", [?MODULE]),
@@ -66,7 +68,17 @@ loop(Reflector) ->
 		
 		%%verify that it is an "InterfaceKit" device
 		{phidgetdevice, M, Ts} ->
+			error_logger:info_msg("~p: loop: received 'phidgetdevice'~n", [?MODULE]),
 			handle_phidgetdevice(M, Ts);
+		
+		{driver, Serial, Port, Pid} ->
+			error_logger:info_msg("~p: loop: received driver info, Serial[~p] Port[~p] Pid[~p]~n", [?MODULE, Serial, Port, Pid]),
+			put({port,  Serial}, Port),
+			put({pid,   Serial}, Pid),
+			put({serial, Port},  Serial);
+		
+		{crashed, Port} ->
+			clean_driver(Port);
 		
 		%%don't know what todo
 		Other ->
@@ -74,27 +86,39 @@ loop(Reflector) ->
 	
 	after 2000 ->
 
-		Updated = sync_reflector(Reflector),
-		?MODULE:loop(Updated)
+		sync_reflector()
 	
 	end,
-	?MODULE:loop(Reflector).
+	?MODULE:loop().
+
+clean_driver(undefined) ->
+	error_logger:warning_msg("~p: clean_driver: received undefined", [?MODULE]);
+
+clean_driver(Port) ->
+	Serial = get({serial, Port}),
+	error_logger:info_msg("~p: clean_driver: Serial[~p] Port[~p]~n", [?MODULE, Serial, Port]),
+	erase({port, Serial}),
+	erase({pid, Serial}),
+	erase({serial, Port}).
 
 
 %% =====================
 %% Sync to Reflector
 %% =====================
 
-sync_reflector(Old) ->
+sync_reflector() ->
 	Current = whereis(reflector),
+	Old = get(reflector_pid),
 	sync_reflector(Old, Current).
 
 sync_reflector(Old, Current) when Old == Current ->
+	%%error_logger:info_msg("~p: sync_reflector: unchanged~n", [?MODULE]),
 	Old;
 
 sync_reflector(Old, Current) when Old /= Current ->
-	_Response = reflector:subscribe(?MODULE, phidgetdevice),
-	%%error_logger:info_msg("~p: sync_reflector: subscription response[~p]~n", [?MODULE, Response]),
+	Response = reflector:subscribe(?MODULE, phidgetdevice),
+	error_logger:info_msg("~p: sync_reflector: subscription response[~p]~n", [?MODULE, Response]),
+	put(reflector_pid, Current),
 	Current.
 
 
@@ -131,6 +155,7 @@ handle_ifk(Serial, State, _) ->
 	error_logger:error_msg("~p: handle_ifk: Serial[~p] INVALID STATE[~p]~n", [?MODULE, Serial, State]),
 	ok.
 
+
 %% Open the driver if not already done
 handle_active(Serial, Ts) ->
 	Port = get({port, Serial}),
@@ -147,10 +172,11 @@ handle_active(Serial, undefined, undefined, Ts) ->
 
 % Not active... yet
 handle_active(Serial, undefined, invalid, _Ts) ->
-	Pid = spawn_link(?MODULE, init_drv, [?DRV_IFK, Serial]),
-	put({pid, Serial}, Pid),
+	
+	Pid = spawn(?MODULE, ifk_drv, [?DRV_IFK, Serial]),
 	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
 	ok;
+
 
 % Is it really active?
 handle_active(Serial, _Port, Pid, Ts) ->
@@ -185,32 +211,42 @@ handle_inactive(Serial, Port, Pid, _Ts) ->
 	case Active of
 		true ->
 			erlang:port_close(Port),
-			erlang:exit(Pid, ok),
+			erlang:exit(Pid, kill),
 			erase({port, Serial}),
-			erase({pid, Serial}),
+			erase({pid,  Serial}),
 			ok;
 		false ->
 			ok
 	end,
 	ok.
 
-init_drv(ExtPrg, Serial) ->
-	
+ifk_drv(ExtPrg, Serial) ->
+	%%error_logger:info_msg("~p:ifk_drv: Serial[~p] Pid[~p]~n",[?MODULE, Serial, self()]),
     process_flag(trap_exit, true),
 	Param = erlang:integer_to_list(Serial),
 	Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
-	error_logger:info_msg("~p: init_drv: Serial[~p] Port[~p]~n",[?MODULE, Serial, Port]),
-	put({port, Serial}, Port),
+	error_logger:info_msg("~p: ifk_drv: Serial[~p] Port[~p] Pid[~p]~n",[?MODULE, Serial, Port, self()]),
+	put({port,   Serial}, Port),
+	put({serial, Port},   Serial),
+	
+	% signal back some useful mapping
+	?MODULE ! {driver, Serial, Port, self()},
 	loop_handler(Port).
 
+
 %% =====================
-%% IFK loop
+%% IFK DRIVER loop
 %% =====================
+
 
 loop_handler(Port) ->
 	receive
+			
 		{Port, {exit_status, _}} ->
-			error_logger:error_msg("~p: loop_handler: an ifk driver exited/could not load~n", [?MODULE]);
+			error_logger:error_msg("~p: loop_handler: an ifk driver exited/could not load~n", [?MODULE]),
+			handle_crashed_driver(Port),
+			exit(crashed);
+			
 			
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
@@ -222,7 +258,6 @@ loop_handler(Port) ->
 	end,
 	loop_handler(Port).
 
-
 send_to_reflector(Decoded) ->
 	{Msgtype, Msg} = Decoded,
 	M = {Msgtype, Msg, {date(), time(), now()}},
@@ -233,4 +268,14 @@ send_to_reflector(Decoded) ->
 			err
 	end.
 
+
+
+%% =======================
+%% CRASHED DRIVER RECOVERY
+%% =======================
+
+
+handle_crashed_driver(Port) ->
+	error_logger:warning_msg("~p: handle_crashed_driver: Port[~p] Pid[~p]~n", [?MODULE, Port, self()]),
+	?MODULE ! {crashed, Port}.
 
