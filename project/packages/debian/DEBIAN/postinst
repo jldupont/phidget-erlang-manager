@@ -131,3 +131,5 @@ if command == 'configure':
 	os.system("ldconfig")
 	sys.exit( code )
 	
+
+## TODO EPEM:  create /var/log/pem directory for sasl

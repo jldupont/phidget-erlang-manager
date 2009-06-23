@@ -11,6 +11,7 @@
 %% Exported Functions
 %%
 -export([
+		 home/0,
 		 elog/2,
 		 ilog/2,
 		 is_debug/1
@@ -49,3 +50,12 @@ is_debug(Args) ->
 			end
 	end,
 	Debug.
+
+
+home() ->
+    case os:getenv("PEMHOME") of
+		false ->
+		    os:getenv("HOME");
+		DIR ->
+	    	DIR
+    end.
