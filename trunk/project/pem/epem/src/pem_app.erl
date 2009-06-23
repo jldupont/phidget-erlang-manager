@@ -1,15 +1,17 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-22
 %% Description: TODO: Add description to pem
+%%
+%% --start
+%% --stop
+%%
 -module(pem_app).
-
--behaviour(application).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 stop/1,
+	 stop/0,
 	 start/0,
 	 start/1,
 	 start/2,
@@ -17,14 +19,8 @@
         ]).
 
 %% ====================================================================!
-%% External functions
+%% API functions
 %% ====================================================================!
-%% --------------------------------------------------------------------
-%% Func: start/2
-%% Returns: {ok, Pid}        |
-%%          {ok, Pid, State} |
-%%          {error, Reason}
-%% --------------------------------------------------------------------
 start() ->
 	start([]).
 
@@ -32,7 +28,7 @@ start(_,_) ->
 	start([]).
 
 start(Args) ->
-	error_logger:info_msg("pem_app: Args[~p]~n", [Args]),
+	base:ilog(?MODULE, "Args[~p]~n", [Args]),
 	process_flag(trap_exit,true),
 	pem_sup:start_link(Args),
 	loop().
@@ -41,14 +37,19 @@ start(Args) ->
 %% Func: stop/1
 %% Returns: any
 %% --------------------------------------------------------------------
-stop(_State) ->
-    ok.
+stop() ->
+    ?MODULE ! stop.
+
+
+%% ====================================================================!
+%% LOCAL functions
+%% ====================================================================!
 
 loop() ->
-	
 	receive
+		stop ->
+			exit(ok);
 		Other->
 			Other
 	end,
-
 	loop().

@@ -13,10 +13,7 @@
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	init/1,
 	start_link/0,
-	start_link/1,
-	start_link/2,
 	stop/0,
 	subscribe/2,
 	unsubscribe/2	 
@@ -40,12 +37,12 @@
 %% --------------------------------------------------------------------
 subscribe(Client, Msgtype) ->
 	Ret = rpc({subscribe, Client, Msgtype}),
-	error_logger:info_msg("~p: subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [?MODULE, Client, Msgtype, Ret]),
+	base:elog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret.
 
 unsubscribe(Client, Msgtype) ->
 	Ret = rpc({unsubscribe, Client, Msgtype}),
-	error_logger:info_msg("~p: unsubscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [?MODULE, Client, Msgtype, Ret]),
+	base:elog(?MODULE, "unsubscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret.
 
 rpc(Q) ->
@@ -61,30 +58,16 @@ rpc(Q) ->
 	end.
 
 %% ====================================================================!
-%% External functions
+%% API functions
 %% ====================================================================!
-start_link(X, Y) ->
-	base:ilog("start_link: X[~p] Y[~p]~n", [X,Y]).
-
-start_link(_) ->
-	start_link().
 
 start_link() ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	%%error_logger:info_msg("reflector:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
 
-init(_) ->
-	error_logger:info_msg("reflector: init: STARTING~p"),
-	{ok,0}.
-
-%% --------------------------------------------------------------------
-%% Func: stop/0
-%% Returns: any
-%% --------------------------------------------------------------------
 stop() ->
-	error_logger:error_msg("reflector: STOP CALLED!~n"),
+	base:elog(?MODULE, "STOP CALLED!~n"),
     rpc({stop}).
 
 
@@ -94,7 +77,7 @@ stop() ->
 loop() ->
 	receive
 		{_From, {stop}} ->
-			error_logger:warning_msg("reflector: received STOP~n"),
+			base:elog(?MODULE, "received STOP~n"),
 			exit(self(), ok);
 
 		%% SUBSCRIBE command
@@ -117,7 +100,7 @@ loop() ->
 			ok;
 
 		Error ->
-			error_logger:warning_msg("reflector:loop: unsupported message, [~p]~n", [Error]),
+			base:elog(?MODULE, "unsupported message, [~p]~n", [Error]),
 			Error
 
 	end,
@@ -150,7 +133,7 @@ remove_client(undefined, _) ->
 	ok;
 
 remove_client(Client, Msgtype) ->
-	error_logger:warning_msg("~p: remove_client: Client[~p] Msgtype[~p]~n", [?MODULE, Client, Msgtype]),
+	base:ilog(?MODULE, "remove_client: Client[~p] Msgtype[~p]~n", [Client, Msgtype]),
 	Liste = get(Msgtype),
 	Updated = Liste--[Client],
 	put(Msgtype, Updated),
@@ -173,14 +156,14 @@ do_publish([], _Msgtype, _, _) ->
 
 
 do_publish(undefined, Msgtype, _, _) ->
-	error_logger:warning_msg("reflector:do_publish: no subscribers for [~p]~n", [Msgtype]),
+	base:ilog(?MODULE, "do_publish: no subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
 do_publish(Liste, Msgtype, Msg, Timestamp) ->
-	base:elog("do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
+	%%base:ilog(?MODULE, "do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
 	[Current|Rest] = Liste,
-	base:ilog("publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
+	%%base:ilog(?MODULE, "publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
 	
 	try	Current ! {Msgtype, Msg, Timestamp} of
 		{Msgtype, Msg, Timestamp} ->

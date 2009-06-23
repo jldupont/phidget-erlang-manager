@@ -2,26 +2,20 @@
 %% Created:     2009-06-23
 %% Description: Server side of the daemon
 %%
-%% -- Verify daemon is running
-%%    -- Check CTL file
-%%    -- Get port from CTL
-%%    -- Try issuing a command
-%%
 -module(daemon_server).
-
-%%
-%% Include files
-%%
 
 %%
 %% Exported Functions
 %%
 -export([
 		 start_link/1,
-		 route_message/1
+		 set_routeto/1,
+		 stop/0
 		]).
 
-
+%%
+%% Local Functions
+%%
 -export([
 		 start_socket/1,
 		 loop_daemon/0,
@@ -29,31 +23,40 @@
 		 route/1,
 		 route/2
 		 ]).
-%%
+
+%% ======================================================================
 %% API Functions
-%%
+%% ======================================================================
 start_link(Port) ->
 	Pid = spawn(?MODULE, loop_daemon, []),
 	register(daemon_server, Pid),
 	start_socket(Port),
 	{ok, Pid}.
 
+stop() ->
+	daemon_server ! stop.
 
 %% Routes all the valid messages to Pid
-route_message(Pid) when is_pid(Pid) ->
+set_routeto(Pid) when is_pid(Pid) ->
 	daemon_server ! {routeto, Pid},
 	{ok, pid, Pid};
 
-route_message(Proc) when is_atom(Proc) ->
+set_routeto(Proc) when is_atom(Proc) ->
 	Pid = whereis(Proc),
 	daemon_server ! {routeto, Pid},
 	{ok, atom, Pid}.
 
-%%
-%% Local Functions
-%%
+
+
+
+%% ======================================================================
+%% LOCAL Functions
+%% ======================================================================
 loop_daemon() ->
 	receive
+		stop ->
+			exit(ok);
+
 		{message, Message} ->
 			route(Message);
 		
@@ -65,19 +68,19 @@ loop_daemon() ->
 			put(routeto, Pid);
 			
 		{closed, Sock} ->
-			base:ilog("daemon server: Socket[~p] closed~n", [Sock]);
+			base:ilog(?MODULE,"Socket[~p] closed~n", [Sock]);
 		
 		{lsocket, LSocket} ->
-			base:ilog("daemon server: LSocket[~p]~n", [LSocket]);
+			base:ilog(?MODULE,"LSocket[~p]~n", [LSocket]);
 		
 		{socket, Socket} ->
-			base:ilog("daemon server: Socket[~p]~n", [Socket]);
+			base:ilog(?MODULE,"Socket[~p]~n", [Socket]);
 		
 		{error, lsocket, Reason} ->
-			base:elog("daemon server: LSocket Error[~p]~n", [Reason]);
+			base:elog(?MODULE,"LSocket Error[~p]~n", [Reason]);
 		
 		{error, socket, Reason} ->
-			base:elog("daemon server: Socket Error[~p]~n", [Reason])
+			base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
 
 	end,
 	loop_daemon().
@@ -89,7 +92,7 @@ start_socket(Port) ->
 		ok ->
 			daemon_server ! {lsocket, LSocket},
 			process_flag(trap_exit, true),
-			Pid = spawn(?MODULE, loop_socket, [Port, LSocket]),
+			Pid = spawn_link(?MODULE, loop_socket, [Port, LSocket]),
 			register(daemon_socket, Pid),
 			daemon_server ! {daemon_socket_pid, Pid},
 			daemon_socket ! {dostart};
