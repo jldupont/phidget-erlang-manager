@@ -32,10 +32,10 @@
 		 ]).
 
 %% ====================================================================!
-%% External functions
+%% API functions
 %% ====================================================================!
 start_link(Args) ->
-	error_logger:info_msg("manager: Args[~p]~n",[Args]),
+	base:elog(?MODULE, "start_link: Args[~p]~n",[Args]),
 	
 	Debug = base:is_debug(Args),
 	case Debug of
@@ -49,18 +49,21 @@ start_link(Args) ->
 start_link() ->
 	start(?DRV_MNG).
 
+stop() ->
+    ?MODULE ! stop.
+
+
 start(DrvPath) ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
 	?MODULE ! {driver, dostart, DrvPath},
-	%%error_logger:info_msg("manager:start_link: PID[~p]~n", [Pid]),
 	{ok, Pid}.
 	
 
 start_drv(DrvPath) ->
 	_Pid_drv = spawn(?MODULE, mng_drv, [DrvPath]),
-	%%error_logger:info_msg("manager:start_drv: Pid[~p]~n", [Pid_drv]),
 	ok.
+
 
 mng_drv(ExtPrg) ->
     process_flag(trap_exit, true),
@@ -68,12 +71,6 @@ mng_drv(ExtPrg) ->
     loop_drv(Port).
 
 
-%% --------------------------------------------------------------------
-%% Func: stop/0
-%% Returns: any
-%% --------------------------------------------------------------------
-stop() ->
-    ?MODULE ! stop.
 
 %% ====================================================================
 %% Internal functions
@@ -95,7 +92,7 @@ loop() ->
 			exit(ok);
 		
 		Error ->
-			error_logger:warning_msg("manager:loop: unsupported message"),
+			base:elog(?MODULE, "unsupported message [~p]~n",[Error]),
 			Error
 	end,
 	loop().
@@ -118,6 +115,7 @@ loop_drv(Port) ->
 			{Msgtype, Msg} = Decoded,
 			M = {Msgtype, Msg, {date(), time(), now()}},
 			send_to_reflector(M)
+	
 	end,
 	loop_drv(Port).
 
@@ -128,11 +126,10 @@ send_to_reflector(M) ->
 
 
 send_to_reflector(undefined, _) ->
-	error_logger:warning_msg("manager:send_to_reflector: reflector not found~n"),
+	base:elog(?MODULE, "reflector not found~n"),
 	ok;
 
 send_to_reflector(Reflector, M) ->
-	%%error_logger:info_msg("manager:send_to_reflector: Msg[~p]~n", [M]),
 	Self = self(),
 	try Reflector ! {Self, M} of
 		
@@ -140,9 +137,9 @@ send_to_reflector(Reflector, M) ->
 		{Self, M} ->
 			ok;
 		Code ->
-			error_logger:warning_msg("manager:send_to_reflector: error sending to reflector, code[~p]", [Code])
+			base:elog(?MODULE, "error sending to reflector, code[~p]", [Code])
 	catch
-		_:_ -> 
-			error_logger:warning_msg("manager:send_to_reflector: error sending~n"),
+		X:Y -> 
+			base:elog(?MODULE, "error sending [~p:~p]~n", [X,Y]),
 			ok
 	end.
