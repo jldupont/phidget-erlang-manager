@@ -4,20 +4,20 @@
 -module(daemon_client).
 
 %%
-%% Include files
+%% MACROS
 %%
+-define(TIMEOUT, 2000).
 
 %%
 %% Exported Functions
 %%
 -export([
 		 start_link/1,
-		 send_test/0
+		 send_command/2
 		 ]).
 
 -export([
-		 loop_connection/1,
-		 send_test_message/1
+		 send_message/2
 		 ]).
 
 %%
@@ -30,39 +30,22 @@ start_link(Port) ->
 	{ok, Pid}.
 
 
+send_command(Port, Command) ->
+	{Code, Socket} = gen_tcp:connect("localhost", Port, [binary, {active, true}, {packet, 2}],?TIMEOUT),
+	case Code of
+		ok ->
+			Ret = send_message(Socket, Command),
+			gen_tcp:close(Socket),
+			Ret;
+				
+		_ ->
+			{Code, Socket} %%holds the error message
+	end.
+
 %%
 %% Local Functions
 %%
+send_message(Socket, Message) ->
+	Bin  = term_to_binary(Message),
+	gen_tcp:send(Socket, Bin).
 
-loop_connection(Port) ->
-	receive
-		{doconnect} ->
-			{Code, Socket} = gen_tcp:connect("localhost", Port, [binary, {active, true}, {packet, 2}]),
-			case Code of
-				ok ->
-					send_test_message(Socket),
-					gen_tcp:close(Socket);
-				
-				_ ->
-					base:elog("daemon client: error connecting [~p]~n",[Socket])
-			end;
-	
-		Other ->
-				  base:ilog(?MODULE, "Other[~p]~n", [Other])
-		
-	end, %%RECEIVE
-	loop_connection(Port).
-
-send_test_message(Socket) ->
-	Term = {test, "Hello!"},
-	Bin  = term_to_binary(Term),
-	case gen_tcp:send(Socket, Bin) of
-		ok ->
-			ok;
-		Other ->
-			base:elog("daemon client: send test message error! [~p]~n", [Other])
-	end.
-
-
-send_test() ->
-	daemon_client ! {doconnect}.
