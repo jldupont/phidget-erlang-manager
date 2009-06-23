@@ -7,28 +7,14 @@
 -module(pem_sup).
 
 -behaviour(supervisor).
-%% --------------------------------------------------------------------
-%% Include files
-%% --------------------------------------------------------------------
 
 %% --------------------------------------------------------------------
 %% External exports
-%% --------------------------------------------------------------------
--export([]).
-
-%% --------------------------------------------------------------------
-%% Internal exports
 %% --------------------------------------------------------------------
 -export([
 	 init/1,
 	 start_link/1
         ]).
-
-%% --------------------------------------------------------------------
-%% Macros
-%% --------------------------------------------------------------------
--define(SERVER, ?MODULE).
-
 
 %% ====================================================================
 %% Server functions
@@ -44,16 +30,18 @@ start_link(Args) ->
 %%          {error, Reason}
 %% --------------------------------------------------------------------
 init(Args) ->
-    Child_reflector = {reflector,{reflector,start_link,Args},
+	Debug = Args -- [debug],
+	
+    Child_reflector = {reflector,{reflector,start_link,[]},
 	      permanent,2000,worker,[reflector]},
 
-    Child_journal = {journal,{journal,start_link,Args},
+    Child_journal = {journal,{journal,start_link,[]},
 	      permanent,2000,worker,[journal]},
-	
-    Child_manager = {manager,{manager,start_link,Args},
+
+    Child_manager = {manager,{manager,start_link,[Debug]},
 	      permanent,2000,worker,[manager]},
 
-    Child_ifk = {ifk,{ifk,start_link,Args},
+    Child_ifk = {ifk,{ifk,start_link,[Debug]},
 	      permanent,2000,worker,[ifk]},
 	
     {ok,{{one_for_one,5,1}, [Child_reflector,

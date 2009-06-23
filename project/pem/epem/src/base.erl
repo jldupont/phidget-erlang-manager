@@ -6,17 +6,24 @@
 %%
 %% Include files
 %%
+-include_lib("kernel/include/file.hrl").
 
 %%
 %% Exported Functions
 %%
 -export([
 		 home/0,
+		 home/1,
 		 elog/2,
 		 ilog/2,
 		 elog/3,
 		 ilog/3,
-		 is_debug/1
+		 is_debug/1,
+		 safe_mkdir/1,
+		 safe_mkdir/2,
+		 is_dir/1,
+		 is_file/1,
+		 path_type/1
 		 ]).
 
 %%
@@ -66,3 +73,61 @@ home() ->
 		DIR ->
 	    	DIR
     end.
+
+home(Env_var) ->
+    case os:getenv(Env_var) of
+		false ->
+		    os:getenv("HOME");
+		DIR ->
+	    	DIR
+    end.
+	
+
+
+safe_mkdir(Dir) ->
+	Type = path_type(Dir),
+	safe_mkdir(Dir, Type).
+
+%% Path already exists and its a directory => nothing todo
+safe_mkdir(_Dir, {ok, directory}) ->
+	ok;
+
+%% Path already exists and its NOT a directory => error
+safe_mkdir(_Dir, {ok, Type}) ->
+	{error, Type};
+	
+
+%% Path does not exist... create as directory then
+safe_mkdir(Dir, {error, _}) ->
+	file:make_dir(Dir).
+
+
+is_file(Path) ->
+	case path_type(Path) of
+		{ok, regular} ->
+			true;
+		_ ->
+			false
+	end.
+
+
+
+is_dir(Path) ->
+	case path_type(Path) of
+		{ok, directory} ->
+			true;
+		_ ->
+			false
+	end.
+
+
+path_type(Path) ->
+	{X, Y} = file:read_file_info(Path),
+	case X of
+		ok ->
+			{ok, Y#file_info.type};
+		_ ->
+			{X, Y}
+	end.
+
+
