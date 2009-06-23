@@ -17,14 +17,17 @@
 %% Exported Functions
 %%
 -export([
-		 start_link/1
+		 start_link/1,
+		 route_message/1
 		]).
 
 
 -export([
 		 start_socket/1,
 		 loop_daemon/0,
-		 loop_socket/2
+		 loop_socket/2,
+		 route/1,
+		 route/2
 		 ]).
 %%
 %% API Functions
@@ -36,11 +39,31 @@ start_link(Port) ->
 	{ok, Pid}.
 
 
+%% Routes all the valid messages to Pid
+route_message(Pid) when is_pid(Pid) ->
+	daemon_server ! {routeto, Pid},
+	{ok, pid, Pid};
+
+route_message(Proc) when is_atom(Proc) ->
+	Pid = whereis(Proc),
+	daemon_server ! {routeto, Pid},
+	{ok, atom, Pid}.
+
 %%
 %% Local Functions
 %%
 loop_daemon() ->
 	receive
+		{message, Message} ->
+			route(Message);
+		
+		{daemon_socket_pid, Pid} ->
+			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
+			
+		{routeto, Pid} ->
+			base:ilog(?MODULE, "setting routeto, Pid[~p]~n", [Pid]),			
+			put(routeto, Pid);
+			
 		{closed, Sock} ->
 			base:ilog("daemon server: Socket[~p] closed~n", [Sock]);
 		
@@ -68,6 +91,7 @@ start_socket(Port) ->
 			process_flag(trap_exit, true),
 			Pid = spawn(?MODULE, loop_socket, [Port, LSocket]),
 			register(daemon_socket, Pid),
+			daemon_server ! {daemon_socket_pid, Pid},
 			daemon_socket ! {dostart};
 		_ ->
 			daemon_server ! {error, lsocket, LSocket}
@@ -78,10 +102,9 @@ start_socket(Port) ->
 
 loop_socket(Port, LSocket) ->
 	receive
-		%% waits for a connection
-		{'EXIT', _Reason} ->
-			self() ! dostart;
 		
+		%% waits for a connection i.e. BLOCKING <=======================================
+		%% =============================================================================
 		{dostart} ->
 			{Code, Socket} = gen_tcp:accept(LSocket),
 			inet:setopts(Socket, [{packet,2},binary,{nodelay, true},{active, true}]),
@@ -89,17 +112,19 @@ loop_socket(Port, LSocket) ->
 				ok ->
 					daemon_server ! {socket, Socket};
 				_ ->
-					daemon_server ! {error, socket, Socket}
+					daemon_server ! {error, socket, Socket},
+					 %% try again
+					 %% TODO think about limiting this?
+					self() ! {dostart}
 			end;
 
+		%% Message Reception
 		{tcp, Sock, Data} ->
 			Decoded = binary_to_term(Data),
+			daemon_server ! {message, Decoded},
 			error_logger:info_msg("daemon server: tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Decoded]);
 		
-		{Port, {data, Data}} ->
-			Decoded = binary_to_term(Data),
-			error_logger:info_msg("daemon server: socket: Decoded[~p]~n", [Decoded]);
-
+		%% Client Connection close... restart
 		{tcp_closed, Sock} ->
 			daemon_server ! {closed, Sock},
 			self() ! {dostart};
@@ -109,6 +134,17 @@ loop_socket(Port, LSocket) ->
 		
 	end, %%RECEIVE
 	loop_socket(Port, LSocket).
+
+
+route(Message) ->
+	Routeto=get(routeto),
+	route(Message, Routeto).
+
+route(_Message, undefined) ->
+	base:ilog(?MODULE, "route: routeto undefined~n", []);
+
+route(Message, Routeto) ->
+	Routeto ! {daemon_message, Message}.
 
 
 

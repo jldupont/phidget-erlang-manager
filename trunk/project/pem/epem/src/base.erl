@@ -14,6 +14,8 @@
 		 home/0,
 		 elog/2,
 		 ilog/2,
+		 elog/3,
+		 ilog/3,
 		 is_debug/1
 		 ]).
 
@@ -27,6 +29,11 @@ elog(X,Y) ->
 ilog(X,Y) ->
 	error_logger:info_msg("~p: "++X, [?MODULE|Y]).
 
+elog(M, X,Y) ->
+	error_logger:error_msg("~p: "++X, [M|Y]).
+
+ilog(M, X,Y) ->
+	error_logger:info_msg("~p: "++X, [M|Y]).
 
 %% Verifies if an ATOM(debug) is present in Args
 %% The paramter Args can either be a single ATOM
