@@ -45,7 +45,10 @@ loop_connection(Port) ->
 				
 				_ ->
 					base:elog("daemon client: error connecting [~p]~n",[Socket])
-			end
+			end;
+	
+		Other ->
+				  base:ilog(?MODULE, "Other[~p]~n", [Other])
 		
 	end, %%RECEIVE
 	loop_connection(Port).
