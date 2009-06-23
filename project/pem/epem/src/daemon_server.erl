@@ -41,6 +41,9 @@ start_link(Port) ->
 %%
 loop_daemon() ->
 	receive
+		{closed, Sock} ->
+			base:ilog("daemon server: Socket[~p] closed~n", [Sock]);
+		
 		{lsocket, LSocket} ->
 			base:ilog("daemon server: LSocket[~p]~n", [LSocket]);
 		
@@ -72,6 +75,7 @@ start_socket(Port) ->
 	ok.
 
 
+
 loop_socket(Port, LSocket) ->
 	receive
 		%% waits for a connection
@@ -96,6 +100,10 @@ loop_socket(Port, LSocket) ->
 			Decoded = binary_to_term(Data),
 			error_logger:info_msg("daemon server: socket: Decoded[~p]~n", [Decoded]);
 
+		{tcp_closed, Sock} ->
+			daemon_server ! {closed, Sock},
+			self() ! {dostart};
+		
 		Other ->
 			error_logger:info_msg("daemon server: socket: Other[~p]~n", [Other])
 		

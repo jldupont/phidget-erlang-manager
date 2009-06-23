@@ -11,7 +11,8 @@
 %% Exported Functions
 %%
 -export([
-		 start_link/1
+		 start_link/1,
+		 send_test/0
 		 ]).
 
 -export([
@@ -59,3 +60,6 @@ send_test_message(Socket) ->
 			base:elog("daemon client: send test message error! [~p]~n", [Other])
 	end.
 
+
+send_test() ->
+	daemon_client ! {doconnect}.
