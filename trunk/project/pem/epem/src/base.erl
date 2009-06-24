@@ -24,9 +24,6 @@
 		 is_dir/1,
 		 is_file/1,
 		 path_type/1,
-		 tmpdir/0,
-		 id_dir/1,
-		 ctl_file/1,
 		 to_list/1,
 		 read_ctl_file/0,
 		 read_ctl_file/1,
@@ -37,6 +34,12 @@
 		 join/2
 		 ]).
 
+-export([
+		 do_create_ctl_file/2,
+		 tmpdir/0,
+		 id_dir/1,
+		 ctl_file/1
+		 ]).
 %%
 %% API Functions
 %%
@@ -185,7 +188,9 @@ create_ctl_file(Terms) ->
 		{ok, _X} ->
 			do_create_ctl_file(Filename, Terms);
 		{X, Y} ->
-			{X, Y}
+			{X, Y};
+		_ ->
+			error
 	end.
 
 do_create_ctl_file(Filename, Terms) ->
@@ -230,7 +235,6 @@ safe_make_dirs(Path) ->
 safe_make_dirs(_Path, [], []) ->
 	ok;
 
-
 safe_make_dirs(_Path, Current, []) ->
 	%io:format("make_dirs: Path[~p] Current[~p]~n", [Path, Current]),
 	P = ?MODULE:join(Current),
@@ -266,7 +270,7 @@ safe_mkdir(_Dir, {ok, directory}) ->
 safe_mkdir(_Dir, {ok, Type}) ->
 	{error, Type};
 	
-
 %% Path does not exist... create as directory then
 safe_mkdir(Dir, {error, _}) ->
 	file:make_dir(Dir).
+
