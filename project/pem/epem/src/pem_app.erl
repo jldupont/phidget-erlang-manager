@@ -18,7 +18,10 @@
 	 start/0,
 	 start/1,
 	 start/2,
-	 loop/0
+	 loop/0,
+	 process_management_message/1,
+	 send_to_client/1,
+	 send_to_client/2
         ]).
 
 -export([
@@ -67,9 +70,35 @@ stop() ->
 
 loop() ->
 	receive
+		{daemon_management_message, Msg} ->
+			process_management_message(Msg);
+		
 		stop ->
 			exit(ok);
 		Other->
-			Other
+			base:elog(?MODULE, "received unknown message [~p]~n", [Other])
+
 	end,
 	loop().
+
+
+process_management_message(Msg) ->
+	case Msg of
+		stop ->
+			?MODULE ! stop;
+		
+		pid ->
+			Pid = os:getpid(),
+			send_to_client({daemon_message, pid, Pid})
+	end.
+
+
+send_to_client(Msg) ->
+	Server = whereis(daemon_server),
+	send_to_client(Msg, Server).
+
+send_to_client(Msg, undefined) ->
+	base:elog(?MODULE, "daemon_server: NOT FOUND, unable to send[~p]~n",[Msg]);
+
+send_to_client(Msg, Server) ->
+	Server ! Msg.

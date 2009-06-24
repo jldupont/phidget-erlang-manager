@@ -21,7 +21,9 @@
 		 loop_daemon/0,
 		 loop_socket/2,
 		 route/1,
-		 route/2
+		 route/2,
+		 send_for_client/2,
+		 send_to_client/2
 		 ]).
 
 %% ======================================================================
@@ -54,6 +56,11 @@ set_routeto(Proc) when is_atom(Proc) ->
 %% ======================================================================
 loop_daemon() ->
 	receive
+		%% message to send to the management client... if any
+		{daemon_message, Msg} ->
+			SocketPid = get(socket_pid),
+			send_for_client(SocketPid, Msg);
+		
 		stop ->
 			exit(ok);
 
@@ -61,6 +68,7 @@ loop_daemon() ->
 			route(Message);
 		
 		{daemon_socket_pid, Pid} ->
+			put(socket_pid, Pid),
 			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
 			
 		{routeto, Pid} ->
@@ -84,6 +92,15 @@ loop_daemon() ->
 
 	end,
 	loop_daemon().
+
+
+
+send_for_client(undefined, Msg) ->
+	base:elog(?MODULE, "socket process ERROR, cannot send [~p]~n", [Msg]);
+
+send_for_client(SocketPid, Msg) ->
+	SocketPid ! {for_client, Msg}.
+
 
 
 start_socket(Port) ->
@@ -113,6 +130,7 @@ loop_socket(Port, LSocket) ->
 			inet:setopts(Socket, [{packet,2},binary,{nodelay, true},{active, true}]),
 			case Code of
 				ok ->
+					put(socket, Socket),
 					daemon_server ! {socket, Socket};
 				_ ->
 					daemon_server ! {error, socket, Socket},
@@ -132,12 +150,29 @@ loop_socket(Port, LSocket) ->
 			daemon_server ! {closed, Sock},
 			self() ! {dostart};
 		
+		{for_client, Msg} ->
+			Socket=get(socket),
+			send_to_client(Socket, Msg);
+		
 		Other ->
 			error_logger:info_msg("daemon server: socket: Other[~p]~n", [Other])
 		
 	end, %%RECEIVE
 	loop_socket(Port, LSocket).
 
+
+
+
+send_to_client(undefined, Msg) ->
+	base:elog(?MODULE, "socket error, cannot send[~p]~n", [Msg]);
+
+send_to_client(Socket, Msg) ->
+	base:elog(?MODULE, "Message to client[~p]~n", [Msg]),
+	Coded = term_to_binary(Msg),
+	gen_tcp:send(Socket, Coded).
+
+
+	
 
 route(Message) ->
 	Routeto=get(routeto),
@@ -147,7 +182,7 @@ route(_Message, undefined) ->
 	base:ilog(?MODULE, "route: routeto undefined~n", []);
 
 route(Message, Routeto) ->
-	Routeto ! {daemon_message, Message}.
+	Routeto ! {daemon_management_message, Message}.
 
 
 
