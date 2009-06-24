@@ -17,7 +17,6 @@
 %%
 -export([
 		 get_port/0,
-		 create_ctl_file/2,
 		 extract_port/1
 		 ]).
 
@@ -55,9 +54,10 @@ get_port() ->
 	end.
 
 extract_port(Terms) ->
-	try lists:keyfind(port,1,Terms)
-	catch
-		_ ->
+	case erlang:is_builtin(lists, keyfind, 3) of
+		true  ->
+			lists:keyfind(port,1,Terms);
+		false ->
 			case lists:keysearch(port,1,Terms) of
 				{value, Value} ->
 					Value;
