@@ -50,7 +50,7 @@ start_daemon(Args) ->
 	pem_sup:start_link(Args),
 	loop().
 
-stop_daemon(Args) ->
+stop_daemon(_Args) ->
 	ok.
 
 %% --------------------------------------------------------------------

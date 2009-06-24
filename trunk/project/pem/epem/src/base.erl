@@ -30,7 +30,7 @@
 		 to_list/1,
 		 read_ctl_file/0,
 		 read_ctl_file/1,
-		 create_ctl_file/2,
+		 create_ctl_file/1,
 		 safe_make_dirs/1,
 		 safe_make_dirs/3,
 		 join/1,
@@ -174,8 +174,25 @@ read_ctl_file() ->
 read_ctl_file(Filename) ->
 	file:consult(Filename).
 
-create_ctl_file(_Path,_Terms) ->
-	ok.
+
+
+create_ctl_file(Terms) ->
+	Filename = ctl_file("default"),
+	Dirname  = filename:dirname(Filename),
+	case safe_make_dirs(Dirname) of
+		ok ->
+			do_create_ctl_file(Filename, Terms);
+		{ok, _X} ->
+			do_create_ctl_file(Filename, Terms);
+		{X, Y} ->
+			{X, Y}
+	end.
+
+do_create_ctl_file(Filename, Terms) ->
+	file:write_file(Filename, io_lib:format("~w.", [Terms])).
+
+
+
 
 join([]) ->
 	"";
@@ -203,6 +220,8 @@ join(A, B) when is_list(A), is_list(B) ->
 	filename:join(A,B).
 
 
+
+
 safe_make_dirs(Path) ->
 	Components = filename:split(Path),
 	[Current|Rest] = Components,
@@ -220,10 +239,17 @@ safe_make_dirs(_Path, Current, []) ->
 safe_make_dirs(Path, Current, Rest) ->
 	%io:format("make_dirs: Path[~p] Current[~p] Rest[~p]~n", [Path, Current, Rest]),
 	P = ?MODULE:join(Current),
-	safe_mkdir(P),
 	[RHead|NewRest] = Rest,
 	NewCurrent=lists:append(Current, ["/",RHead]),
-	safe_make_dirs(Path, NewCurrent, NewRest).
+	case safe_mkdir(P) of
+		ok ->
+			safe_make_dirs(Path, NewCurrent, NewRest);
+		{ok, _} ->
+			safe_make_dirs(Path, NewCurrent, NewRest);
+		{X, Y} ->
+			{X, Y}
+	end.
+
 
 
 	
