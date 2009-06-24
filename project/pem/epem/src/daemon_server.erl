@@ -2,6 +2,9 @@
 %% Created:     2009-06-23
 %% Description: Server side of the daemon
 %%
+%% To send a message back to the management client,
+%% send a message to this module using {daemon_message, Msg}.
+%%
 -module(daemon_server).
 
 %%
@@ -38,6 +41,8 @@ start_link(Port) ->
 stop() ->
 	daemon_server ! stop.
 
+
+
 %% Routes all the valid messages to Pid
 set_routeto(Pid) when is_pid(Pid) ->
 	daemon_server ! {routeto, Pid},
@@ -57,6 +62,7 @@ set_routeto(Proc) when is_atom(Proc) ->
 loop_daemon() ->
 	receive
 		%% message to send to the management client... if any
+		%% send to socket process for delivery
 		{daemon_message, Msg} ->
 			SocketPid = get(socket_pid),
 			send_for_client(SocketPid, Msg);
@@ -64,9 +70,14 @@ loop_daemon() ->
 		stop ->
 			exit(ok);
 
-		{message, Message} ->
+		%% Just acting as relay.
+		%% This type of message comes from the socket process
+		{from_client, Message} ->
 			route(Message);
 		
+		%% Need to track the socket process Pid in order
+		%% to establish a communication link between
+		%% a Client and a resident daemon
 		{daemon_socket_pid, Pid} ->
 			put(socket_pid, Pid),
 			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
@@ -140,9 +151,13 @@ loop_socket(Port, LSocket) ->
 			end;
 
 		%% Message Reception
+		%% Rx from Client connected on the socket,
+		%% message is relayed through the daemon_server
+		%% to the subscriber to all messages.
+		%% The subscriber is configured through "set_routeto" function.
 		{tcp, Sock, Data} ->
 			Decoded = binary_to_term(Data),
-			daemon_server ! {message, Decoded},
+			daemon_server ! {from_client, Decoded},
 			error_logger:info_msg("daemon server: tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Decoded]);
 		
 		%% Client Connection close... restart
@@ -150,6 +165,7 @@ loop_socket(Port, LSocket) ->
 			daemon_server ! {closed, Sock},
 			self() ! {dostart};
 		
+		%% Message to deliver to the Client connected to the socket
 		{for_client, Msg} ->
 			Socket=get(socket),
 			send_to_client(Socket, Msg);
