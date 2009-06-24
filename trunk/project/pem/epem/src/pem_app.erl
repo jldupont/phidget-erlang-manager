@@ -82,6 +82,7 @@ loop() ->
 	loop().
 
 
+%% Management Client issued message
 process_management_message(Msg) ->
 	case Msg of
 		stop ->
@@ -93,6 +94,11 @@ process_management_message(Msg) ->
 	end.
 
 
+
+%% Send a message back to the management client
+%% (assuming one is connected)
+%% The message is relayed through the module "daemon_server"
+%%
 send_to_client(Msg) ->
 	Server = whereis(daemon_server),
 	send_to_client(Msg, Server).

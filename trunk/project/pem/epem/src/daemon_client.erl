@@ -1,6 +1,7 @@
-%% Author: Jean-Lou Dupont
-%% Created: 2009-06-23
-%% Description: TODO: Add description to daemon_client
+%% Author:      Jean-Lou Dupont
+%% Created:     2009-06-23
+%% Description: Module for communicating with the daemon
+%%
 -module(daemon_client).
 
 %%
