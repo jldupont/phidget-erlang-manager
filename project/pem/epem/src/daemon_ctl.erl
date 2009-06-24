@@ -17,7 +17,8 @@
 %%
 -export([
 		 get_port/0,
-		 create_ctl_file/2
+		 create_ctl_file/2,
+		 extract_port/1
 		 ]).
 
 %%
@@ -43,10 +44,26 @@ stop_daemon(_Args, Port) ->
 %% Returns the Port# of the
 %% daemon currently running (if any)
 get_port() ->
-	Home = base:home(),
-	ok.
+	{Code, X} = base:read_ctl_file(),
+	Terms=X,
+	case Code of 
+		ok ->
+			extract_port(Terms);
+		_ ->
+			% error code really
+			{Code, X}
+	end.
 
-%  file:write_file(F, io_lib:format("~w.", [{Port,Key}])),
-
+extract_port(Terms) ->
+	try lists:keyfind(port,1,Terms)
+	catch
+		_ ->
+			case lists:keysearch(port,1,Terms) of
+				{value, Value} ->
+					Value;
+				_ ->
+					error
+			end
+	end.
 
 
