@@ -16,7 +16,8 @@
 %% LOCAL Exported Functions
 %%
 -export([
-		 get_port/0
+		 get_port/0,
+		 create_ctl_file/2
 		 ]).
 
 %%
@@ -44,5 +45,8 @@ stop_daemon(_Args, Port) ->
 get_port() ->
 	Home = base:home(),
 	ok.
+
+%  file:write_file(F, io_lib:format("~w.", [{Port,Key}])),
+
 
 

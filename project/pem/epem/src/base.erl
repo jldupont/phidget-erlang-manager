@@ -23,7 +23,18 @@
 		 safe_mkdir/2,
 		 is_dir/1,
 		 is_file/1,
-		 path_type/1
+		 path_type/1,
+		 tmpdir/0,
+		 id_dir/1,
+		 ctl_file/1,
+		 to_list/1,
+		 read_ctl_file/0,
+		 read_ctl_file/1,
+		 create_ctl_file/2,
+		 safe_make_dirs/1,
+		 safe_make_dirs/3,
+		 join/1,
+		 join/2
 		 ]).
 
 %%
@@ -84,22 +95,6 @@ home(Env_var) ->
 	
 
 
-safe_mkdir(Dir) ->
-	Type = path_type(Dir),
-	safe_mkdir(Dir, Type).
-
-%% Path already exists and its a directory => nothing todo
-safe_mkdir(_Dir, {ok, directory}) ->
-	ok;
-
-%% Path already exists and its NOT a directory => error
-safe_mkdir(_Dir, {ok, Type}) ->
-	{error, Type};
-	
-
-%% Path does not exist... create as directory then
-safe_mkdir(Dir, {error, _}) ->
-	file:make_dir(Dir).
 
 
 is_file(Path) ->
@@ -131,3 +126,121 @@ path_type(Path) ->
 	end.
 
 
+% from Yaws
+id_dir(Id) ->
+    filename:join([tmpdir(), "pem", to_list(Id)]).
+
+% from Yaws
+ctl_file(Id) ->
+    filename:join([id_dir(Id), "CTL"]).
+
+% from Yaws
+to_list(L) when is_list(L) ->
+    L;
+
+% from Yaws
+to_list(A) when is_atom(A) ->
+    atom_to_list(A).
+
+% from Yaws
+tmpdir() ->
+    case os:type() of
+        {win32,_} ->
+            case os:getenv("TEMP") of
+                false ->
+                    case os:getenv("TMP") of
+                        false ->
+                            case file:read_file_info("C:/WINNT/Temp") of
+                                {error, _} ->
+                                    "C:/WINDOWS/Temp";
+                                {ok, _} ->
+                                    "C:/WINNT/Temp"
+                            end;
+                        PathTMP ->
+                            PathTMP
+                    end;
+                PathTEMP ->
+                    PathTEMP
+            end;
+        _ ->
+	    filename:join([home(), ".pem"])
+    end.
+
+
+read_ctl_file() ->
+	Filename = ctl_file("default"),
+	read_ctl_file(Filename).
+
+read_ctl_file(Filename) ->
+	file:consult(Filename).
+
+create_ctl_file(_Path,_Terms) ->
+	ok.
+
+join([]) ->
+	"";
+
+join(String) when is_list(String), length(String) == 1 ->
+	%io:format("1-join(String): [~p]~n", [String]),
+	filename:join([String]);
+	
+join([String]) ->
+	%io:format("2-join([String]): [~p]~n", [String]),
+	filename:join([String]);
+
+join(Atom) when is_atom(Atom) ->
+	%io:format("3-join(Atom): [~p]~n", [Atom]),
+	filename:join([Atom]);
+
+join(String) ->
+	%io:format("4-join(String): [~p]~n", [String]),
+	filename:join([String]).
+
+join([], []) ->
+	"";
+
+join(A, B) when is_list(A), is_list(B) ->
+	filename:join(A,B).
+
+
+safe_make_dirs(Path) ->
+	Components = filename:split(Path),
+	[Current|Rest] = Components,
+	safe_make_dirs(Path, Current, Rest).
+
+safe_make_dirs(_Path, [], []) ->
+	ok;
+
+
+safe_make_dirs(_Path, Current, []) ->
+	%io:format("make_dirs: Path[~p] Current[~p]~n", [Path, Current]),
+	P = ?MODULE:join(Current),
+	safe_mkdir(P);
+
+safe_make_dirs(Path, Current, Rest) ->
+	%io:format("make_dirs: Path[~p] Current[~p] Rest[~p]~n", [Path, Current, Rest]),
+	P = ?MODULE:join(Current),
+	safe_mkdir(P),
+	[RHead|NewRest] = Rest,
+	NewCurrent=lists:append(Current, ["/",RHead]),
+	safe_make_dirs(Path, NewCurrent, NewRest).
+
+
+	
+safe_mkdir(Dir) ->
+	%io:format("safe_mkdir: Dir[~p]~n",[Dir]),
+	Type = path_type(Dir),
+	safe_mkdir(Dir, Type).
+
+%% Path already exists and its a directory => nothing todo
+safe_mkdir(_Dir, {ok, directory}) ->
+	ok;
+
+%% Path already exists and its NOT a directory => error
+safe_mkdir(_Dir, {ok, Type}) ->
+	{error, Type};
+	
+
+%% Path does not exist... create as directory then
+safe_mkdir(Dir, {error, _}) ->
+	file:make_dir(Dir).
