@@ -2,8 +2,7 @@
 %% Created:     2009-06-23
 %% Description: Module for communicating with the daemon
 %%
-%% Generates the following message back to the subscribing
-%% process (must be set through 'set_routeto'):
+%% Generates the following message back to the subscribing process:
 %%
 %% {Prefix, message, Message}      Message from Server side
 %% {Prefix, info, open}            Socket is open & ready
@@ -23,9 +22,8 @@
 %% Exported Functions
 %%
 -export([
-		 start_link/1,
+		 start_link/3,
 		 stop/0,
-		 set_routeto/2,
 		 send_message/2
 		 ]).
 
@@ -43,29 +41,24 @@
 %% API Functions
 %% ======================================================
 
-start_link(Port) ->
-	Pid = spawn(?MODULE, loop_connection, [Port]),
-	register(daemon_client, Pid),
-	Pid ! {doconnect},
-	{ok, Pid}.
+start_link(Port, Pid, Prefix) when is_pid(Pid) ->
+	P = spawn(?MODULE, loop_connection, [Port]),
+	register(daemon_client, P),
+	P ! {routeto, Pid, Prefix},
+	P ! {doconnect},
+	{ok, P};
+
+
+start_link(Port, Proc, Prefix) when is_atom(Proc) ->
+	Pid = whereis(Proc),
+	P = spawn(?MODULE, loop_connection, [Port]),
+	register(daemon_client, P),
+	P ! {routeto, Pid, Prefix},
+	P ! {doconnect},
+	{ok, P}.
 
 stop() ->
 	daemon_client ! stop.
-
-
-%% Sets the subscriber parameters.
-%% Pid:    process Id of the subscriber wishing to receive
-%%         status & messages from the Server
-%% Prefix: Term() which should be used to prefix all
-%%         status & messages back to the subscriber
-set_routeto(Pid, Prefix) when is_pid(Pid) ->
-	daemon_client ! {routeto, Pid, Prefix},
-	ok;
-
-set_routeto(Proc, Prefix) when is_atom(Proc) ->
-	Pid = whereis(Proc),
-	daemon_client ! {routeto, Pid, Prefix},
-	ok.
 
 
 %% Sends a message down the socket connection.
