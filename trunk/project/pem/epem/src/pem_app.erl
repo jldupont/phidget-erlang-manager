@@ -20,8 +20,6 @@
 	 start/2,
 	 loop/0,
 	 process_management_message/1,
-	 send_to_client/1,
-	 send_to_client/2
         ]).
 
 -export([
@@ -46,6 +44,8 @@ start(debug, start) ->
 
 start(debug, stop) ->
 	stop_daemon([debug]).
+
+
 
 start_daemon(Args) ->
 	base:ilog(?MODULE, "Args[~p]~n", [Args]),
@@ -94,17 +94,3 @@ process_management_message(Msg) ->
 	end.
 
 
-
-%% Send a message back to the management client
-%% (assuming one is connected)
-%% The message is relayed through the module "daemon_server"
-%%
-send_to_client(Msg) ->
-	Server = whereis(daemon_server),
-	send_to_client(Msg, Server).
-
-send_to_client(Msg, undefined) ->
-	base:elog(?MODULE, "daemon_server: NOT FOUND, unable to send[~p]~n",[Msg]);
-
-send_to_client(Msg, Server) ->
-	Server ! Msg.
