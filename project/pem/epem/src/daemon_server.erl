@@ -5,6 +5,13 @@
 %% To send a message back to the management client,
 %% send a message to this module using {daemon_message, Msg}.
 %%
+%% Messages generated back to the subscriber:
+%%
+%% {Prefix, {message, Msg}}
+%% {Prefix, {info, txerror, MsgId}}
+%% {Prefix, {info, txok,    MsgId}}
+%%
+
 -module(daemon_server).
 
 %%
@@ -12,8 +19,9 @@
 %%
 -export([
 		 start_link/1,
-		 set_routeto/1,
-		 stop/0
+		 set_routeto/2,
+		 stop/0,
+		 send_message/2
 		]).
 
 %%
@@ -25,8 +33,8 @@
 		 loop_socket/2,
 		 route/1,
 		 route/2,
-		 send_for_client/2,
-		 send_to_client/2
+		 send_for_client/3,
+		 send_to_client/3
 		 ]).
 
 %% ======================================================================
@@ -44,28 +52,39 @@ stop() ->
 
 
 %% Routes all the valid messages to Pid
-set_routeto(Pid) when is_pid(Pid) ->
-	daemon_server ! {routeto, Pid},
+set_routeto(Pid, Prefix) when is_pid(Pid) ->
+	daemon_server ! {routeto, Pid, Prefix},
 	{ok, pid, Pid};
 
-set_routeto(Proc) when is_atom(Proc) ->
+set_routeto(Proc, Prefix) when is_atom(Proc) ->
 	Pid = whereis(Proc),
-	daemon_server ! {routeto, Pid},
+	daemon_server ! {routeto, Pid, Prefix},
 	{ok, atom, Pid}.
 
 
+send_message(MsgId, Msg) ->
+	daemon_server ! {to_client, MsgId, Msg}.
+	
 
 
 %% ======================================================================
 %% LOCAL Functions
 %% ======================================================================
-loop_daemon() ->
+loop_daemon() ->  %%daemon_server loop
 	receive
-		%% message to send to the management client... if any
+		%% The listen port could have been assigned
+		%% by the OS: we need to keep track of it
+		%% for managing the daemon through a management
+		%% client interface. 
+		{assignedport, Port} ->
+			%% TODO write the port in the CTL file
+			put(assignedport, Port);
+		
+		%% message to send down the socket ... if any
 		%% send to socket process for delivery
-		{daemon_message, Msg} ->
+		{to_client, MsgId, Msg} ->
 			SocketPid = get(socket_pid),
-			send_for_client(SocketPid, Msg);
+			send_for_client(SocketPid, MsgId, Msg);
 		
 		stop ->
 			exit(ok);
@@ -82,9 +101,9 @@ loop_daemon() ->
 			put(socket_pid, Pid),
 			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
 			
-		{routeto, Pid} ->
+		{routeto, Pid, Prefix} ->
 			base:ilog(?MODULE, "setting routeto, Pid[~p]~n", [Pid]),			
-			put(routeto, Pid);
+			put(routeto, {Pid, Prefix});
 			
 		{closed, Sock} ->
 			base:ilog(?MODULE,"Socket[~p] closed~n", [Sock]);
@@ -106,11 +125,34 @@ loop_daemon() ->
 
 
 
-send_for_client(undefined, Msg) ->
-	base:elog(?MODULE, "socket process ERROR, cannot send [~p]~n", [Msg]);
+%% CALLED FROM daemon_server PROCESS	
+%% Send status/message back to the subscriber
+route(Message) ->
+	Routeto=get(routeto),
+	route(Message, Routeto).
 
-send_for_client(SocketPid, Msg) ->
-	SocketPid ! {for_client, Msg}.
+route(_Message, undefined) ->
+	%% TODO probably need to throttle this!
+	base:ilog(?MODULE, "route: routeto undefined~n", []);
+
+route(Message, Routeto) ->
+	{Pid, Prefix} = Routeto,
+	Pid ! {Prefix, Message}.
+
+
+
+
+
+%% CALLED FROM daemon_server PROCESS
+%% These functions server as bridge between the daemon_server
+%% process and the socket process
+send_for_client(undefined, MsgId, Msg) ->
+	%% TODO throttle this?
+	base:elog(?MODULE, "socket process ERROR, cannot send MsgId[~p] Msg[~p]~n", [MsgId, Msg]);
+
+send_for_client(SocketPid, MsgId, Msg) ->
+	SocketPid ! {for_client, MsgId, Msg}.
+
 
 
 
@@ -118,11 +160,20 @@ start_socket(Port) ->
 	{Code, LSocket} = gen_tcp:listen(Port,[{nodelay, true}, {packet, 2}, {reuseaddr, true},{active, true}]),
 	case Code of
 		ok ->
+			%% Retrieve the Port number as it could have been assigned by the OS
+			%% by setting '0' in the call to gen_tcp:listen
+			AssignedPort = inet:port(LSocket),
 			daemon_server ! {lsocket, LSocket},
-			process_flag(trap_exit, true),
-			Pid = spawn_link(?MODULE, loop_socket, [Port, LSocket]),
+
+			%%TODO check this: process_flag(trap_exit, true),
+			Pid = spawn_link(?MODULE, loop_socket, [AssignedPort, LSocket]),
 			register(daemon_socket, Pid),
+			
+			%% info back to the main loop 'daemon_server'
+			daemon_server ! {assignedport, AssignedPort},
 			daemon_server ! {daemon_socket_pid, Pid},
+			
+			%% Start accepting calls!
 			daemon_socket ! {dostart};
 		_ ->
 			daemon_server ! {error, lsocket, LSocket}
@@ -130,10 +181,10 @@ start_socket(Port) ->
 	ok.
 
 
-
+%% Socket process loop
+%% ===================
 loop_socket(Port, LSocket) ->
 	receive
-		
 		%% waits for a connection i.e. BLOCKING <=======================================
 		%% =============================================================================
 		{dostart} ->
@@ -157,8 +208,8 @@ loop_socket(Port, LSocket) ->
 		%% The subscriber is configured through "set_routeto" function.
 		{tcp, Sock, Data} ->
 			Decoded = binary_to_term(Data),
-			daemon_server ! {from_client, Decoded},
-			error_logger:info_msg("daemon server: tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Decoded]);
+			daemon_server ! {from_client, {message, Decoded}},
+			base:ilog(?MODULE, "tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Decoded]);
 		
 		%% Client Connection close... restart
 		{tcp_closed, Sock} ->
@@ -166,9 +217,9 @@ loop_socket(Port, LSocket) ->
 			self() ! {dostart};
 		
 		%% Message to deliver to the Client connected to the socket
-		{for_client, Msg} ->
+		{for_client, MsgId, Msg} ->
 			Socket=get(socket),
-			send_to_client(Socket, Msg);
+			send_to_client(Socket, MsgId, Msg);
 		
 		Other ->
 			error_logger:info_msg("daemon server: socket: Other[~p]~n", [Other])
@@ -178,27 +229,24 @@ loop_socket(Port, LSocket) ->
 
 
 
+%% CALLED BY SOCKET PROCESS
+%% Send message down the socket to the Client side
+send_to_client(undefined, MsgId, Msg) ->
+	%% TODO throttle?
+	base:elog(?MODULE, "socket error, cannot send, MsgId[~p] Msg[~p]~n", [MsgId, Msg]),
+	daemon_server ! {for_client, {info, txerror, MsgId}};
 
-send_to_client(undefined, Msg) ->
-	base:elog(?MODULE, "socket error, cannot send[~p]~n", [Msg]);
 
-send_to_client(Socket, Msg) ->
-	base:elog(?MODULE, "Message to client[~p]~n", [Msg]),
+send_to_client(Socket, MsgId, Msg) ->
+	base:elog(?MODULE, "Message to client, MsgId[~p] Msg[~p]~n", [MsgId, Msg]),
 	Coded = term_to_binary(Msg),
-	gen_tcp:send(Socket, Coded).
+	case gen_tcp:send(Socket, Coded) of
+		ok ->
+			daemon_server ! {for_client, {info, txok, MsgId}};
 
-
-	
-
-route(Message) ->
-	Routeto=get(routeto),
-	route(Message, Routeto).
-
-route(_Message, undefined) ->
-	base:ilog(?MODULE, "route: routeto undefined~n", []);
-
-route(Message, Routeto) ->
-	Routeto ! {daemon_management_message, Message}.
-
+		{error, Reason} ->
+			base:elog(?MODULE, "send_to_client: ERROR, Reason[~p] MsgId[~p] Msg[~p]~n", [Reason, MsgId, Msg]),
+			daemon_server ! {for_client, {info, txerror, MsgId}}
+	end.
 
 

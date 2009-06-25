@@ -11,7 +11,9 @@
 		 stop_daemon/1,
 		 stop_daemon/2,
 		 getpid_daemon/0,
-		 getpid_daemon/1
+		 getpid_daemon/1,
+		 send_to_client/1,
+		 send_to_client/2,
 		 ]).
 
 %%
@@ -19,6 +21,7 @@
 %%
 -export([
 		 getport/0,
+		 saveport/1,
 		 extract_port/1
 		 ]).
 
@@ -26,6 +29,10 @@
 %% API Functions
 %%
 start_daemon(Args) ->
+	%% TODO is there a daemon already running?
+	%%      Wait x time for response back
+	
+	
 	%% TODO set_routeto
 	ok.
 
@@ -62,6 +69,9 @@ getpid_daemon({Code, Error}) ->
 
 %% Returns the Port# of the
 %% daemon currently running (if any)
+%%
+%% Returns: {port, Port}
+%%
 getport() ->
 	{Code, X} = base:read_ctl_file(),
 	Terms=X,
@@ -87,3 +97,22 @@ extract_port(Terms) ->
 	end.
 
 
+%% Save the used by this daemon
+saveport(Port) ->
+	base:create_ctl_file([{port, Port}]).
+
+
+
+%% Send a message back to the management client
+%% (assuming one is connected)
+%% The message is relayed through the module "daemon_server"
+%%
+send_to_client(Msg) ->
+	Server = whereis(daemon_server),
+	send_to_client(Msg, Server).
+
+send_to_client(Msg, undefined) ->
+	base:elog(?MODULE, "daemon_server: NOT FOUND, unable to send[~p]~n",[Msg]);
+
+send_to_client(Msg, Server) ->
+	Server ! Msg.
