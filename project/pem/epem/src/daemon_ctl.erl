@@ -3,6 +3,10 @@
 %% Description: TODO: Add description to daemon_ctl
 -module(daemon_ctl).
 
+%% Timeout for communicating
+%% with the daemon
+-define(TIMEOUT, 2000).
+
 %%
 %% API Exported Functions
 %%
@@ -13,7 +17,7 @@
 		 getpid_daemon/0,
 		 getpid_daemon/1,
 		 send_to_client/1,
-		 send_to_client/2,
+		 send_to_client/2
 		 ]).
 
 %%
@@ -116,3 +120,5 @@ send_to_client(Msg, undefined) ->
 
 send_to_client(Msg, Server) ->
 	Server ! Msg.
+
+
