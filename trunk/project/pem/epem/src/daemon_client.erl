@@ -2,14 +2,19 @@
 %% Created:     2009-06-23
 %% Description: Module for communicating with the daemon
 %%
-%% Generates the following message back to the subscribing process:
+%% SUBSCRIPTIONS:
+%% ==============
 %%
-%% {Prefix, message, Message}      Message from Server side
-%% {Prefix, info, open}            Socket is open & ready
-%% {Prefix, info, closed}          Socket is closed
-%% {Prefix, info, error}           Socket cannot be opened
-%% {Prefix, info, txerror, MsgId}  Error transmitting message to Server
-%% {Prefix, info, txok,    MsgId}  Transmission to Server OK
+%% {to_daemon, {MsgId, Msg}}
+%%
+%% MESSAGE GENERATED:
+%% ==================
+%% {from_daemon, Message}           Message from Server side
+%% {management,  open}              Socket is open & ready
+%% {management,  closed}            Socket is closed
+%% {management,  error}             Socket cannot be opened
+%% {management,  {txerror, MsgId}}  Error transmitting message to Server
+%% {management,  {txok,    MsgId}}  Transmission to Server OK
 
 -module(daemon_client).
 
@@ -18,21 +23,21 @@
 %%
 -define(TIMEOUT, 2000).
 
+-define(SUBS, [to_daemon]).
+
 %%
 %% Exported Functions
 %%
 -export([
-		 start_link/3,
-		 stop/0,
-		 send_message/2
+		 start/1,
+		 stop/0
 		 ]).
 
 -export([
-		 route/2,
-		 route/3,
 		 loop_connection/1,
 		 close_socket/0,
 		 close_socket/1,
+		 send_to_reflector/1,
 		 send_to_server/2,
 		 send_to_server/3
 		 ]).
@@ -41,32 +46,15 @@
 %% API Functions
 %% ======================================================
 
-start_link(Port, Pid, Prefix) when is_pid(Pid) ->
+start(Port)->
 	P = spawn(?MODULE, loop_connection, [Port]),
 	register(daemon_client, P),
-	P ! {routeto, Pid, Prefix},
-	P ! {doconnect},
-	{ok, P};
-
-
-start_link(Port, Proc, Prefix) when is_atom(Proc) ->
-	Pid = whereis(Proc),
-	P = spawn(?MODULE, loop_connection, [Port]),
-	register(daemon_client, P),
-	P ! {routeto, Pid, Prefix},
-	P ! {doconnect},
 	{ok, P}.
+
 
 stop() ->
 	daemon_client ! stop.
 
-
-%% Sends a message down the socket connection.
-%% Status of delivery will be relayed back
-%% asynchronously.
-send_message(MsgId, Message) ->
-	daemon_client ! {send, MsgId, Message},
-	ok.
 
 
 %% ======================================================
@@ -86,30 +74,28 @@ loop_connection(Port) ->
 			case Code of
 				ok ->
 					put(socket, Socket),
-					route(info, open);
+					reflector:send_sync(daemon_client, management, open, ?SUBS);
 				_ ->
 					put(socket, undefined),
-					route(info, error)
+					reflector:send_sync(daemon_client, management, error, ?SUBS)
 			end;
 
-		%% To Server
-		{send, MsgId, Msg} ->
+		{to_daemon, {MsgId, Msg}} ->
 			send_to_server(MsgId, Msg);
 			
-		
-		{routeto, Pid, Prefix} ->
-			put(routeto, {Pid, Prefix});
-
 		%% From socket
 		{tcp, _Sock, Data} ->
-			Decoded = binary_to_term(Data),
-			route(message, Decoded);
+			Message = binary_to_term(Data),
+			send_to_reflector(Message);
 
 		%% From socket
 		{tcp_closed, _Sock} ->
 			put(socket, undefined),
-			route(info, closed)
+			reflector:send_sync(daemon_client, management, closed, ?SUBS)			
 		
+	after ?TIMEOUT ->
+			
+		reflector:sync_to_reflector(?SUBS)
 		
 	end,
 	loop_connection(Port).
@@ -129,23 +115,13 @@ close_socket(Socket) ->
 
 
 
+send_to_reflector({MsgType, Msg}) ->
+	reflector:send_sync(daemon_server, MsgType, Msg, ?SUBS);
 
-%% Route a message back to the subscriber
-%% of this Client interface.
-%% Use the 'set_routeto' function to setup
-%% the communication link.
-route(MsgType, Msg) ->
-	Routeto=get(routeto),
-	route(MsgType, Msg, Routeto).
+send_to_reflector(Message) ->
+	base:elog(?MODULE, "INVALID FORMAT: Message[~p]~n", [Message]).
 
-route(MsgType, Msg, undefined) ->
-	%% closing the socket prevents cascading effects
-	close_socket(),
-	base:elog(?MODULE, "routeto undefined, MsgType[~p] Msg[~p]~n",[MsgType, Msg]);
 
-route(MsgType, Msg, Routeto) ->
-	{Pid, Prefix} = Routeto,
-	Pid ! {Prefix, MsgType, Msg}.
 
 
 %% Send a message over the socket connection
@@ -157,16 +133,17 @@ send_to_server(MsgId, Msg) ->
 	send_to_server(Socket, MsgId, Msg).
 		
 send_to_server(undefined, MsgId, _Msg) ->
-	route(info, txerror, MsgId);
+	reflector:send_sync(daemon_client, management, {txerror, MsgId}, ?SUBS);
+
 
 send_to_server(Socket, MsgId, Msg) ->
 	Coded = term_to_binary(Msg),
 	case gen_tcp:send(Socket, Coded) of
 		ok ->
-			route(info, txok, MsgId);
+			reflector:send_sync(daemon_client, management, {txok, MsgId}, ?SUBS);
 		{error,Reason} ->
 			base:elog(?MODULE, "send_to_server: ERROR, Reason[~p], MsgId[~p] Msg[~p]~n", [Reason, MsgId, Msg]),
-			route(info, txerror, MsgId)
+			reflector:send_sync(daemon_client, management, {txerror, MsgId}, ?SUBS)
 	end.
 
 

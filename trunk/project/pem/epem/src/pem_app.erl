@@ -262,36 +262,3 @@ handle_command() ->
 	end.
 
 
-
-try_start(Args) ->
-	Port=daemon_ctl:getport(),
-	try_start(Args, Port).
-	
-%% Found a port... but is the daemon
-%% really there and active?
-try_start(_Args, {port, Port}) ->
-	daemon_client:start_link(Port, self(), from_server);
-	
-						
-%% Didn't find a port... but
-%% there could still be a zombie/unreachable
-%% daemon lying around... can't do anything from here
-try_start(Args, _) ->
-	put(state, started),
-	pem_sup:start_link(Args).
-
-
-%% Trying to stop an active daemon
-try_stop(Args) ->
-	Port=daemon_ctl:getport(),
-	try_stop(Args, Port).
-
-try_stop(_Args, {port, Port}) ->
-	daemon_client:start_link(Port, self(), from_server);
-
-%% Can't find a communication channel down to daemon...
-%% Maybe the daemon just isn't there of course.
-try_stop(_Args, _) ->
-	self() ! daemon_not_found.
-
-

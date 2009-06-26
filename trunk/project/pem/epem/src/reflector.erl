@@ -10,6 +10,12 @@
 %%   - unsubscribe(Client, MsgType)
 %%   - send(From, MsgType, Msg)
 %%
+%% MESSAGE FORMAT:
+%% ===============
+%%
+%% The format of the message sent to subscribers:
+%%
+%%  { MsgType, Msg } 
 
 -module(reflector).
 
@@ -17,6 +23,7 @@
 %% API exports
 %% --------------------------------------------------------------------
 -export([
+	start/0,
 	start_link/0,
 	stop/0,
 	subscribe/2,
@@ -53,12 +60,20 @@
 %% --------------------------------------------------------------------
 %% API Functions
 %% --------------------------------------------------------------------
+
+%% @spec subscribe(Client, Msgtype) -> ok || error
+%% where 
+%%       Client  = atom(),
+%%       Msgtype = atom()
 subscribe(Client, Msgtype) when is_atom(Msgtype) ->
 	Ret = rpc({subscribe, Client, Msgtype}),
 	base:ilog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret;
 
-%% List of subscriptions
+%% @spec subscribe(Client, Subs::List) -> ok || error
+%% where 
+%%       List = [Item],
+%%       Item = atom()
 subscribe(Client, Subs) ->
 	Ret = rpc({subscribe, Client, Subs}),
 	base:ilog(?MODULE, "subscribe: Client[~p] Subs[~p] Ret[~p]~n", [Client, Subs, Ret]),
@@ -80,21 +95,13 @@ send(From, Msgtype, Msg) when is_atom(From), is_atom(Msgtype) ->
 	end.
 
 
-rpc(Q) ->
-	Pid = self(),
-	try ?MODULE ! {Pid, Q} of
-		{Pid, _} ->
-			ok;
-		Other ->
-			Other
-	catch
-		_:_ ->
-			error
-	end.
-
 %% ====================================================================!
 %% API functions
 %% ====================================================================!
+start() ->
+	Pid = spawn(?MODULE, loop, []),
+	register( ?MODULE, Pid ),
+	{ok, Pid}.
 
 start_link() ->
 	Pid = spawn_link(?MODULE, loop, []),
@@ -104,121 +111,6 @@ start_link() ->
 stop() ->
 	base:elog(?MODULE, "STOP CALLED!~n"),
     rpc({stop}).
-
-
-%% ==========
-%% Func: loop
-%% ==========
-loop() ->
-	receive
-		{_From, {stop}} ->
-			base:elog(?MODULE, "received STOP~n"),
-			exit(self(), ok);
-
-		%% SUBSCRIBE command
-		{_From, {subscribe, Client, X}} ->
-			add_client(Client, X);
-			
-		%% UNSUBSCRIBE command
-		{_From, {unsubscribe, Client, Msgtype}} ->
-			remove_client(Client, Msgtype);
-		
-		%% Message publication
-		{From, {send, Msgtype, Msg}} ->
-			spublish({From, Msgtype, Msg});
-		
-		Error ->
-			base:elog(?MODULE, "unsupported message, [~p]~n", [Error]),
-			Error
-
-	end,
-	?MODULE:loop().
-
-%% =======================================================================================
-%% SUBSCRIBE/UNSUBSCRIBE API
-%% =======================================================================================
-
-add_client(_Client, []) ->
-	ok;
-
-add_client(Client, Msgtype) when is_atom(Msgtype) ->
-	Liste = get({msgtype,Msgtype}),
-	add_client(Liste, Client, Msgtype);
-
-add_client(Client, Subs) ->
-	[Msgtype|Rest] = Subs,
-	add_client(Client, Msgtype),
-	add_client(Client, Rest).
-
-%no Client yet for Msgtype
-add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
-	New_liste = [Client],
-	put({msgtype,Msgtype}, New_liste),
-	ok;
-
-add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
-	
-	% we do not want duplicates
-	Filtered_liste = Liste -- [Client],
-	
-	New_liste = Filtered_liste ++ [Client],
-	put({msgtype, Msgtype}, New_liste),
-	ok.
-
-
-
-remove_client(undefined, _) ->
-	ok;
-
-remove_client(Client, Msgtype) ->
-	base:ilog(?MODULE, "remove_client: Client[~p] Msgtype[~p]~n", [Client, Msgtype]),
-	Liste = get(Msgtype),
-	Updated = Liste--[Client],
-	put({msgtype, Msgtype}, Updated),
-	ok.
-
-%% =======================================================================================
-%% PUBLISH API
-%% =======================================================================================
-
-spublish(M) ->
-	{_From, MsgType, _Msg} = M,
-	To = get({msgtype, MsgType}),
-	spublish(To, M).
-
-%% No more subscribers
-spublish([], _M) ->
-	ok;
-
-%% No subscribers
-spublish(undefined, _M) ->
-	%%{_From, MsgType, _Msg} = M,
-	%%base:ilog(?MODULE, "spublish: no subscribers for [~p]~n", [MsgType]),
-	ok;
-
-spublish(To, M) ->
-	{From, MsgType, Msg} = M,
-	[Current|Rest] = To,
-	
-	base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p]~n", [From, To, MsgType]),
-	
-	ssend(Current, {MsgType, Msg}),
-	spublish(Rest, M).
-
-
-ssend(To, {MsgType, Msg}) ->
-	
-	try	To ! {MsgType, Msg} of
-		{MsgType, Msg} ->
-			ok;
-		Other ->
-			base:elog(?MODULE,"ssend: result[~p]~n", [Other]),
-			remove_client(To, MsgType)
-	catch
-		X:Y ->
-			base:elog(?MODULE, "ssend: ERROR sending, X[~p] Y[~p]~n", [X, Y]),
-			remove_client(To, MsgType)
-	end.
 
 
 %% =======================================================================================
@@ -290,3 +182,135 @@ send_sync(From, MsgType, Msg, Subs) ->
 			end
 	end.
 
+
+
+%% ==========
+%% Func: loop
+%% ==========
+loop() ->
+	receive
+		{_From, {stop}} ->
+			base:elog(?MODULE, "received STOP~n"),
+			exit(self(), ok);
+
+		%% SUBSCRIBE command
+		{_From, {subscribe, Client, X}} ->
+			add_client(Client, X);
+			
+		%% UNSUBSCRIBE command
+		{_From, {unsubscribe, Client, Msgtype}} ->
+			remove_client(Client, Msgtype);
+		
+		%% Message publication
+		{From, {send, Msgtype, Msg}} ->
+			spublish({From, Msgtype, Msg});
+		
+		Error ->
+			base:elog(?MODULE, "unsupported message, [~p]~n", [Error]),
+			Error
+
+	end,
+	?MODULE:loop().
+
+%% =======================================================================================
+%% SUBSCRIBE/UNSUBSCRIBE HELPERS
+%% =======================================================================================
+
+add_client(_Client, []) ->
+	ok;
+
+add_client(Client, Msgtype) when is_atom(Msgtype) ->
+	Liste = get({msgtype,Msgtype}),
+	add_client(Liste, Client, Msgtype);
+
+add_client(Client, Subs) ->
+	[Msgtype|Rest] = Subs,
+	add_client(Client, Msgtype),
+	add_client(Client, Rest).
+
+%no Client yet for Msgtype
+add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
+	New_liste = [Client],
+	put({msgtype,Msgtype}, New_liste),
+	ok;
+
+add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
+	
+	% we do not want duplicates
+	Filtered_liste = Liste -- [Client],
+	
+	New_liste = Filtered_liste ++ [Client],
+	put({msgtype, Msgtype}, New_liste),
+	ok.
+
+
+
+remove_client(undefined, _) ->
+	ok;
+
+remove_client(Client, Msgtype) ->
+	base:ilog(?MODULE, "remove_client: Client[~p] Msgtype[~p]~n", [Client, Msgtype]),
+	Liste = get(Msgtype),
+	Updated = Liste--[Client],
+	put({msgtype, Msgtype}, Updated),
+	ok.
+
+%% =======================================================================================
+%% PUBLISH HELPERS
+%% =======================================================================================
+
+spublish(M) ->
+	{From, MsgType, Msg} = M,
+	base:ilog(?MODULE, "spublish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),	
+	To = get({msgtype, MsgType}),
+	spublish(To, M).
+
+%% No more subscribers
+spublish([], _M) ->
+	ok;
+
+%% No subscribers
+spublish(undefined, _M) ->
+	%%{_From, MsgType, _Msg} = M,
+	%%base:ilog(?MODULE, "spublish: no subscribers for [~p]~n", [MsgType]),
+	ok;
+
+spublish(To, M) ->
+	{From, MsgType, Msg} = M,
+	[Current|Rest] = To,
+	
+	base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p]~n", [From, To, MsgType]),
+	
+	ssend(Current, {MsgType, Msg}),
+	spublish(Rest, M).
+
+
+%% Actual point of transmission
+ssend(To, {MsgType, Msg}) ->
+	
+	try	To ! {MsgType, Msg} of
+		{MsgType, Msg} ->
+			ok;
+		Other ->
+			base:elog(?MODULE,"ssend: result[~p]~n", [Other]),
+			remove_client(To, MsgType)
+	catch
+		X:Y ->
+			base:elog(?MODULE, "ssend: ERROR sending, X[~p] Y[~p]~n", [X, Y]),
+			remove_client(To, MsgType)
+	end.
+
+
+
+
+rpc(Q) ->
+	Pid = self(),
+	try ?MODULE ! {Pid, Q} of
+		{Pid, _} ->
+			ok;
+		Other ->
+			Other
+	catch
+		_:_ ->
+			error
+	end.
