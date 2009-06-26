@@ -12,6 +12,13 @@
 %%   start(stop)        -> stops daemon
 %%
 %%
+%% SUBSCRIPTIONS:
+%% ==============
+%%
+%% {control, canstart}
+%% {control, daemon_not_found}
+%%
+%%
 %% Contexts:
 %% 
 %%  - Client (for managing a running daemon)
@@ -28,6 +35,7 @@
 
 -define(TIMEOUT, 2000).
 
+-define(SUBS, [canstart]).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
