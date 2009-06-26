@@ -3,14 +3,11 @@
 %% Description: Publishes messages from a Source
 %%              to the target Destination subscriber(s).
 %%
-%% {subscribe, Msgtype}
-%%
-%%
 
 -module(reflector).
 
 %% --------------------------------------------------------------------
-%% Behavioural exports
+%% API exports
 %% --------------------------------------------------------------------
 -export([
 	start_link/0,
@@ -35,10 +32,17 @@
 %% --------------------------------------------------------------------
 %% API Functions
 %% --------------------------------------------------------------------
-subscribe(Client, Msgtype) ->
+subscribe(Client, Msgtype) when is_atom(Msgtype) ->
 	Ret = rpc({subscribe, Client, Msgtype}),
-	base:elog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
+	base:ilog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
+	Ret;
+
+%% List of subscriptions
+subscribe(Client, Subs) ->
+	Ret = rpc({subscribe, Client, Subs}),
+	base:ilog(?MODULE, "subscribe: Client[~p] Subs[~p] Ret[~p]~n", [Client, Subs, Ret]),
 	Ret.
+
 
 unsubscribe(Client, Msgtype) ->
 	Ret = rpc({unsubscribe, Client, Msgtype}),
@@ -81,8 +85,8 @@ loop() ->
 			exit(self(), ok);
 
 		%% SUBSCRIBE command
-		{From, {subscribe, Client, Msgtype}} ->
-			add_client(Client, Msgtype),
+		{From, {subscribe, Client, X}} ->
+			add_client(Client, X),
 			
 			%provide feedback to caller
 			From ! {reflector, subscribe, ok},
@@ -110,24 +114,34 @@ loop() ->
 %% SUBSCRIBE/UNSUBSCRIBE API
 %% =======================================================================================
 
-add_client(Client, Msgtype) ->
-	Liste = get(Msgtype),
-	add_client(Liste, Client, Msgtype).
-
-%no Client yet for Msgtype
-add_client(undefined, Client, Msgtype) ->
-	New_liste = [Client],
-	put(Msgtype, New_liste),
+add_client(_Client, []) ->
 	ok;
 
-add_client(Liste, Client, Msgtype) ->
+add_client(Client, Msgtype) when is_atom(Msgtype) ->
+	Liste = get({msgtype,Msgtype}),
+	add_client(Liste, Client, Msgtype);
+
+add_client(Client, Subs) ->
+	[Msgtype|Rest] = Subs,
+	add_client(Client, Msgtype),
+	add_client(Client, Rest).
+
+%no Client yet for Msgtype
+add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
+	New_liste = [Client],
+	put({msgtype,Msgtype}, New_liste),
+	ok;
+
+add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
 	
 	% we do not want duplicates
 	Filtered_liste = Liste -- [Client],
 	
 	New_liste = Filtered_liste ++ [Client],
-	put(Msgtype, New_liste),
+	put({msgtype, Msgtype}, New_liste),
 	ok.
+
+
 
 remove_client(undefined, _) ->
 	ok;
@@ -136,7 +150,7 @@ remove_client(Client, Msgtype) ->
 	base:ilog(?MODULE, "remove_client: Client[~p] Msgtype[~p]~n", [Client, Msgtype]),
 	Liste = get(Msgtype),
 	Updated = Liste--[Client],
-	put(Msgtype, Updated),
+	put({msgtype, Msgtype}, Updated),
 	ok.
 
 %% =======================================================================================
@@ -144,14 +158,14 @@ remove_client(Client, Msgtype) ->
 %% =======================================================================================
 
 publish(M) ->
-	%%error_logger:info_msg("reflector: publish Msg[~p]~n", [M]),
+	%%base:ilog(?MODULE, "publish Msg[~p]~n", [M]),
 	{Msgtype, Msg, Timestamp} = M,
-	Liste = get(Msgtype),
+	Liste = get({msgtype, Msgtype}),
 	do_publish(Liste, Msgtype, Msg, Timestamp).
 
 
 do_publish([], _Msgtype, _, _) ->
-	%%error_logger:warning_msg("reflector:do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
+	%%base:ilog(?MODULE, "do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
 	ok;
 
 
@@ -169,11 +183,11 @@ do_publish(Liste, Msgtype, Msg, Timestamp) ->
 		{Msgtype, Msg, Timestamp} ->
 			ok;
 		Other ->
-			error_logger:warning_msg("~p: do_publish: result[~p]~n", [?MODULE, Other]),
+			base:elog(?MODULE,"do_publish: result[~p]~n", [Other]),
 			remove_client(Current, Msgtype)
 	catch
 		X:Y ->
-			error_logger:error_msg("~p: do_publish: ERROR sending, X[~p] Y[~p]~n", [?MODULE, X, Y]),
+			base:elog(?MODULE, "do_publish: ERROR sending, X[~p] Y[~p]~n", [X, Y]),
 			remove_client(Current, Msgtype)
 	end,
 	do_publish(Rest, Msgtype, Msg, Timestamp).

@@ -18,6 +18,8 @@
 		 ilog/2,
 		 elog/3,
 		 ilog/3,
+		 cond_elog/4,
+		 cond_ilog/4,
 		 is_debug/1,
 		 safe_mkdir/1,
 		 safe_mkdir/2,
@@ -31,7 +33,9 @@
 		 safe_make_dirs/1,
 		 safe_make_dirs/3,
 		 join/1,
-		 join/2
+		 join/2,
+		 add/2,
+		 pvadd/2
 		 ]).
 
 -export([
@@ -273,4 +277,37 @@ safe_mkdir(_Dir, {ok, Type}) ->
 %% Path does not exist... create as directory then
 safe_mkdir(Dir, {error, _}) ->
 	file:make_dir(Dir).
+
+
+
+add(undefined, Value) ->
+	Value;
+
+add(Var, Value) ->
+	Var + Value.
+
+
+pvadd(Var, Value) ->
+	Count=get(Var),
+	NewCount = base:add(Count, Value),
+	put(Var, NewCount),
+	NewCount.
+
+
+
+cond_elog(Prob, M, X,Y) ->
+	Rv = random:uniform(),
+	if 
+		Rv < Prob ->
+			error_logger:error_msg("~p: "++X, [M|Y])
+	end.
+	
+
+cond_ilog(Prob, M, X,Y) ->
+	Rv = random:uniform(),
+	if 
+		Rv < Prob ->
+			error_logger:info_msg("~p: "++X, [M|Y])
+	end.
+
 

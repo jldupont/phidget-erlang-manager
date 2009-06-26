@@ -35,7 +35,7 @@
 %% API functions
 %% ====================================================================!
 start_link(Args) ->
-	base:elog(?MODULE, "start_link: Args[~p]~n",[Args]),
+	base:ilog(?MODULE, "start_link: Args[~p]~n",[Args]),
 	
 	Debug = base:is_debug(Args),
 	case Debug of
@@ -84,7 +84,7 @@ loop() ->
 			start_drv(DrvPath);
 		
 		{driver, crashed} ->
-			error_logger:error_msg("~p: driver crashed~n", [?MODULE]),
+			base:elog(?MODULE, "driver crashed~n", []),
 			DriverPath = get(driver_path),
 			start_drv(DriverPath);
 

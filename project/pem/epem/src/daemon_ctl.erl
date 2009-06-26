@@ -1,6 +1,8 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-23
 %% Description: TODO: Add description to daemon_ctl
+%%
+%%
 -module(daemon_ctl).
 
 %% Timeout for communicating

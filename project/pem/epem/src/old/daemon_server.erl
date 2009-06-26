@@ -2,36 +2,24 @@
 %% Created:     2009-06-23
 %% Description: Server side of the daemon
 %%
-%% This module:
-%%   - Listens for incoming connections from Clients
-%%   - Accepts 1 connection at a time
-%%   - Receives messages from a Client
-%%   - Send the messages to the Reflector
-%%     {from_client, message, Msg}
+%% To send a message back to the management client,
+%% send a message to this module using {daemon_message, Msg}.
 %%
-%%   - Receives messages to be sent to Clients
-%%     - Messages are received via the Reflector
-%%       {to_client, message, MsgId, Msg}
+%% Messages generated back to the subscriber:
 %%
-%%   - Sends messages to clients
-%%     - Sends message transmission status through Reflector
-%%       {to_client, status, Status}
-%%       Status = {txerror, MsgId}
-%%       Status = {txok,    MsgId}
-%%
-%%   - Updates the CTL file with the Port currently in use
+%% {Prefix, {message, Msg}}
+%% {Prefix, {info, txerror, MsgId}}
+%% {Prefix, {info, txok,    MsgId}}
 %%
 
 -module(daemon_server).
-
--define(REFLECTOR_SYNC_TIMEOUT, 2000).
-
 
 %%
 %% Exported Functions
 %%
 -export([
-		 start_link/0,
+		 start_link/1,
+		 set_routeto/2,
 		 stop/0,
 		 send_message/2
 		]).
@@ -49,22 +37,29 @@
 		 send_to_client/3
 		 ]).
 
--export([
-		 log_reflector_error/0,
-		 do_subscribe/1
-		 ]).
-
 %% ======================================================================
 %% API Functions
 %% ======================================================================
-start_link() ->
+start_link(Port) ->
 	Pid = spawn_link(?MODULE, loop_daemon, []),
 	register(daemon_server, Pid),
-	start_socket(0), %% pick a socket
+	start_socket(Port),
 	{ok, Pid}.
 
 stop() ->
 	daemon_server ! stop.
+
+
+
+%% Routes all the valid messages to Pid
+set_routeto(Pid, Prefix) when is_pid(Pid) ->
+	daemon_server ! {routeto, Pid, Prefix},
+	{ok, pid, Pid};
+
+set_routeto(Proc, Prefix) when is_atom(Proc) ->
+	Pid = whereis(Proc),
+	daemon_server ! {routeto, Pid, Prefix},
+	{ok, atom, Pid}.
 
 
 send_message(MsgId, Msg) ->
@@ -125,44 +120,8 @@ loop_daemon() ->  %%daemon_server loop
 		{error, socket, Reason} ->
 			base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
 
-	after ?REFLECTOR_SYNC_TIMEOUT ->
-			
-		sync_to_reflector()
-	
 	end,
 	loop_daemon().
-
-sync_to_reflector() ->
-	Old=get(reflector_pid),
-	Reflector = whereis(reflector),
-	sync_to_reflector(Old, Reflector).
-
-%% Cannot find the reflector now!
-sync_to_reflector(_, undefined) ->
-	log_reflector_error();
-
-%% Not much todo -- steady state
-sync_to_reflector(Old, Current) when Old == Current ->
-	ok;
-
-sync_to_reflector(Old, Current) when Old /= Current ->
-	put(reflector_pid, Current),
-	do_subscribe(Current).
-	
-
-log_reflector_error() ->
-	Count = base:pvadd(sync_error, 1),
-	if
-		Count < 5 ->
-			base:elog(?MODULE, "reflector NOT found~n");
-	
-		Count > 5 ->
-			base:cond_elog(0.1, ?MODULE, "reflector NOT found~n")
-	end.
-	
-
-do_subscribe(Reflector) ->
-	ok.
 
 
 
