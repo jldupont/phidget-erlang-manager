@@ -1,77 +1,81 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-23
-%% Description: TODO: Add description to daemon_ctl
+%% Description: Control for the daemon
 %%
 %%
+%% SUBSCRIPTIONS:
+%% ==============
+%%  
+%%  {assignedport, Port}
+%%
+%%
+%% MESSAGE GENERATED:
+%% ==================
+%%
+%%
+
 -module(daemon_ctl).
 
 %% Timeout for communicating
 %% with the daemon
 -define(TIMEOUT, 2000).
 
-%%
+%% Reflector subscriptions
+-define(SUBS, [assignedport]).
+
+
+%% =============================
 %% API Exported Functions
-%%
+%% =============================
 -export([
+		 start/0,
+		 start_link/0,
 		 start_daemon/1,
 		 stop_daemon/1,
-		 stop_daemon/2,
 		 getpid_daemon/0,
-		 getpid_daemon/1,
-		 send_to_client/1,
-		 send_to_client/2
+		 getpid_daemon/1
 		 ]).
 
 %%
 %% LOCAL Exported Functions
 %%
 -export([
+		 loop/0,
 		 getport/0,
 		 saveport/1,
-		 extract_port/1
+		 extract_port/1,
+		 try_start/1,
+		 try_start/2,
+		 try_stop/1,
+		 try_stop/2
 		 ]).
 
-%%
+%% =======================================
 %% API Functions
-%%
+%% =======================================
+start() ->
+	Pid = spawn(?MODULE, loop, []),
+	register(daemon_ctl, Pid),
+	{ok, Pid}.
+	
+start_link() ->
+	Pid = spawn_link(?MODULE, loop, []),
+	register(daemon_ctl, Pid),
+	{ok, Pid}.
+
+
 start_daemon(Args) ->
-	%% TODO is there a daemon already running?
-	%%      Wait x time for response back
-	
-	
-	%% TODO set_routeto
+	?MODULE ! {command, start, Args},
 	ok.
+	
+stop_daemon(Args) ->
+	?MODULE ! {command, stop, Args}.
 
-
-
-stop_daemon(_Args) ->
-	Port=?MODULE:getport(),
-	daemon_client:send_command(Port, {command, stop}).
-
-stop_daemon(_Args, undefined) ->
-	{error, port_undefined};
-
-stop_daemon(_Args, Port) ->
-	daemon_client:send_command(Port, {command, stop}).
-
-
-%% Asks the daemon side for its Pid.
-%% The answer will be relayed to the process configured
-%% through the "set_routeto" function.
-getpid_daemon() ->
-	Port=?MODULE:getport(),
-	getpid_daemon(Port).
-
-getpid_daemon({port, Port}) ->
-	daemon_client:send_command(Port, {command, pid});
-
-getpid_daemon({Code, Error}) ->
-	{Code, Error}.
 	
 
-%% ===============
+%% ====================================================================================
 %% Local Functions
-%% ===============
+%% ====================================================================================
 
 %% Returns the Port# of the
 %% daemon currently running (if any)
@@ -105,22 +109,86 @@ extract_port(Terms) ->
 
 %% Save the used by this daemon
 saveport(Port) ->
+	base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
 	base:create_ctl_file([{port, Port}]).
 
 
 
-%% Send a message back to the management client
-%% (assuming one is connected)
-%% The message is relayed through the module "daemon_server"
-%%
-send_to_client(Msg) ->
-	Server = whereis(daemon_server),
-	send_to_client(Msg, Server).
+%% ================================================================
+%% MAIN LOOP
+%% ================================================================
+loop() ->
+	receive
+		{assignedport, Port} ->
+			saveport(Port);
+		
+		%% TODO is there a daemon already running?
+		%%      Wait x time for response back
 
-send_to_client(Msg, undefined) ->
-	base:elog(?MODULE, "daemon_server: NOT FOUND, unable to send[~p]~n",[Msg]);
+		{command, start, Args} ->
+			put(context, start),
+			try_start(Args);
+	
+		{command, stop, Args} ->
+			put(context, stop),
+			try_stop(Args)
+		
+	end,
+	loop().
 
-send_to_client(Msg, Server) ->
-	Server ! Msg.
+
+
+
+%% Asks the daemon side for its Pid.
+%% The answer will be relayed to the process configured
+%% through the "set_routeto" function.
+getpid_daemon() ->
+	Port=?MODULE:getport(),
+	getpid_daemon(Port).
+
+getpid_daemon({port, Port}) ->
+	daemon_client:send_command(Port, {command, pid});
+
+getpid_daemon({Code, Error}) ->
+	{Code, Error}.
+
+
+
+
+try_start(Args) ->
+	Port=daemon_ctl:getport(),
+	try_start(Args, Port).
+	
+%% Can't find port in CTL file...
+try_start(_Args, {error, _X}) ->
+	?MODULE ! port_not_found;
+
+
+%% Found a port... but is the daemon
+%% really there and active?
+try_start(_Args, {port, Port}) ->
+	daemon_client:start_link(Port, self(), from_server);
+	
+						
+%% Didn't find a port... but
+%% there could still be a zombie/unreachable
+%% daemon lying around... can't do anything from here
+try_start(Args, _) ->
+	put(state, started),
+	pem_sup:start_link(Args).
+
+
+%% Trying to stop an active daemon
+try_stop(Args) ->
+	Port=daemon_ctl:getport(),
+	try_stop(Args, Port).
+
+try_stop(_Args, {port, Port}) ->
+	daemon_client:start_link(Port, self(), from_server);
+
+%% Can't find a communication channel down to daemon...
+%% Maybe the daemon just isn't there of course.
+try_stop(_Args, _) ->
+	self() ! daemon_not_found.
 
 

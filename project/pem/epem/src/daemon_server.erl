@@ -11,16 +11,25 @@
 %%
 %%   - Receives messages to be sent to Clients
 %%     - Messages are received via the Reflector
-%%       {to_client, message, MsgId, Msg}
+%%
+%%       {to_client, {MsgId, Msg} }
+%%        ^          ------------
+%%        |                ^
+%%        MsgType          |
+%%                        Msg
 %%
 %%   - Sends messages to clients
 %%     - Sends message transmission status through Reflector
-%%       {to_client_status, status, Status}
-%%       Status = {txerror, MsgId}
-%%       Status = {txok,    MsgId}
 %%
-%%   - Updates the CTL file with the Port currently in use
+%%       {to_client_tx_status, {MsgId, Code} }
+%%       Status Code = txerror || txok 
 %%
+%%   - Sends the Port opened for management Clients on the Reflector
+%%
+%%     {management_port, Port}
+%%           ^            
+%%           |
+%%        MsgType
 
 -module(daemon_server).
 
@@ -35,6 +44,7 @@
 %% Exported Functions
 %%
 -export([
+		 start/0,
 		 start_link/0,
 		 stop/0,
 		 send_message/2
@@ -47,16 +57,22 @@
 		 start_socket/1,
 		 loop_daemon/0,
 		 loop_socket/2,
-		 route/1,
-		 route/2,
 		 send_for_client/3,
-		 send_to_client/3
+		 send_to_client/3,
+		 send_to_reflector/1
 		 ]).
 
 
 %% ======================================================================
 %% API Functions
 %% ======================================================================
+start() ->
+	Pid = spawn(?MODULE, loop_daemon, []),
+	register(daemon_server, Pid),
+	start_socket(0), %% pick a socket
+	{ok, Pid}.
+	
+
 start_link() ->
 	Pid = spawn_link(?MODULE, loop_daemon, []),
 	register(daemon_server, Pid),
@@ -71,13 +87,6 @@ stop() ->
 send_message(MsgId, Msg) ->
 	daemon_server ! {to_client, MsgId, Msg}.
 
-%% ======================================================================
-%% REFLECTOR INTERFACE
-%% ======================================================================
-
-send_to_reflector(Msgtype, Msg) ->
-	reflector:publish(M).
-
 
 
 %% ======================================================================
@@ -86,32 +95,34 @@ send_to_reflector(Msgtype, Msg) ->
 loop_daemon() ->  %%daemon_server loop
 	receive
 		
-		%% Status of transmission to client side
-		{for_client_status, {info, Code, MsgId}} ->
-			report_tx_status( {Code, MsgId} );
+		stop ->
+			exit(ok);
 		
-			
+		%% Status of transmission to client side
+		{tx_status, {info, Code, MsgId}} ->
+			send_to_reflector( {to_client_tx_status, {MsgId, Code} } );
+		
 		%% The listen port could have been assigned
 		%% by the OS: we need to keep track of it
 		%% for managing the daemon through a management
 		%% client interface. 
 		{assignedport, Port} ->
-			%% TODO write the port in the CTL file
-			put(assignedport, Port);
+			put(assignedport, Port),
+			send_to_reflector({management_port, Port});
 		
-		%% message to send down the socket ... if any
+		%% message to send down the socket ... if any.
 		%% send to socket process for delivery
-		{to_client, MsgId, Msg} ->
+		{to_client, {MsgId, Msg}} ->
 			SocketPid = get(socket_pid),
 			send_for_client(SocketPid, MsgId, Msg);
 		
-		stop ->
-			exit(ok);
-
 		%% Just acting as relay.
 		%% This type of message comes from the socket process
+		%% (from the Client side) and needs to be relayed.
+		%% The message is sent on the Reflector.
 		{from_client, Message} ->
-			route(Message);
+			send_to_reflector(Message);
+
 		
 		%% Need to track the socket process Pid in order
 		%% to establish a communication link between
@@ -119,10 +130,6 @@ loop_daemon() ->  %%daemon_server loop
 		{daemon_socket_pid, Pid} ->
 			put(socket_pid, Pid),
 			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
-			
-		{routeto, Pid, Prefix} ->
-			base:ilog(?MODULE, "setting routeto, Pid[~p]~n", [Pid]),			
-			put(routeto, {Pid, Prefix});
 			
 		{closed, Sock} ->
 			base:ilog(?MODULE,"Socket[~p] closed~n", [Sock]);
@@ -139,6 +146,9 @@ loop_daemon() ->  %%daemon_server loop
 		{error, socket, Reason} ->
 			base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
 
+	%% We always have to sync to the reflector;
+	%% we can't rely on the having to send stuff
+	%% to re-sync.
 	after ?REFLECTOR_SYNC_TIMEOUT ->
 			
 		reflector:sync_to_reflector(?SUBS)
@@ -148,21 +158,11 @@ loop_daemon() ->  %%daemon_server loop
 
 
 
+send_to_reflector({MsgType, Msg}) ->
+	reflector:send_sync(daemon_server, MsgType, Msg, ?SUBS);
 
-%% CALLED FROM daemon_server PROCESS	
-%% Send status/message back to the subscriber
-route(Message) ->
-	Routeto=get(routeto),
-	route(Message, Routeto).
-
-route(_Message, undefined) ->
-	%% TODO probably need to throttle this!
-	base:ilog(?MODULE, "route: routeto undefined~n", []);
-
-route(Message, Routeto) ->
-	{Pid, Prefix} = Routeto,
-	Pid ! {Prefix, Message}.
-
+send_to_reflector(Message) ->
+	base:elog(?MODULE, "INVALID FORMAT: Message[~p]~n", [Message]).
 
 
 
@@ -234,13 +234,11 @@ loop_socket(Port, LSocket) ->
 
 		%% Message Reception
 		%% Rx from Client connected on the socket,
-		%% message is relayed through the daemon_server
-		%% to the subscriber to all messages.
-		%% The subscriber is configured through "set_routeto" function.
+		%% message is relayed through the daemon_server.
 		{tcp, Sock, Data} ->
-			Decoded = binary_to_term(Data),
-			daemon_server ! {from_client, {message, Decoded}},
-			base:ilog(?MODULE, "tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Decoded]);
+			Message = binary_to_term(Data),
+			daemon_server ! {from_client, Message},
+			base:ilog(?MODULE, "tcp socket: Sock[~p] Decoded[~p]~n", [Sock, Message]);
 		
 		%% Client Connection close... restart
 		{tcp_closed, Sock} ->
@@ -266,7 +264,7 @@ loop_socket(Port, LSocket) ->
 send_to_client(undefined, MsgId, Msg) ->
 	%% TODO throttle?
 	base:elog(?MODULE, "socket error, cannot send, MsgId[~p] Msg[~p]~n", [MsgId, Msg]),
-	daemon_server ! {for_client_status, {info, txerror, MsgId}};
+	daemon_server ! {tx_status, {info, txerror, MsgId}};
 
 
 send_to_client(Socket, MsgId, Msg) ->
@@ -274,11 +272,11 @@ send_to_client(Socket, MsgId, Msg) ->
 	Coded = term_to_binary(Msg),
 	case gen_tcp:send(Socket, Coded) of
 		ok ->
-			daemon_server ! {for_client_status, {info, txok, MsgId}};
+			daemon_server ! {tx_status, {info, txok, MsgId}};
 
 		{error, Reason} ->
 			base:elog(?MODULE, "send_to_client: ERROR, Reason[~p] MsgId[~p] Msg[~p]~n", [Reason, MsgId, Msg]),
-			daemon_server ! {for_client_status, {info, txerror, MsgId}}
+			daemon_server ! {tx_status, {info, txerror, MsgId}}
 	end.
 
 
