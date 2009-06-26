@@ -82,9 +82,6 @@ drvIfk::init(void) {
 	// {phidgeterror,{Serial, Code, String}}
 	mh->registerType(MSG_PHIDGETERROR, "phidgeterror", "LLS");
 
-	// {phidgetifk,{Serial, state}}
-	//mh->registerType(MSG_PHIDGETIFK, "phidgetifk", "LA");
-
 	// {device,{Serial,Type,State, Version,Name,Label}}
 	mh->registerType(MSG_DEVICE, "device", "LSALSS");
 

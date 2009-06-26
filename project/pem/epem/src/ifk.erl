@@ -1,6 +1,18 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-19
 %% Description: TODO: Add description to ifk
+%%
+%% MESSAGES GENERATED:
+%% ===================
+%% {phidgeterror, {{Serial, Code, String},                  date(), time(), now() }}
+%% {device,       {{Serial,Type,State, Version,Name,Label}, date(), time(), now() }}
+%% {din,          {{Serial, Index, Value},                  date(), time(), now() }}
+%% {dout,         {{Serial, Index, Value},                  date(), time(), now() }}
+%% {sout,         {{Serial, Index, Value},                  date(), time(), now() }}
+%%
+%%
+%% SUBSCRIPTIONS:
+%% ==============
 -module(ifk).
 
 %%
@@ -276,13 +288,8 @@ loop_handler(Port) ->
 
 send_to_reflector(Decoded) ->
 	{Msgtype, Msg} = Decoded,
-	M = {Msgtype, Msg, {date(), time(), now()}},
-	try
-		reflector ! {self(), M}
-	catch
-		_:_ -> 
-			err
-	end.
+	M = {Msg, {date(), time(), now()}},
+	reflector:send(self(), Msgtype, M).
 
 
 
