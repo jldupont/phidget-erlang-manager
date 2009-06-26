@@ -34,9 +34,9 @@
 %%
 -module(pem_app).
 
--define(TIMEOUT, 2000).
+-define(TIMEOUT, 3000).
 
--define(SUBS, [control, daemon_pid]).
+-define(SUBS, [control, daemon_pid, daemon_exit]).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
@@ -47,12 +47,7 @@
 	 start/1,
 	 start/2,
 	 loop/0,
-	 loop_main/0,
-	 try_start/1,
-	 try_start/2,
-	 try_stop/1,
-	 try_stop/2,
-	 handle_command/0
+	 loop_main/0
         ]).
 
 -export([
@@ -85,28 +80,18 @@ start(debug, stop) ->
 	stop_daemon([debug]).
 
 
-%% 1- Is the daemon running already?
-%%    - Retrieving port from CTL file
-%%      - Start Client side comm
-%%    - Try establishing comm, retrieve PID
-%%    - Not responding? clear CTL file
-%%
-%% 2- Not running:
-%%    - Start daemon
-%%    - Write comm port to CTL file
-%%
 start_daemon(Args) ->
+	put(args, Args),	
 	put(context, client),
 	base:ilog(?MODULE, "start_daemon: Args[~p]~n", [Args]),
-	put(args, Args),
 	process_flag(trap_exit,true),
 	?MODULE ! {start_daemon, Args},
 	loop().
 
 stop_daemon(Args) ->
+	put(args, Args),
 	put(context, client),
 	base:ilog(?MODULE, "stop_daemon: Args[~p]~n", [Args]),
-	put(args, Args),
 	?MODULE ! {stop_daemon, Args},
 	loop().
 
@@ -127,95 +112,69 @@ stop() ->
 
 loop() ->
 	receive
-			{control,canstart} ->
-			ok;
-		
-
-		
 		
 		%% Try starting the daemon
 		{start_daemon, Args} ->
+			reflector:sync_to_reflector(?SUBS),
 			put(state, try_start),
-			try_start(Args);
+			daemon_ctl:start_link(),
+			daemon_ctl:start_daemon(Args);
 
 		%% Try stopping the daemon
 		{stop_daemon, Args} ->
+			reflector:sync_to_reflector(?SUBS),
 			put(state, try_stop),
-			try_stop(Args);
+			daemon_ctl:start_link(),
+			daemon_ctl:stop_daemon(Args);
 
+		%% we can start the daemon!
+		{control, canstart} ->
+			Args=get(args),
+			pem_sup:start_link(Args),
+			reflector:send_sync(self(), daemonized, {}, ?SUBS),
+			loop_main();
+
+		
+		%% If we receive this message it means
+		%% we tried to start a daemon BUT one
+		%% is already in function... exit.
+		{daemon_pid, Pid} ->
+			io:format("daemon already running, Pid[~p]~n", [Pid]),
+			exit(ok);
+		
 		%% Tried to stop a running
 		%% daemon but didn't find one
-		daemon_not_found ->
+		{control, daemon_not_found} ->
 			io:format("cannot find daemon~n"),
 			exit(ok);
 
-		%% Socket to daemon server
-		%% opened... act upon 
-		{from_server, {info, open}} ->
-			put(state, daemon_found),
-			handle_command();
-
-		%% The daemon server returns its Pid
-		{from_server, {message, {pid, Pid}}} ->
-			put(daemon_pid, Pid),
-			self() ! got_pid;
-
-		%% we got the pid from the running daemon...
-		%% now, what were we trying todo?
-		%% 1- start: then, abort!
-		%% ... just this one case for now.
-		got_pid ->
-			Pid = get(daemon_pid),
-			io:format("daemon already running, pid[~p]~n", [Pid]),
-			exit(ok);
-
-		stop ->
-			io:format("exiting~n"),
-			base:ilog(?MODULE, "exiting~n"),
-			exit(ok);
 		
 		Other->
 			base:elog(?MODULE, "received unknown message [~p]~n", [Other])
 
 	after ?TIMEOUT ->
-		  
+		 
+		reflector:sync_to_reflector(?SUBS),
+		
 		State = get(state),
 		case State of
-			
-			started ->
-				loop_main();
-			
-			%% We asked the supposedly running daemon
-			%% for its pid but it took too long... assume it isn't
-			%% really a daemon we know about.
-			asked_pid ->
-				put(state, start),
-				self() ! start,
-				loop_main();
-			
-			
-			%% We asked the daemon (which we, at this point, believe
-			%% is running) to exit... make sure it has.
-			%% TODO to better than this
-			asked_exit ->
-				io:format("daemon should have terminated~n"),
-				ok;
-
 			
 			%% Couldn't communicate with a daemon
 			%% So probably none were present... let's start
 			%% then!
 			try_start ->
-				put(state, start),
-				self() ! start,
-				loop_main();
+				io:format("something is wrong... timeout occured whilst command[Start]~n"),
+				exit(error);
 			
 			%% Couldn't communicate with a daemon
 			%% no use trying to stop then... exit
 			try_stop ->
-				io:format("cannot communicate with the daemon~n"),
-				exit(ok)
+				io:format("something is wrong... timeout occured whilst command[Start]~n"),
+				exit(error);
 
+			Other ->
+				io:format("something is wrong... unexpected state[~p]~n", [Other]),
+				exit(error)
 
 		end %%case
 	
@@ -233,47 +192,19 @@ loop() ->
 loop_main() ->
 	receive
 		
-		start ->
-			put(context, daemon),
-			Args=get(args),
-			pem_sup:start_link(Args);
-
+		stop ->
+			base:ilog(?MODULE, "exiting~n", []),
+			exit(ok);
+		
+		{daemon_exit, Pid} ->
+			base:ilog(?MODULE, "exiting daemon, Pid[~p]~n", [Pid]);
 	
-		%% A management Client is making sure
-		%% we are alive... 
-		{from_client, {message, what_pid}} ->
-			base:ilog(?MODULE, "replying with Pid[~p] in response to management request~n", [self()]),
-			%% TODO send message back
-			ok;
+		Other -> 
+			base:ilog(?MODULE, "received unexpected Message[~p]~n", [Other])
 	
-		{from_client, {message, do_exit}} ->
-			base:ilog(?MODULE, "exiting in response to management request~n"),
-			exit(ok)
-	
+	after ?TIMEOUT ->
+			
+		reflector:sync_to_reflector(?SUBS)			
 	
 	end,
 	loop_main().
-
-
-%% The supported commands are:
-%% 1) start
-%% 2) stop
-handle_command() ->
-	State = get(state),
-	case State of
-		
-		%% we've got a communication channel down to 
-		%% the daemon... ask for its Pid to make sure
-		%% we really have a PEM daemon at hand
-		try_start ->
-			put(state, asked_pid),
-			daemon_client:send_message(asked_pid, what_pid);
-
-		%% ok then, ask the daemon to exit
-		try_stop ->
-			put(state, asked_exit),
-			daemon_client:send_message(asked_exit, do_exit)
-
-	end.
-
-
