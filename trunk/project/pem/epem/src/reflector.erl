@@ -16,6 +16,11 @@
 	unsubscribe/2	 
 	]).
 
+%% SYNC API
+-export([
+	sync_to_reflector/1
+		 ]).
+
 %% --------------------------------------------------------------------
 %% Internal exports
 %% --------------------------------------------------------------------
@@ -27,6 +32,12 @@
 		 add_client/2,
 		 add_client/3,
 		 remove_client/2
+		 ]).
+
+%% SYNC API
+-export([
+		 sync_to_reflector/3,
+		 log_reflector_error/0
 		 ]).
 
 %% --------------------------------------------------------------------
@@ -192,3 +203,42 @@ do_publish(Liste, Msgtype, Msg, Timestamp) ->
 	end,
 	do_publish(Rest, Msgtype, Msg, Timestamp).
 
+
+
+%% =======================================================================================
+%% SYNC API
+%% 
+%%  Used by processes to keep synchronized with the Reflector.
+%%  Useful when processes die/restart
+%% =======================================================================================
+
+
+%% Subs = subscriptions
+%% Subs = Atom() || [atom, atom, ...]
+sync_to_reflector(Subs) ->
+	Old=get(reflector_pid),
+	Reflector = whereis(reflector),
+	sync_to_reflector(Old, Reflector, Subs).
+
+%% Cannot find the reflector now!
+sync_to_reflector(_, undefined, _) ->
+	log_reflector_error();
+
+%% Not much todo -- steady state
+sync_to_reflector(Old, Current, _Subs) when Old == Current ->
+	ok;
+
+sync_to_reflector(Old, Current, Subs) when Old /= Current ->
+	put(reflector_pid, Current),
+	subscribe(self(), Subs).
+	
+
+log_reflector_error() ->
+	Count = base:pvadd(sync_error, 1),
+	if
+		Count < 5 ->
+			base:elog(?MODULE, "reflector NOT found~n");
+	
+		Count > 5 ->
+			base:cond_elog(0.1, ?MODULE, "reflector NOT found~n")
+	end.

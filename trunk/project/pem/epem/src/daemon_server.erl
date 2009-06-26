@@ -15,7 +15,7 @@
 %%
 %%   - Sends messages to clients
 %%     - Sends message transmission status through Reflector
-%%       {to_client, status, Status}
+%%       {to_client_status, status, Status}
 %%       Status = {txerror, MsgId}
 %%       Status = {txok,    MsgId}
 %%
@@ -26,6 +26,10 @@
 
 -define(REFLECTOR_SYNC_TIMEOUT, 2000).
 
+%% Reflector subscriptions
+%%  We just need to grab the messages destined
+%%  to the Client side of the connection
+-define(SUBS, [to_client]).  
 
 %%
 %% Exported Functions
@@ -49,10 +53,6 @@
 		 send_to_client/3
 		 ]).
 
--export([
-		 log_reflector_error/0,
-		 do_subscribe/1
-		 ]).
 
 %% ======================================================================
 %% API Functions
@@ -66,10 +66,18 @@ start_link() ->
 stop() ->
 	daemon_server ! stop.
 
-
+%% Send a message to the Client side
+%% of the connection
 send_message(MsgId, Msg) ->
 	daemon_server ! {to_client, MsgId, Msg}.
-	
+
+%% ======================================================================
+%% REFLECTOR INTERFACE
+%% ======================================================================
+
+send_to_reflector(Msgtype, Msg) ->
+	reflector:publish(M).
+
 
 
 %% ======================================================================
@@ -77,6 +85,12 @@ send_message(MsgId, Msg) ->
 %% ======================================================================
 loop_daemon() ->  %%daemon_server loop
 	receive
+		
+		%% Status of transmission to client side
+		{for_client_status, {info, Code, MsgId}} ->
+			report_tx_status( {Code, MsgId} );
+		
+			
 		%% The listen port could have been assigned
 		%% by the OS: we need to keep track of it
 		%% for managing the daemon through a management
@@ -127,42 +141,11 @@ loop_daemon() ->  %%daemon_server loop
 
 	after ?REFLECTOR_SYNC_TIMEOUT ->
 			
-		sync_to_reflector()
+		reflector:sync_to_reflector(?SUBS)
 	
 	end,
 	loop_daemon().
 
-sync_to_reflector() ->
-	Old=get(reflector_pid),
-	Reflector = whereis(reflector),
-	sync_to_reflector(Old, Reflector).
-
-%% Cannot find the reflector now!
-sync_to_reflector(_, undefined) ->
-	log_reflector_error();
-
-%% Not much todo -- steady state
-sync_to_reflector(Old, Current) when Old == Current ->
-	ok;
-
-sync_to_reflector(Old, Current) when Old /= Current ->
-	put(reflector_pid, Current),
-	do_subscribe(Current).
-	
-
-log_reflector_error() ->
-	Count = base:pvadd(sync_error, 1),
-	if
-		Count < 5 ->
-			base:elog(?MODULE, "reflector NOT found~n");
-	
-		Count > 5 ->
-			base:cond_elog(0.1, ?MODULE, "reflector NOT found~n")
-	end.
-	
-
-do_subscribe(Reflector) ->
-	ok.
 
 
 
@@ -283,7 +266,7 @@ loop_socket(Port, LSocket) ->
 send_to_client(undefined, MsgId, Msg) ->
 	%% TODO throttle?
 	base:elog(?MODULE, "socket error, cannot send, MsgId[~p] Msg[~p]~n", [MsgId, Msg]),
-	daemon_server ! {for_client, {info, txerror, MsgId}};
+	daemon_server ! {for_client_status, {info, txerror, MsgId}};
 
 
 send_to_client(Socket, MsgId, Msg) ->
@@ -291,11 +274,11 @@ send_to_client(Socket, MsgId, Msg) ->
 	Coded = term_to_binary(Msg),
 	case gen_tcp:send(Socket, Coded) of
 		ok ->
-			daemon_server ! {for_client, {info, txok, MsgId}};
+			daemon_server ! {for_client_status, {info, txok, MsgId}};
 
 		{error, Reason} ->
 			base:elog(?MODULE, "send_to_client: ERROR, Reason[~p] MsgId[~p] Msg[~p]~n", [Reason, MsgId, Msg]),
-			daemon_server ! {for_client, {info, txerror, MsgId}}
+			daemon_server ! {for_client_status, {info, txerror, MsgId}}
 	end.
 
 
