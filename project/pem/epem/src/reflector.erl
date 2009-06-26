@@ -3,6 +3,13 @@
 %% Description: Publishes messages from a Source
 %%              to the target Destination subscriber(s).
 %%
+%% API:
+%% ====
+%%
+%%   - subscribe(Client,   MsgType)
+%%   - unsubscribe(Client, MsgType)
+%%   - send(From, MsgType, Msg)
+%%
 
 -module(reflector).
 
@@ -14,12 +21,13 @@
 	stop/0,
 	subscribe/2,
 	unsubscribe/2,
-	send/2	 
+	send/3 
 	]).
 
-%% SYNC API
+%% SEND / SYNC API
 -export([
-	sync_to_reflector/1
+		send_sync/4,
+		sync_to_reflector/1
 		 ]).
 
 %% --------------------------------------------------------------------
@@ -28,11 +36,12 @@
 -export([
 		 loop/0,
 		 rpc/1,
-		 publish/1,
-		 do_publish/4,
+		 spublish/1,
+		 spublish/2,		 
 		 add_client/2,
 		 add_client/3,
-		 remove_client/2
+		 remove_client/2,
+		 ssend/2
 		 ]).
 
 %% SYNC API
@@ -61,8 +70,14 @@ unsubscribe(Client, Msgtype) ->
 	base:elog(?MODULE, "unsubscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret.
 
-send(Msgtype, Msg) ->
-	rpc({send, Msgtype, Msg}).
+%% Send a message on the Reflector
+send(From, Msgtype, Msg) when is_atom(From), is_atom(Msgtype) ->
+	case ?MODULE ! {From, {send, Msgtype, Msg}} of
+		{From, Msgtype, Msg} ->
+			ok;
+		_ ->
+			error
+	end.
 
 
 rpc(Q) ->
@@ -74,7 +89,7 @@ rpc(Q) ->
 			Other
 	catch
 		_:_ ->
-			err
+			error
 	end.
 
 %% ====================================================================!
@@ -101,28 +116,17 @@ loop() ->
 			exit(self(), ok);
 
 		%% SUBSCRIBE command
-		{From, {subscribe, Client, X}} ->
-			add_client(Client, X),
+		{_From, {subscribe, Client, X}} ->
+			add_client(Client, X);
 			
-			%provide feedback to caller
-			From ! {reflector, subscribe, ok},
-			ok;
-
 		%% UNSUBSCRIBE command
-		{From, {unsubscribe, Client, Msgtype}} ->
-			remove_client(Client, Msgtype),
-			From ! {reflector, unsubscribe, ok},
-			ok;
-		
-		%% Messae publication
-		{_From, {send, Msgtype, Msg}} ->
-			publish({Msgtype, Msg});
+		{_From, {unsubscribe, Client, Msgtype}} ->
+			remove_client(Client, Msgtype);
 		
 		%% Message publication
-		{_From, {Msgtype, Msg, Timestamp}} ->
-			publish({Msgtype, Msg, Timestamp}),
-			ok;
-
+		{From, {send, Msgtype, Msg}} ->
+			spublish({From, Msgtype, Msg});
+		
 		Error ->
 			base:elog(?MODULE, "unsupported message, [~p]~n", [Error]),
 			Error
@@ -177,41 +181,44 @@ remove_client(Client, Msgtype) ->
 %% PUBLISH API
 %% =======================================================================================
 
-publish(M) ->
-	%%base:ilog(?MODULE, "publish Msg[~p]~n", [M]),
-	{Msgtype, Msg, Timestamp} = M,
-	Liste = get({msgtype, Msgtype}),
-	do_publish(Liste, Msgtype, Msg, Timestamp).
+spublish(M) ->
+	{_From, MsgType, _Msg} = M,
+	To = get({msgtype, MsgType}),
+	spublish(To, M).
 
-
-do_publish([], _Msgtype, _, _) ->
-	%%base:ilog(?MODULE, "do_publish: NO MORE subscribers for [~p]~n", [Msgtype]),
+%% No more subscribers
+spublish([], _M) ->
 	ok;
 
-
-do_publish(undefined, Msgtype, _, _) ->
-	base:ilog(?MODULE, "do_publish: no subscribers for [~p]~n", [Msgtype]),
+%% No subscribers
+spublish(undefined, _M) ->
+	%%{_From, MsgType, _Msg} = M,
+	%%base:ilog(?MODULE, "spublish: no subscribers for [~p]~n", [MsgType]),
 	ok;
 
-
-do_publish(Liste, Msgtype, Msg, Timestamp) ->
-	%%base:ilog(?MODULE, "do_publish, Msgtype[~p] liste[~p]~n", [Msgtype, Liste]),
-	[Current|Rest] = Liste,
-	%%base:ilog(?MODULE, "publish, TO[~p] Msgtype[~p] Msg[~p]~n", [Current, Msgtype, Msg]),
+spublish(To, M) ->
+	{From, MsgType, Msg} = M,
+	[Current|Rest] = To,
 	
-	try	Current ! {Msgtype, Msg, Timestamp} of
-		{Msgtype, Msg, Timestamp} ->
+	base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p]~n", [From, To, MsgType]),
+	
+	ssend(Current, {MsgType, Msg}),
+	spublish(Rest, M).
+
+
+ssend(To, {MsgType, Msg}) ->
+	
+	try	To ! {MsgType, Msg} of
+		{MsgType, Msg} ->
 			ok;
 		Other ->
-			base:elog(?MODULE,"do_publish: result[~p]~n", [Other]),
-			remove_client(Current, Msgtype)
+			base:elog(?MODULE,"ssend: result[~p]~n", [Other]),
+			remove_client(To, MsgType)
 	catch
 		X:Y ->
-			base:elog(?MODULE, "do_publish: ERROR sending, X[~p] Y[~p]~n", [X, Y]),
-			remove_client(Current, Msgtype)
-	end,
-	do_publish(Rest, Msgtype, Msg, Timestamp).
-
+			base:elog(?MODULE, "ssend: ERROR sending, X[~p] Y[~p]~n", [X, Y]),
+			remove_client(To, MsgType)
+	end.
 
 
 %% =======================================================================================
@@ -231,7 +238,8 @@ sync_to_reflector(Subs) ->
 
 %% Cannot find the reflector now!
 sync_to_reflector(_, undefined, _) ->
-	log_reflector_error();
+	log_reflector_error(),
+	error;
 
 %% Not much todo -- steady state
 sync_to_reflector(Old, Current, _Subs) when Old == Current ->
@@ -251,3 +259,34 @@ log_reflector_error() ->
 		Count > 5 ->
 			base:cond_elog(0.1, ?MODULE, "reflector NOT found~n")
 	end.
+
+%% =======================================================================================
+%% Send & Sync API
+%%
+%%  Send messages on the Reflector
+%%  and synchronize on failure
+%%
+%%  Should only be called from other processes.
+%% =======================================================================================
+
+send_sync(From, MsgType, Msg, Subs) ->
+	Ret = send(From, MsgType, Msg),
+	case Ret of
+		ok ->
+			ok;
+
+		%% Possibly out-of-sync
+		error ->
+			SRet = subscribe(From, Subs),
+			case SRet of
+				
+				%% We have re-synch'ed
+				ok ->
+					%% One last chance
+					send(From, MsgType, Msg);
+			
+				_ ->
+					error
+			end
+	end.
+
