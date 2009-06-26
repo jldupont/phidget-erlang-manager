@@ -18,6 +18,11 @@
 %%        MsgType          |
 %%                        Msg
 %%
+%%   - Receives messages from the socket
+%%     These are sent to the Reflector with the following:
+%%
+%%       {from_client, Msg}
+%%
 %%   - Sends messages to clients
 %%     - Sends message transmission status through Reflector
 %%
@@ -158,11 +163,8 @@ loop_daemon() ->  %%daemon_server loop
 
 
 
-send_to_reflector({MsgType, Msg}) ->
-	reflector:send_sync(daemon_server, MsgType, Msg, ?SUBS);
-
 send_to_reflector(Message) ->
-	base:elog(?MODULE, "INVALID FORMAT: Message[~p]~n", [Message]).
+	reflector:send_sync(daemon_server, from_client, Message, ?SUBS).
 
 
 
