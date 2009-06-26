@@ -7,6 +7,7 @@
 %%
 %% {to_daemon, {MsgId, Msg}}
 %%
+%%
 %% MESSAGE GENERATED:
 %% ==================
 %% {from_daemon, Message}           Message from Server side

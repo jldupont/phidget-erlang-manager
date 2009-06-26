@@ -17,6 +17,7 @@
 %%
 %% {control, canstart}
 %% {control, daemon_not_found}
+%% {daemon_pid, Pid}
 %%
 %%
 %% Contexts:
@@ -35,7 +36,7 @@
 
 -define(TIMEOUT, 2000).
 
--define(SUBS, [canstart]).
+-define(SUBS, [daemon_pid]).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
