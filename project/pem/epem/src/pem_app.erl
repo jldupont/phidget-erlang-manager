@@ -36,7 +36,7 @@
 
 -define(TIMEOUT, 2000).
 
--define(SUBS, [daemon_pid]).
+-define(SUBS, [control, daemon_pid]).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
