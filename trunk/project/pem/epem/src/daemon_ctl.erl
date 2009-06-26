@@ -6,10 +6,13 @@
 %% SUBSCRIPTIONS:
 %% ==============
 %%  
-%%  {assignedport, Port}
-%%  {management,  X}
-%%  {from_daemon, M}
-%%  {from_client, M}
+%%  {assignedport, Port}         %% Write Port to CTL file
+%%  {daemonized}                 %% Change state machine Context
+%%
+%%  {management,  X}             %% Client context: status from sending activity to DAEMON
+%%
+%%  {from_daemon, M}             %% Client context: Rx messages from DAEMON
+%%  {from_client, M}             %% Daemon context: Rx messages from CLIENT
 %%
 %%
 %% MESSAGE GENERATED:
@@ -19,12 +22,20 @@
 %% {control,     stop_sent_ok}
 %% {control,     stop_sent_error}
 %% {control,     daemon_not_found}
-%% {daemon_pid,  Pid}
-%% {daemon_exit, Pid}
 %%
-%% MESSAGES SENT TO THE CLIENT:
+%% {daemon_pid,  Pid}            %% Client context: daemon pid found
+%% {daemon_exit, Pid}            %% Daemon context: client asked for daemon to exit
+%%
+%%
+%% MESSAGES SENT TO THE DAEMON through daemon_client:
+%%
+%%  what_pid  
+%%  do_exit
+%%
+%% MESSAGES SENT TO THE CLIENT through daemon_server:
+%%
 %% {pid, Pid}
-%%
+%% 
 
 -module(daemon_ctl).
 
@@ -194,6 +205,13 @@ hevent(E) ->
 	hcevent(Context, State, Command, E).
 	
 
+%% DAEMON STARTED
+%% ==============
+
+hcevent(_,_,_, daemonized) ->
+	put(context, daemon),
+	put(state, started),
+	put(command, none);
 
 
 %%               CLIENT CONTEXT
@@ -292,6 +310,10 @@ hcevent(client, State, stop, Event) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%               DAEMON SIDE 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% We don't need the timer in this context.
+hcevent(daemon, _, _, timeout) ->
+	ok;
 
 %% The management client is asking us to exit daemon state...
 hcevent(daemon, started, _, {from_client, do_exit}) ->
