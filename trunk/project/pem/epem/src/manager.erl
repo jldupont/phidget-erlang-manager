@@ -1,6 +1,17 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-18
 %% Description: TODO: Add description to manager
+%%
+%% MESSAGES GENERATED on the Reflector:
+%% ====================================
+%% 
+%% {phidgetdevice, {{Serial, Type, state}, {date(), time(), now()}}},
+%%
+%% SUBSCRIPTIONS:
+%%
+%%  none
+%%
+
 -module(manager).
 
 %% --------------------------------------------------------------------
@@ -26,9 +37,7 @@
 		 loop/0,
 		 loop_drv/1,
 		 start_drv/1,
-		 mng_drv/1,
-		 send_to_reflector/1,
-		 send_to_reflector/2
+		 mng_drv/1
 		 ]).
 
 %% ====================================================================!
@@ -112,34 +121,10 @@ loop_drv(Port) ->
 			Decoded = binary_to_term(Data),
 			%% Decoded:  {Msgtype, Msg}
 			%%            Atom     Tuple
-			{Msgtype, Msg} = Decoded,
-			M = {Msgtype, Msg, {date(), time(), now()}},
-			send_to_reflector(M)
+			{MsgType, Msg} = Decoded,
+			M = {Msg, {date(), time(), now()}},
+			reflector:send(self(), MsgType, M)
 	
 	end,
 	loop_drv(Port).
 
-
-send_to_reflector(M) ->
-	Reflector = whereis(reflector),
-	send_to_reflector(Reflector, M).
-
-
-send_to_reflector(undefined, _) ->
-	base:elog(?MODULE, "reflector not found~n"),
-	ok;
-
-send_to_reflector(Reflector, M) ->
-	Self = self(),
-	try Reflector ! {Self, M} of
-		
-		%% we're echo'ed back the message if everything is OK
-		{Self, M} ->
-			ok;
-		Code ->
-			base:elog(?MODULE, "error sending to reflector, code[~p]", [Code])
-	catch
-		X:Y -> 
-			base:elog(?MODULE, "error sending [~p:~p]~n", [X,Y]),
-			ok
-	end.
