@@ -13,6 +13,9 @@
 %% MESSAGE GENERATED:
 %% ==================
 %%
+%% {control, stop_sent_ok}
+%% {control, stop_sent_error}
+%%
 %%
 
 -module(daemon_ctl).
@@ -49,8 +52,8 @@
 		 try_start/2,
 		 try_stop/1,
 		 try_stop/2,
-		 handle_management_message/1,
-		 handle_daemon_message/1
+		 hevent/1,
+		 hcevent/3
 		 ]).
 
 %% =======================================
@@ -147,53 +150,91 @@ loop() ->
 	
 		%% @TODO
 		{from_daemon, Msg} ->
-			handle_daemon_message(Msg);
+			hevent({from_daemon, Msg});
 		
 		{management, Msg} ->
-			handle_management_message(Msg);
+			hevent({management, Msg});
 		
 		Other ->
 			base:ilog(?MODULE, "received [~p]~n", [Other])
 	
 	after ?TIMEOUT ->
-			
-		reflector:sync_to_reflector(?SUBS)
+
+		reflector:sync_to_reflector(?SUBS),
+		hevent(timeout)
 	
 	end,
 	loop().
 
+hevent(timeout) ->
+	Context = get(context),
+	State   = get(state),
+	hcevent(Context, State, timeout);	
 
-handle_daemon_message(Msg) ->
-	case Msg of
-		
-		
-	end.
+hevent({from_daemon, M}) ->
+	Context = get(context),
+	State   = get(state),
+	hcevent(Context, State, {from_daemon, M});
 
-
-
-%% Management communication is opened...
-%% We can send any messages down the channel then.
-handle_management_message(open) ->
+hevent({management, M}) ->
 	Context=get(context),
-	case Context of
-		
-		%% We are trying to start but 
-		%% we need to check first if there is
-		%% a daemon already running.
-		%% Send a "pid request" and see...
-		start ->
-			put(state, asked_pid),
-			reflector:send_sync(self(), to_daemon, {asked_pid, what_pid}, ?SUBS);
-		
-		stop ->
-			put(state, asked_exit),
-			reflector:send_sync(self(), to_daemon, {asked_exit, do_exit}, ?SUBS),
-			ok;
-		
-		_ ->
-			base:elog(?MODULE, "INVALID CONTEXT[~p]~n", [Context])
-	end.
-	
+	State   = get(state),
+	hcevent(Context, State, {management, M}).
+
+
+%% START CONTEXT
+%% ^^^^^^^^^^^^^
+
+%% Management channel found: ask for PID to running daemon
+hcevent(start, wait_management, {management, open}) ->
+	reflector:send_sync(self(), to_daemon, {asked_pid, what_pid}, ?SUBS),
+	put(state, wait_pid);
+
+%% Couldn't reach a running daemon
+hcevent(start, wait_management, timeout) ->
+	put(state, canstart),
+	reflector:send_sync(self(), control, canstart, ?SUBS);
+
+
+%% Management
+hcevent(start, wait_management, {management, closed}}) ->
+	put(state, canstart),
+	reflector:send_sync(self(), control, canstart, ?SUBS);
+
+
+
+%% STOP CONTEXT
+%% ^^^^^^^^^^^^
+
+%% Management channel found: ask the running daemon to stop
+hcevent(stop, wait_management, {management, open}) ->
+	reflector:send_sync(self(), to_daemon, {asked_exit, do_exit}, ?SUBS),
+	put(state, wait_txok_exit);
+
+%% We sent a 'stop' command to the daemon and our request
+%% was transmitted OK.
+hcevent(stop, wait_txok_exit, {management, {txok, _X} }) ->
+	reflector:send_sync(self(), control, stop_sent_ok, ?SUBS),	
+	put(state, stop_sent_ok);
+
+
+%% We sent a 'stop' command *BUT* the transmission wasn't successful...
+hcevent(stop, wait_txok_exit, {management, {txerror, _X} }) ->
+	reflector:send_sync(self(), control, stop_sent_error, ?SUBS),
+	put(state, stop_sent_error);
+
+%% We sent a 'stop' command *BUT* the management channel went down 
+hcevent(stop, wait_txok_exit, {management, _X }) ->
+	reflector:send_sync(self(), control, stop_sent_error, ?SUBS),
+	put(state, stop_sent_error);
+
+%% Couldn't reach a running daemon
+hcevent(stop, wait_management, timeout) ->
+	put(state, daemon_not_found),
+	reflector:send_sync(self(), control, daemon_not_found, ?SUBS).
+
+
+  
 
 
 

@@ -126,6 +126,11 @@ stop() ->
 
 loop() ->
 	receive
+			{control,canstart} ->
+			ok;
+		
+
+		
 		
 		%% Try starting the daemon
 		{start_daemon, Args} ->
@@ -226,6 +231,7 @@ loop() ->
 %%
 loop_main() ->
 	receive
+		
 		start ->
 			put(context, daemon),
 			Args=get(args),
