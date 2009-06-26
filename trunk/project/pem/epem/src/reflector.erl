@@ -13,7 +13,8 @@
 	start_link/0,
 	stop/0,
 	subscribe/2,
-	unsubscribe/2	 
+	unsubscribe/2,
+	send/2	 
 	]).
 
 %% SYNC API
@@ -59,6 +60,10 @@ unsubscribe(Client, Msgtype) ->
 	Ret = rpc({unsubscribe, Client, Msgtype}),
 	base:elog(?MODULE, "unsubscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret.
+
+send(Msgtype, Msg) ->
+	rpc({send, Msgtype, Msg}).
+
 
 rpc(Q) ->
 	Pid = self(),
@@ -108,6 +113,10 @@ loop() ->
 			remove_client(Client, Msgtype),
 			From ! {reflector, unsubscribe, ok},
 			ok;
+		
+		%% Messae publication
+		{_From, {send, Msgtype, Msg}} ->
+			publish({Msgtype, Msg});
 		
 		%% Message publication
 		{_From, {Msgtype, Msg, Timestamp}} ->
