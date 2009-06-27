@@ -87,13 +87,16 @@ unsubscribe(Client, Msgtype) ->
 
 %% Send a message on the Reflector
 send(From, Msgtype, Msg) when is_atom(From), is_atom(Msgtype) ->
+	%%base:ilog(?MODULE, "send: From[~p] Msgtype[~p] Msg[~p]~n", [From, Msgtype, Msg]),
 	case ?MODULE ! {From, {send, Msgtype, Msg}} of
 		{From, Msgtype, Msg} ->
 			ok;
 		_ ->
 			error
-	end.
+	end;
 
+send(From, Msgtype, Msg) ->
+	base:ilog(?MODULE, "ERROR: send: From[~p] Msgtype[~p] Msg[~p]~n", [From, Msgtype, Msg]).
 
 %% ====================================================================!
 %% API functions

@@ -52,6 +52,7 @@
 start_link()->
 	Pid = spawn_link(?MODULE, loop_connection, []),
 	register(daemon_client, Pid),
+	?MODULE ! sync,
 	base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
@@ -67,9 +68,12 @@ stop() ->
 
 loop_connection() ->
 	receive
+		
+		sync ->
+			reflector:sync_to_reflector(?SUBS);
+
 		{management_port, Port} ->
 			put(management_port, Port);
-			
 		
 		stop ->
 			close_socket(),
