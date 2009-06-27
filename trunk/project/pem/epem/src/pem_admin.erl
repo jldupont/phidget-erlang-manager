@@ -15,6 +15,17 @@
 %%
 -define(TIMEOUT, 2000).
 
+
+-define(CANSTART,       0).
+-define(STOPSENT,       0).
+-define(EUCMD,          1).
+-define(CANNOTSTOP,     2).
+-define(COMMERROR,      3).
+-define(DAEMON_PRESENT, 4).
+-define(NODAEMON,       5).
+-define(EUNKNOWN,       10).
+
+
 -define(SUBS, [
 			   management,
 			   from_daemon
@@ -51,10 +62,12 @@ start([stop]) ->
 	run(stop);
 
 start([Unknown]) ->
-	io:format("pem_admin: unknown command[~p]~n", [Unknown]);
+	io:format("pem_admin: unknown command[~p]~n", [Unknown]),
+	halt(?EUCMD);
 
 start(Unknown) ->
-	io:format("pem_admin: unknown command[~p]~n", [Unknown]).
+	io:format("pem_admin: unknown command[~p]~n", [Unknown]),
+	halt(?EUCMD).
 
 
 stop() ->
@@ -77,8 +90,6 @@ run(Cmd) ->
 
 
 
-
-
 gevent(E) ->
 	?MODULE ! E.
 
@@ -96,6 +107,7 @@ loop() ->
 	receive
 		
 		run ->
+			reflector:sync_to_reflector(?SUBS),
 			put(cmd, undefined),
 			put(state, run),
 			pem_admin_sup:start_link();	
@@ -111,6 +123,14 @@ loop() ->
 		{port, Port} ->
 			hevent({port, Port});
 	
+		%%from daemon_client
+		{management, Msg} ->
+			hevent({management, Msg});
+		
+		%%from daemon_client on behalf of daemon
+		{from_daemon, Msg} ->
+			hevent({from_daemon, Msg});
+		
 		Other ->
 			io:format("something is wrong... unhandled event[~p]~n", [Other])
 	
@@ -132,13 +152,72 @@ hcevent(_  , _    , {cmd, start}) ->
 %% We've got a valid port... let's try to connect
 hcevent(_, run, {port, {port, Port}} ) ->
 	put(state, try_connect),
-	reflector:send(self(), management_port, Port),
-	reflector:send(self(), client, connect),
+	reflector:send(pem_admin, management_port, Port),
+	reflector:send(pem_admin, client, connect),
 	ok;
 
+%% Can't get a port... no daemon (probably)
+hcevent(start, run, {port, _} ) ->
+	io:format("no management port found~n"),
+	halt(?CANSTART);
+	
+%% We've got a port opened ... possibly to the daemon
+hcevent(start, tryconnect, {management, open}) ->
+	put(state, wait_pid),
+	reflector:send(pem_admin, to_daemon, {asked_pid, what_pid}),
+	ok;
 
-hcevent(_, _, {cmd, stop}) ->
-	ok.
+hcevent(start, wait_pid, {management, {txerror, _}}) ->
+	io:format("communication error to daemon~n"),
+	halt(?COMMERROR);
+
+%% Message was sent ok... wait for a reply
+hcevent(start, wait_pid, {management, {txok, _}}) ->
+	ok;
+
+%% We received a pid from the daemon... this means
+%% one is (probably) running -> we can't start another one!
+hcevent(start, wait_pid, {from_daemon, {pid, Pid}}) ->
+	io:format("daemon already running, Pid[~p]~n", [Pid]),
+	halt(?DAEMON_PRESENT);	
+
+hcevent(start, tryconnect, {management, _Other}) ->
+	io:format("communication error to daemon~n"),
+	halt(?COMMERROR);
+
+
+%% =================== STOP ========================
+
+%% Try to stop a daemon
+%%      Cmd, State, Event
+hcevent(_  , _    , {cmd, stop}) ->
+	Port=base:getport(),
+	gevent( {port, Port} );	
+
+
+%% Can't get a port... no daemon (probably)
+hcevent(stop, run, {port, _} ) ->
+	io:format("no management port found~n"),
+	halt(?CANNOTSTOP);
+
+
+%% We've got a port opened ... possibly to the daemon
+hcevent(stop, tryconnect, {management, open}) ->
+	put(state, wait_pid),
+	reflector:send(pem_admin, to_daemon, {asked_exit, do_exit}),
+	ok;
+
+hcevent(stop, tryconnect, {management, {txok, _}}) ->
+	io:format("stop command sent~n"),
+	halt(?STOPSENT);
+
+hcevent(stop, tryconnect, {management, _Other}) ->
+	io:format("no daemon found~n"),
+	halt(?NODAEMON);
+
+hcevent(Cmd, State, Event) ->
+	io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
+	halt(?EUNKNOWN).
 
 
 
