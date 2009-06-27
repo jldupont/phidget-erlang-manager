@@ -42,7 +42,10 @@
 		 do_create_ctl_file/2,
 		 tmpdir/0,
 		 id_dir/1,
-		 ctl_file/1
+		 ctl_file/1,
+		 getport/0,
+		 extract_port/1,
+		 saveport/1
 		 ]).
 %%
 %% API Functions
@@ -311,3 +314,37 @@ cond_ilog(Prob, M, X,Y) ->
 	end.
 
 
+%% Returns the Port# of the
+%% daemon currently running (if any)
+%%
+%% Returns: {port, Port}
+%%
+getport() ->
+	{Code, X} = base:read_ctl_file(),
+	Terms=X,
+	case Code of 
+		ok ->
+			extract_port(Terms);
+		_ ->
+			% error code really
+			{Code, X}
+	end.
+
+extract_port(Terms) ->
+	case erlang:is_builtin(lists, keyfind, 3) of
+		true  ->
+			lists:keyfind(port,1,Terms);
+		false ->
+			case lists:keysearch(port,1,Terms) of
+				{value, Value} ->
+					Value;
+				_ ->
+					error
+			end
+	end.
+
+
+%% Save the used by this daemon
+saveport(Port) ->
+	base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
+	base:create_ctl_file([{port, Port}]).

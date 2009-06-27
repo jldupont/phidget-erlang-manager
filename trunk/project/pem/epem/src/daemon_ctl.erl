@@ -64,9 +64,6 @@
 %%
 -export([
 		 loop/0,
-		 getport/0,
-		 saveport/1,
-		 extract_port/1,
 		 try_start/1,
 		 try_start/2,
 		 try_stop/1,
@@ -104,40 +101,6 @@ stop_daemon(Args) ->
 %% Local Functions
 %% ====================================================================================
 
-%% Returns the Port# of the
-%% daemon currently running (if any)
-%%
-%% Returns: {port, Port}
-%%
-getport() ->
-	{Code, X} = base:read_ctl_file(),
-	Terms=X,
-	case Code of 
-		ok ->
-			extract_port(Terms);
-		_ ->
-			% error code really
-			{Code, X}
-	end.
-
-extract_port(Terms) ->
-	case erlang:is_builtin(lists, keyfind, 3) of
-		true  ->
-			lists:keyfind(port,1,Terms);
-		false ->
-			case lists:keysearch(port,1,Terms) of
-				{value, Value} ->
-					Value;
-				_ ->
-					error
-			end
-	end.
-
-
-%% Save the used by this daemon
-saveport(Port) ->
-	base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
-	base:create_ctl_file([{port, Port}]).
 
 
 
@@ -154,7 +117,7 @@ loop() ->
 			put(context, client);
 		
 		{assignedport, Port} ->
-			saveport(Port);
+			base:saveport(Port);
 		
 		%% TODO is there a daemon already running?
 		%%      Wait x time for response back
