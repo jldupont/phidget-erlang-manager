@@ -106,6 +106,7 @@ start() ->
 start_link() ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
+	base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
 stop() ->
@@ -124,12 +125,14 @@ stop() ->
 %% Subs = subscriptions
 %% Subs = Atom() || [atom, atom, ...]
 sync_to_reflector(Subs) ->
+	%%base:ilog(?MODULE, "sync_to_reflector: Subs[~p]~n", [Subs]),
 	Old=get(reflector_pid),
 	Reflector = whereis(reflector),
 	sync_to_reflector(Old, Reflector, Subs).
 
 %% Cannot find the reflector now!
-sync_to_reflector(_, undefined, _) ->
+sync_to_reflector(_Old, undefined, _) ->
+	%%base:ilog(?MODULE, "sync_to_reflector: cannot find reflector! Old[~p]~n", [Old]),
 	log_reflector_error(),
 	error;
 
@@ -138,6 +141,7 @@ sync_to_reflector(Old, Current, _Subs) when Old == Current ->
 	ok;
 
 sync_to_reflector(Old, Current, Subs) when Old /= Current ->
+	base:ilog(?MODULE, "sync_to_reflector: Old[~p] Current[~p] Subs[~p]~n", [Old, Current, Subs]),
 	put(reflector_pid, Current),
 	subscribe(self(), Subs).
 	
@@ -146,9 +150,11 @@ log_reflector_error() ->
 	Count = base:pvadd(sync_error, 1),
 	if
 		Count < 5 ->
+			io:format("reflector not found!~n"),
 			base:elog(?MODULE, "reflector NOT found~n");
 	
 		Count > 5 ->
+			io:format("reflector not found!~n"),
 			base:cond_elog(0.1, ?MODULE, "reflector NOT found~n")
 	end.
 

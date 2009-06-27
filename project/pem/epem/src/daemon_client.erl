@@ -5,7 +5,9 @@
 %% SUBSCRIPTIONS:
 %% ==============
 %%
-%% {to_daemon, {MsgId, Msg}}
+%% {to_daemon,       {MsgId, Msg}}
+%% {management_port, Port}
+%% {client,          doconnect}
 %%
 %%
 %% MESSAGE GENERATED:
@@ -24,18 +26,18 @@
 %%
 -define(TIMEOUT, 2000).
 
--define(SUBS, [to_daemon]).
+-define(SUBS, [to_daemon, management_port, client]).
 
 %%
 %% Exported Functions
 %%
 -export([
-		 start/1,
+		 start_link/0,
 		 stop/0
 		 ]).
 
 -export([
-		 loop_connection/1,
+		 loop_connection/0,
 		 close_socket/0,
 		 close_socket/1,
 		 send_to_reflector/1,
@@ -47,10 +49,11 @@
 %% API Functions
 %% ======================================================
 
-start(Port)->
-	P = spawn(?MODULE, loop_connection, [Port]),
-	register(daemon_client, P),
-	{ok, P}.
+start_link()->
+	Pid = spawn_link(?MODULE, loop_connection, []),
+	register(daemon_client, Pid),
+	base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
+	{ok, Pid}.
 
 
 stop() ->
@@ -62,15 +65,20 @@ stop() ->
 %% Local Functions
 %% ======================================================
 
-loop_connection(Port) ->
+loop_connection() ->
 	receive
+		{management_port, Port} ->
+			put(management_port, Port);
+			
+		
 		stop ->
 			close_socket(),
 			exit(ok);
 		
 		%% Starts a connection towards the Server
-		{doconnect} ->
+		{client, doconnect} ->
 			close_socket(),
+			Port=get(management_port),
 			{Code, Socket} = gen_tcp:connect("localhost", Port, [binary, {active, true}, {packet, 2}], ?TIMEOUT),
 			case Code of
 				ok ->
@@ -99,7 +107,7 @@ loop_connection(Port) ->
 		reflector:sync_to_reflector(?SUBS)
 		
 	end,
-	loop_connection(Port).
+	loop_connection().
 
 
 
