@@ -45,7 +45,6 @@
 	 stop/0,
 	 start/0,
 	 start/1,
-	 start/2,
 	 loop/0,
 	 loop_main/0
         ]).
@@ -61,39 +60,53 @@
 
 %% START
 start() ->
-	start_daemon([]).
+	base:ilog(?MODULE, "start_daemon~n", []),
+	process_flag(trap_exit,true),
+	Pid = spawn(?MODULE, loop, []),
+	base:ilog(?MODULE, "start_daemon: Pid[~p]~n", [Pid]),
+	%%put(args, Args),	
+	put(context, client),
+	?MODULE ! {start_daemon, []},
+	{ok, Pid}.
+
+%%	base:ilog(?MODULE, "start~n", []),
+%%	start_daemon(undefined).
 
 %% START
-start(debug) ->
-	start_daemon([debug]);
+start([debug]) ->
+	base:ilog(?MODULE, "start(debug)~n", []),
+	start_daemon(debug);
 
 %% ##STOP##
-start(stop) ->
-	stop_daemon([]).
+start([stop]) ->
+	stop_daemon(undefined);
 
 %% START
-start(debug, start) ->
-	start_daemon([debug]);
+start([debug, start]) ->
+	start_daemon(debug);
 
 %% ##STOP##
-start(debug, stop) ->
-	stop_daemon([debug]).
+start([debug, stop]) ->
+	stop_daemon(debug).
 
 
-start_daemon(Args) ->
+start_daemon(Args) ->	
+	process_flag(trap_exit,true),
+	Pid = spawn(?MODULE, loop, []),
+	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
 	put(args, Args),	
 	put(context, client),
-	base:ilog(?MODULE, "start_daemon: Args[~p]~n", [Args]),
-	process_flag(trap_exit,true),
 	?MODULE ! {start_daemon, Args},
-	loop().
+	{ok, Pid}.
 
 stop_daemon(Args) ->
+	process_flag(trap_exit,true),
+	Pid = spawn(?MODULE, loop, []),
+	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
 	put(args, Args),
 	put(context, client),
-	base:ilog(?MODULE, "stop_daemon: Args[~p]~n", [Args]),
 	?MODULE ! {stop_daemon, Args},
-	loop().
+	{ok, Pid}.
 
 
 	
