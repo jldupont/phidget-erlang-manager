@@ -20,6 +20,9 @@
 -define(DRV_MNG,       "pem_drv_mng").
 -define(DRV_MNG_DEBUG, "pem_drv_mng_debug").
 
+-define(TIMEOUT,       2000).
+-define(SUBS,          [daemonized]).
+
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
@@ -65,7 +68,7 @@ stop() ->
 start(DrvPath) ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	?MODULE ! {driver, dostart, DrvPath},
+	?MODULE ! {driver, canstart, DrvPath},
 	{ok, Pid}.
 	
 
@@ -88,9 +91,16 @@ mng_drv(ExtPrg) ->
 loop() ->
 	receive
 		
-		{driver, dostart, DrvPath} ->
-			put(driver_path, DrvPath),
+		%% Only start when we are actually in daemon mode
+		{daemonized, _} ->
+			DrvPath=get(driver_path),
 			start_drv(DrvPath);
+		
+		
+		%% Grab driver's path
+		{driver, canstart, DrvPath} ->
+			put(driver_path, DrvPath);
+			
 		
 		{driver, crashed} ->
 			base:elog(?MODULE, "driver crashed~n", []),

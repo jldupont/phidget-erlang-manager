@@ -24,6 +24,8 @@
 -define(DRV_IFK_DEBUG, "pem_drv_ifk_debug").
 -define(DRV_IFK,       "pem_drv_ifk").
 
+-define(SUBS,          [daemonized]).
+
 %%
 %% Exported Functions
 %%

@@ -311,6 +311,7 @@ rpc(Q) ->
 		Other ->
 			Other
 	catch
-		_:_ ->
+		X:Y ->
+			base:elog(?MODULE, "rpc error: [~p][~p]~n",[X,Y]),
 			error
 	end.
