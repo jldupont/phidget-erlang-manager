@@ -12,6 +12,12 @@
 %%   start(stop)        -> stops daemon
 %%
 %%
+%% MESSAGES GENERATED:
+%% ===================
+%%
+%% daemonized
+%%
+%%
 %% SUBSCRIPTIONS:
 %% ==============
 %%
@@ -60,15 +66,8 @@
 
 %% START
 start() ->
-	base:ilog(?MODULE, "start_daemon~n", []),
-	process_flag(trap_exit,true),
-	Pid = spawn(?MODULE, loop, []),
-	base:ilog(?MODULE, "start_daemon: Pid[~p]~n", [Pid]),
-	%%put(args, Args),	
-	put(context, client),
-	?MODULE ! {start_daemon, []},
-	{ok, Pid}.
-
+	start_daemon([]).
+	
 %%	base:ilog(?MODULE, "start~n", []),
 %%	start_daemon(undefined).
 
@@ -90,13 +89,13 @@ start([debug, stop]) ->
 	stop_daemon(debug).
 
 
-start_daemon(Args) ->	
+start_daemon(Args) ->
 	process_flag(trap_exit,true),
 	Pid = spawn(?MODULE, loop, []),
 	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
 	put(args, Args),	
 	put(context, client),
-	?MODULE ! {start_daemon, Args},
+	Pid ! {start_daemon, Args},
 	{ok, Pid}.
 
 stop_daemon(Args) ->
@@ -105,7 +104,7 @@ stop_daemon(Args) ->
 	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
 	put(args, Args),
 	put(context, client),
-	?MODULE ! {stop_daemon, Args},
+	Pid ! {stop_daemon, Args},
 	{ok, Pid}.
 
 
