@@ -25,6 +25,7 @@
 -export([
 	start/0,
 	start_link/0,
+	start_link/1,
 	stop/0,
 	subscribe/2,
 	unsubscribe/2,
@@ -33,6 +34,7 @@
 
 %% SEND / SYNC API
 -export([
+		 is_ready/0,
 		send_sync/4,
 		sync_to_reflector/1
 		 ]).
@@ -112,6 +114,14 @@ start_link() ->
 	base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
+start_link({Recipient, Msg}) ->
+	Pid = spawn_link(?MODULE, loop, []),
+	register( ?MODULE, Pid ),
+	?MODULE ! {sync, Recipient, Msg},
+	base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
+	{ok, Pid}.
+	
+
 stop() ->
 	base:elog(?MODULE, "STOP CALLED!~n"),
     rpc({stop}).
@@ -170,6 +180,15 @@ log_reflector_error() ->
 %%  Should only be called from other processes.
 %% =======================================================================================
 
+is_ready() ->
+	case whereis(reflector) of
+		undefined ->
+			false;	
+		_ ->
+			true
+	end.
+
+
 send_sync(From, MsgType, Msg, Subs) ->
 	Ret = send(From, MsgType, Msg),
 	case Ret of
@@ -198,6 +217,9 @@ send_sync(From, MsgType, Msg, Subs) ->
 %% ==========
 loop() ->
 	receive
+		{sync, Recipient, Msg} ->
+			base:send_ready_signal(reflector, Recipient, Msg);
+		
 		{_From, {stop}} ->
 			base:elog(?MODULE, "received STOP~n"),
 			exit(self(), ok);

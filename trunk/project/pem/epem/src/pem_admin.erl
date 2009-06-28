@@ -83,8 +83,7 @@ run(Cmd) ->
 	
 	Pid = spawn_link(?MODULE, loop, []),
 	register(?MODULE, Pid),
-	?MODULE ! run,
-	?MODULE ! {cmd, Cmd},
+	?MODULE ! {run, Cmd},
 	{ok, Pid}.
 	
 
@@ -106,19 +105,23 @@ hevent(E) ->
 loop() ->
 	receive
 		
-		run ->
-			reflector:sync_to_reflector(?SUBS),
-			put(cmd, undefined),
+		{run, Cmd} ->
+			put(cmd, Cmd),
 			put(state, run),
-			pem_admin_sup:start_link();	
+			pem_admin_sup:start_link({?MODULE, ready});
+			%%reflector:sync_to_reflector(?SUBS)
+
+		synced ->
+			hevent(synced);
+		
+		{sync, From, ready} ->
+			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
+			put({sync, From}, true),
+			hevent({sync, From});
 		
 		stop ->
 			exit(ok);
 		
-		{cmd, Cmd} ->
-			put(cmd, Cmd),
-			hevent({cmd, Cmd}),
-			io:format("Command[~p]~n", [Cmd]);
 
 		{port, Port} ->
 			hevent({port, Port});
@@ -143,14 +146,26 @@ loop() ->
 	loop().
 
 
+hcevent(_, _, {sync, _From}) ->
+	Count = base:pvadd(module_synced, 1),
+	case Count of
+		1 ->
+			ok;
+		2 ->
+			put(state, synced),
+			gevent(synced)
+	end;
+
+	
 %% Try to start a daemon
 %%      Cmd, State, Event
-hcevent(_  , _    , {cmd, start}) ->
+hcevent(_  , _    , synced) ->
 	Port=base:getport(),
+	put(state, synced),
 	gevent( {port, Port} );	
 
 %% We've got a valid port... let's try to connect
-hcevent(_, run, {port, {port, Port}} ) ->
+hcevent(_, synced, {port, {port, Port}} ) ->
 	put(state, try_connect),
 	reflector:send(pem_admin, management_port, Port),
 	reflector:send(pem_admin, client, connect),
@@ -188,15 +203,9 @@ hcevent(start, tryconnect, {management, _Other}) ->
 
 %% =================== STOP ========================
 
-%% Try to stop a daemon
-%%      Cmd, State, Event
-hcevent(_  , _    , {cmd, stop}) ->
-	Port=base:getport(),
-	gevent( {port, Port} );	
-
 
 %% Can't get a port... no daemon (probably)
-hcevent(stop, run, {port, _} ) ->
+hcevent(stop, synced, {port, _} ) ->
 	io:format("no management port found~n"),
 	halt(?CANNOTSTOP);
 
