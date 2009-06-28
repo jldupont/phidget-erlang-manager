@@ -36,7 +36,8 @@
 		 join/2,
 		 add/2,
 		 pvadd/2,
-		 send_ready_signal/3
+		 send_ready_signal/3,
+		 send_synced_signal/2
 		 ]).
 
 -export([
@@ -295,11 +296,13 @@ add(Var, Value) ->
 	Var + Value.
 
 
+
 pvadd(Var, Value) ->
 	Count=get(Var),
 	NewCount = base:add(Count, Value),
 	put(Var, NewCount),
 	NewCount.
+
 
 
 
@@ -361,6 +364,15 @@ send_ready_signal(_From, undefined, _) ->
 
 send_ready_signal(From, Recipient, Msg) ->
 	Recipient ! {ready, From, Msg}.
+
+
+
+
+send_synced_signal(_From, undefined) ->
+	ok;
+
+send_synced_signal(From, RootProc) ->
+	RootProc ! {synced, From}.
 
 
 

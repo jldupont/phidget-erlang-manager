@@ -105,16 +105,24 @@ hevent(E) ->
 loop() ->
 	receive
 		
+		%% Step #1
 		{run, Cmd} ->
 			put(cmd, Cmd),
 			put(state, run),
 			pem_admin_sup:start_link({?MODULE, ready});
-			%%reflector:sync_to_reflector(?SUBS)
 
-		synced ->
+		%% Step #2
+		modules_ready ->
+			reflector:sync_to_reflector(?SUBS),
 			base:send_to_list(modules_ready, mods_ready),
-			hevent(synced);
+			hevent(modules_ready);
 		
+		%% Step #3
+		modules_synced ->
+			base:send_to_list(modules_synced, mods_synced),
+			hevent(modules_synced);
+		
+		%% Accumulate modules ready
 		{ready, From, ready} ->
 			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
 			put({ready, From}, true),
@@ -122,6 +130,15 @@ loop() ->
 			%% keep track of modules ready
 			base:add_to_list(modules_ready, From),
 			hevent({ready, From});
+		
+		%% Accumulate modules synced
+		{synced, From} ->
+			base:ilog(?MODULE, "module [~p] is synced~n", [From]),
+			put({synced, From}, true),
+			
+			%% keep track of modules synced
+			base:add_to_list(modules_synced, From),
+			hevent({synced, From});
 		
 		stop ->
 			exit(ok);
@@ -156,13 +173,27 @@ hcevent(_, _, {ready, _From}) ->
 		1 ->
 			ok;
 		2 ->
-			put(state, synced),
-			gevent(synced)
+			put(state, modules_ready),
+			gevent(modules_ready)
 	end;
+
 
 	
 %% Try to start a daemon
 %%      Cmd, State, Event
+hcevent(_,   _,     modules_ready) ->
+	ok;
+
+
+hcevent(_, _, {synced, _From}) ->
+	Count = base:pvadd(modules_synced, 1),
+	case Count of
+		1 ->
+			put(state, modules_synced),
+			gevent(modules_synced)
+	end;
+	
+
 hcevent(_  , _    , synced) ->
 	Port=base:getport(),
 	put(state, synced),
