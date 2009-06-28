@@ -114,10 +114,10 @@ loop() ->
 		synced ->
 			hevent(synced);
 		
-		{sync, From, ready} ->
+		{ready, From, ready} ->
 			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
-			put({sync, From}, true),
-			hevent({sync, From});
+			put({ready, From}, true),
+			hevent({ready, From});
 		
 		stop ->
 			exit(ok);
@@ -146,7 +146,7 @@ loop() ->
 	loop().
 
 
-hcevent(_, _, {sync, _From}) ->
+hcevent(_, _, {ready, _From}) ->
 	Count = base:pvadd(module_synced, 1),
 	case Count of
 		1 ->

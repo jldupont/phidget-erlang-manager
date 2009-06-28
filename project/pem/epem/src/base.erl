@@ -356,4 +356,4 @@ send_ready_signal(_From, undefined, _) ->
 	ok;	
 
 send_ready_signal(From, Recipient, Msg) ->
-	Recipient ! {sync, From, Msg}.
+	Recipient ! {ready, From, Msg}.
