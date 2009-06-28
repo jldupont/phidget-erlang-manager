@@ -77,13 +77,22 @@ stop() ->
 loop_connection() ->
 	receive
 		
+		%% When we need to notify a root proc of our progress
 		{sync, Recipient, Msg} ->
-			base:send_ready_signal(daemon_client, Recipient, Msg),
-			reflector:sync_to_reflector(?SUBS);
+			put(root_proc, Recipient),
+			base:send_ready_signal(daemon_client, Recipient, Msg);
+			
 
 		%% All modules are ready... let's sync
 		%% to the Reflector
 		mods_ready ->
+			reflector:sync_to_reflector(?SUBS),
+			ok;
+		
+		%% We are subscribed... final sync to the root proc
+		{from_reflector, subscribed} ->
+			RootProc=get(root_proc),
+			base:send_synced_signal(daemon_client, RootProc),
 			ok;
 		
 		{management_port, Port} ->
