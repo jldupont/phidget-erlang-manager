@@ -17,12 +17,12 @@
 
 
 -define(CANSTART,       0).
--define(STOPSENT,       0).
--define(EUCMD,          1).
--define(CANNOTSTOP,     2).
--define(COMMERROR,      3).
--define(DAEMON_PRESENT, 4).
--define(NODAEMON,       5).
+-define(STOPSENT,       1).
+-define(EUCMD,          2).
+-define(CANNOTSTOP,     3).
+-define(COMMERROR,      4).
+-define(DAEMON_PRESENT, 5).
+-define(NODAEMON,       6).
 -define(EUNKNOWN,       10).
 
 
