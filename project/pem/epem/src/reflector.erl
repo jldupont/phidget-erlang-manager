@@ -121,14 +121,14 @@ start() ->
 start_link() ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
-	base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
+	%%base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
 start_link({Recipient, Msg}) ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
 	?MODULE ! {sync, Recipient, Msg},
-	base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
+	%%base:ilog(?MODULE, "Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 	
 
@@ -338,7 +338,7 @@ remove_client(Client, Msgtype) ->
 
 spublish(M) ->
 	{From, MsgType, Msg} = M,
-	base:ilog(?MODULE, "spublish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),	
+	%%base:ilog(?MODULE, "spublish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),	
 	To = get({msgtype, MsgType}),
 	spublish(To, M).
 
@@ -356,7 +356,7 @@ spublish(To, M) ->
 	{From, MsgType, Msg} = M,
 	[Current|Rest] = To,
 	
-	base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p]~n", [From, To, MsgType]),
+	%%base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p] Msg[~p]~n", [From, To, MsgType, Msg]),
 	
 	ssend(Current, {MsgType, Msg}),
 	spublish(Rest, M).
