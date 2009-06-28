@@ -17,13 +17,23 @@ usage = \
          Cmd="stop"   : stop daemon
 """
 
-erlcmd = "erl -noshell -pa ./ebin -s pem_admin start %s"
-
 
     
 class Command(object):
+    """ Communicates Command to the PEM daemon
     """
-    """
+    erlcmd = "erl -noshell -pa ./ebin -s pem_admin start %s"
+    
+    codes = {   0:{m:"cannot start"            },
+                1:{m:"stop sent"               },
+                2:{m:"unknown command"         },
+                3:{m:"cannot stop"             },
+                4:{m:"communication error"     },
+                5:{m:"daemon present"          },
+                6:{m:"no daemon"               },
+                10:{m:"unknown error"          }
+             }
+    
     def erl(self, cmd):
         """Executes the Erlang administration program for PEM
         """
@@ -44,7 +54,7 @@ class Command(object):
     
 
 def main():
-    """
+    """ Main entry point
     """
     parser=OptionParser(usage)
 
@@ -60,6 +70,7 @@ def main():
     cmd = Command()
     
     try:
+        # DISPATCH COMMAND
         ret = getattr(cmd, fun)()
     except:
         parser.error("invalid command")
