@@ -53,10 +53,12 @@
 		 loop/0,
 		 rpc/1,
 		 spublish/1,
-		 spublish/2,		 
+		 spublish/2,
+		 		 
 		 add_client/2,
 		 add_client/3,
-		 add_client/4,
+		 add_client_to_lists/3,
+		 
 		 remove_client/2,
 		 ssend/2
 		 ]).
@@ -77,7 +79,7 @@
 %%       Msgtype = atom()
 subscribe(Client, Msgtype) when is_atom(Msgtype) ->
 	Ret = rpc({subscribe, Client, Msgtype}),
-	base:ilog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
+	%%base:ilog(?MODULE, "subscribe: Client[~p] Msgtype[~p] Ret[~p]~n", [Client, Msgtype, Ret]),
 	Ret;
 
 %% @spec subscribe(Client, Subs::List) -> ok || error
@@ -260,6 +262,7 @@ loop() ->
 %% SUBSCRIBE/UNSUBSCRIBE HELPERS
 %% =======================================================================================
 
+%% Empty list / Finished list
 add_client(_Client, []) ->
 	ok;
 
@@ -271,36 +274,7 @@ add_client(Client, Msgtype) when is_atom(Msgtype) ->
 %% ==========================
 add_client(Client, Subs) ->
 	[Head|Tail] = Subs,
-	List=get({msgtype, Head}),
-	add_client(List, Client, Head, Tail).
-
-
-%% Only one Msgtype for Client...
-%% Generate notification
-add_client(undefined, Client, HMsgtype, []) ->
-	NewList= [Client],
-	put({msgtype, HMsgtype}, NewList),
-	Client ! {from_reflector, subscribed},
-	ok;
-
-add_client(undefined, Client, HMsgtype, TMsgtype) ->
-	NewList= [Client],
-	put({msgtype, HMsgtype}, NewList),
-	[NewHead, NewTail] = TMsgtype,
-	add_client(NewList, Client, NewHead, NewTail);
-
-%% Last entry in the list...
-%% Time to notify the client that its subs are done
-add_client(Liste, Client, HMsgtype, []) ->
-	add_client(Liste, Client, HMsgtype),
-	Client ! {from_reflector, subscribed},
-	ok;
-	
-
-add_client(Liste, Client, HMsgtype, TMsgtype) ->
-	[NewHead, NewTail] = TMsgtype,
-	add_client(Liste, Client, HMsgtype),
-	add_client(Liste, Client, NewHead, NewTail).
+	add_client_to_lists(Client, Head, Tail).
 
 
 %no Client yet for Msgtype
@@ -321,8 +295,25 @@ add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
 	put({msgtype, Msgtype}, New_liste),
 
 	%% Successful subscription
-	Client ! {from_reflector, subscribed, Msgtype},
+	Client ! {from_reflector, subscribed},
 	ok.
+
+
+add_client_to_lists(Client, HMsgType, []) ->
+	add_client(Client, HMsgType),
+	Client ! {from_reflector, subscribed};
+	
+	
+add_client_to_lists(Client, HMsgType, TMsgType) ->
+	base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
+	[NewHead, NewTail] = TMsgType,
+	base:ilog(?MODULE, "add_client_to_lists: Client[~p] NewHead[~p] NewTail[~p]~n",[Client, NewHead, NewTail]),
+	List=get({msgtype, HMsgType}),
+	add_client(List, Client, HMsgType),
+	add_client_to_lists(Client, NewHead, NewTail).
+	
+
+
 
 
 
