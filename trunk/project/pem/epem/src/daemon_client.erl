@@ -92,6 +92,7 @@ loop_connection() ->
 		%% We are subscribed... final sync to the root proc
 		{from_reflector, subscribed} ->
 			RootProc=get(root_proc),
+			%%base:send_on_count(RootProc, Msg, CountVar, TargetCount)
 			base:send_synced_signal(daemon_client, RootProc),
 			ok;
 		
@@ -129,9 +130,9 @@ loop_connection() ->
 			put(socket, undefined),
 			reflector:send_sync(daemon_client, management, closed, ?SUBS)			
 		
-	after ?TIMEOUT ->
+	%%after ?TIMEOUT ->
 			
-		reflector:sync_to_reflector(?SUBS)
+		%%reflector:sync_to_reflector(?SUBS)
 		
 	end,
 	loop_connection().

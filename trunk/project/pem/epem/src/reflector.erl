@@ -56,7 +56,7 @@
 		 spublish/2,
 		 		 
 		 add_client/2,
-		 add_client/3,
+		 do_add_client/3,
 		 add_client_to_lists/3,
 		 
 		 remove_client/2,
@@ -164,7 +164,7 @@ sync_to_reflector(Old, Current, _Subs) when Old == Current ->
 	ok;
 
 sync_to_reflector(Old, Current, Subs) when Old /= Current ->
-	base:ilog(?MODULE, "sync_to_reflector: Old[~p] Current[~p] Subs[~p]~n", [Old, Current, Subs]),
+	%%base:ilog(?MODULE, "sync_to_reflector: Old[~p] Current[~p] Subs[~p]~n", [Old, Current, Subs]),
 	put(reflector_pid, Current),
 	subscribe(self(), Subs).
 	
@@ -262,13 +262,18 @@ loop() ->
 %% SUBSCRIBE/UNSUBSCRIBE HELPERS
 %% =======================================================================================
 
+add_client(_Client, undefined) ->
+	ok;
+
 %% Empty list / Finished list
 add_client(_Client, []) ->
 	ok;
 
 add_client(Client, Msgtype) when is_atom(Msgtype) ->
 	Liste = get({msgtype,Msgtype}),
-	add_client(Liste, Client, Msgtype);
+	do_add_client(Liste, Client, Msgtype),
+	Client ! {from_reflector, subscribed};
+
 
 %% For a list of subscription 
 %% ==========================
@@ -277,41 +282,41 @@ add_client(Client, Subs) ->
 	add_client_to_lists(Client, Head, Tail).
 
 
+
+%% Last one to add...
+add_client_to_lists(Client, HMsgType, []) ->
+	List=get({msgtype, HMsgType}),
+	do_add_client(List, Client, HMsgType),
+	Client ! {from_reflector, subscribed};
+	
+
+%% Add one at a time
+add_client_to_lists(Client, HMsgType, TMsgType) ->
+	%%base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
+	[NewHead|NewTail] = TMsgType,
+	List=get({msgtype, HMsgType}),
+	do_add_client(List, Client, HMsgType),
+	add_client_to_lists(Client, NewHead, NewTail).
+	
+
+%% >>3<<
+
 %no Client yet for Msgtype
-add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
+do_add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
 	New_liste = [Client],
 	put({msgtype,Msgtype}, New_liste),
-	
-	%% Successful subscription
-	Client ! {from_reflector, subscribed},
 	ok;
 
-add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
+do_add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
 	
 	% we do not want duplicates
 	Filtered_liste = Liste -- [Client],
 	
 	New_liste = Filtered_liste ++ [Client],
 	put({msgtype, Msgtype}, New_liste),
-
-	%% Successful subscription
-	Client ! {from_reflector, subscribed},
 	ok.
 
 
-add_client_to_lists(Client, HMsgType, []) ->
-	add_client(Client, HMsgType),
-	Client ! {from_reflector, subscribed};
-	
-
-	
-add_client_to_lists(Client, HMsgType, TMsgType) ->
-	%%base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
-	[NewHead|NewTail] = TMsgType,
-	List=get({msgtype, HMsgType}),
-	add_client(List, Client, HMsgType),
-	add_client_to_lists(Client, NewHead, NewTail).
-	
 
 
 
