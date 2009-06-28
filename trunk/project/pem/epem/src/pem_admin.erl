@@ -112,11 +112,15 @@ loop() ->
 			%%reflector:sync_to_reflector(?SUBS)
 
 		synced ->
+			base:send_to_list(modules_ready, mods_ready),
 			hevent(synced);
 		
 		{ready, From, ready} ->
 			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
 			put({ready, From}, true),
+			
+			%% keep track of modules ready
+			base:add_to_list(modules_ready, From),
 			hevent({ready, From});
 		
 		stop ->

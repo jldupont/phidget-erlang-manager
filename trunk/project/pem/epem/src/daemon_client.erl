@@ -81,6 +81,11 @@ loop_connection() ->
 			base:send_ready_signal(daemon_client, Recipient, Msg),
 			reflector:sync_to_reflector(?SUBS);
 
+		%% All modules are ready... let's sync
+		%% to the Reflector
+		mods_ready ->
+			ok;
+		
 		{management_port, Port} ->
 			put(management_port, Port);
 		
