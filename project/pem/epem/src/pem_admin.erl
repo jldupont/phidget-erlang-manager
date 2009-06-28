@@ -234,7 +234,7 @@ hcevent(start, tryconnect, {management, open}) ->
 	ok;
 
 hcevent(start, wait_pid, {management, {txerror, _}}) ->
-	io:format("communication error to daemon~n"),
+	%%io:format("communication error to daemon~n"),
 	halt(?COMMERROR);
 
 %% Message was sent ok... wait for a reply
@@ -244,11 +244,11 @@ hcevent(start, wait_pid, {management, {txok, _}}) ->
 %% We received a pid from the daemon... this means
 %% one is (probably) running -> we can't start another one!
 hcevent(start, wait_pid, {from_daemon, {pid, Pid}}) ->
-	io:format("daemon already running, Pid[~p]~n", [Pid]),
+	%%io:format("daemon already running, Pid[~p]~n", [Pid]),
 	halt(?DAEMON_PRESENT);	
 
 hcevent(start, tryconnect, {management, _Other}) ->
-	io:format("communication error to daemon~n"),
+	%%io:format("communication error to daemon~n"),
 	halt(?COMMERROR);
 
 
@@ -268,15 +268,15 @@ hcevent(stop, tryconnect, {management, open}) ->
 	ok;
 
 hcevent(stop, tryconnect, {management, {txok, _}}) ->
-	io:format("stop command sent~n"),
+	%%io:format("stop command sent~n"),
 	halt(?STOPSENT);
 
 hcevent(stop, tryconnect, {management, _Other}) ->
-	io:format("no daemon found~n"),
+	%%io:format("no daemon found~n"),
 	halt(?NODAEMON);
 
 hcevent(Cmd, State, Event) ->
-	io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
+	%%io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
 	halt(?EUNKNOWN).
 
 
