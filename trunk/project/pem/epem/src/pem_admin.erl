@@ -123,6 +123,9 @@ loop() ->
 			hevent(modules_synced);
 		
 		%% Accumulate modules ready
+		%% In Step #1, a module sends the following message
+		%% once it is ready to process more messages ie.
+		%% its message loop is ready.
 		{ready, From, ready} ->
 			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
 			put({ready, From}, true),
@@ -132,6 +135,8 @@ loop() ->
 			hevent({ready, From});
 		
 		%% Accumulate modules synced
+		%% In Step #2, a module sends the following message
+		%% once it is synced to the Reflector
 		{synced, From} ->
 			base:ilog(?MODULE, "module [~p] is synced~n", [From]),
 			put({synced, From}, true),
@@ -177,14 +182,6 @@ hcevent(_, _, {ready, _From}) ->
 			gevent(modules_ready)
 	end;
 
-
-	
-%% Try to start a daemon
-%%      Cmd, State, Event
-hcevent(_,   _,     modules_ready) ->
-	ok;
-
-
 hcevent(_, _, {synced, _From}) ->
 	Count = base:pvadd(modules_synced, 1),
 	case Count of
@@ -192,9 +189,17 @@ hcevent(_, _, {synced, _From}) ->
 			put(state, modules_synced),
 			gevent(modules_synced)
 	end;
-	
 
-hcevent(_  , _    , synced) ->
+
+	
+%% Try to start a daemon
+%%      Cmd, State, Event
+hcevent(_,   _,     modules_ready) ->
+	gevent( modules_ready ),
+	ok;
+
+
+hcevent(_  , _    , modules_synced) ->
 	Port=base:getport(),
 	put(state, synced),
 	gevent( {port, Port} );	

@@ -385,9 +385,9 @@ add_to_list(List, Element) ->
 add_to_list(undefined, List, Element) ->
 	put(List, [Element]);
 
-add_to_list(ListVar, Liste, Element) ->
-	NewList = Liste ++ [Element],
-	put(ListVar, NewList).
+add_to_list(ListVar, List, Element) ->
+	NewList = ListVar ++ [Element],
+	put(List, NewList).
 
 
 
