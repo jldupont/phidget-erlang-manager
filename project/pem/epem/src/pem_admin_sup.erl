@@ -13,15 +13,15 @@
 %% --------------------------------------------------------------------
 -export([
 	 init/1,
-	 start_link/0
+	 start_link/1
         ]).
 
 %% ====================================================================
 %% Server functions
 %% ====================================================================
-start_link() ->
+start_link({Recipient, Msg}) ->
 	process_flag(trap_exit,true),
-	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+	supervisor:start_link({local, ?MODULE}, ?MODULE, [{Recipient, Msg}]).
 
 
 %% --------------------------------------------------------------------
@@ -30,12 +30,12 @@ start_link() ->
 %%          ignore                          |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-init([]) ->
+init([Params]) ->
 	
-    Child_reflector = {reflector,{reflector,start_link,[]},
+    Child_reflector = {reflector,{reflector,start_link,[Params]},
 	      permanent,2000,worker,[reflector]},
 
-    Child_client = {daemon_client,{daemon_client,start_link,[]},
+    Child_client = {daemon_client,{daemon_client,start_link,[Params]},
 	      permanent,2000,worker,[daemon_client]},
 	
 	

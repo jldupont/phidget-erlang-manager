@@ -35,7 +35,8 @@
 		 join/1,
 		 join/2,
 		 add/2,
-		 pvadd/2
+		 pvadd/2,
+		 send_ready_signal/3
 		 ]).
 
 -export([
@@ -348,3 +349,11 @@ extract_port(Terms) ->
 saveport(Port) ->
 	base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
 	base:create_ctl_file([{port, Port}]).
+
+
+
+send_ready_signal(_From, undefined, _) ->
+	ok;	
+
+send_ready_signal(From, Recipient, Msg) ->
+	Recipient ! {sync, From, Msg}.
