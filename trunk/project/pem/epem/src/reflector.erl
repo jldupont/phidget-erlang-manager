@@ -303,11 +303,11 @@ add_client_to_lists(Client, HMsgType, []) ->
 	add_client(Client, HMsgType),
 	Client ! {from_reflector, subscribed};
 	
+
 	
 add_client_to_lists(Client, HMsgType, TMsgType) ->
 	base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
-	[NewHead, NewTail] = TMsgType,
-	base:ilog(?MODULE, "add_client_to_lists: Client[~p] NewHead[~p] NewTail[~p]~n",[Client, NewHead, NewTail]),
+	[NewHead|NewTail] = TMsgType,
 	List=get({msgtype, HMsgType}),
 	add_client(List, Client, HMsgType),
 	add_client_to_lists(Client, NewHead, NewTail).
