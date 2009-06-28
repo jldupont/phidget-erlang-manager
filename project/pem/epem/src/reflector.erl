@@ -15,7 +15,14 @@
 %%
 %% The format of the message sent to subscribers:
 %%
-%%  { MsgType, Msg } 
+%%  { MsgType, Msg }
+%%
+%% MESSAGES GENERATED:
+%% ===================
+%%
+%% Client ! {from_reflector, subscribed}
+%%
+%%
 
 -module(reflector).
 
@@ -49,6 +56,7 @@
 		 spublish/2,		 
 		 add_client/2,
 		 add_client/3,
+		 add_client/4,
 		 remove_client/2,
 		 ssend/2
 		 ]).
@@ -220,6 +228,11 @@ loop() ->
 		{sync, Recipient, Msg} ->
 			base:send_ready_signal(reflector, Recipient, Msg);
 		
+		%% The other modules will probably now
+		%% sync to the Reflector when this signal arrives
+		mods_ready ->
+			ok;
+		
 		{_From, {stop}} ->
 			base:elog(?MODULE, "received STOP~n"),
 			exit(self(), ok);
@@ -254,15 +267,49 @@ add_client(Client, Msgtype) when is_atom(Msgtype) ->
 	Liste = get({msgtype,Msgtype}),
 	add_client(Liste, Client, Msgtype);
 
+%% For a list of subscription 
+%% ==========================
 add_client(Client, Subs) ->
-	[Msgtype|Rest] = Subs,
-	add_client(Client, Msgtype),
-	add_client(Client, Rest).
+	[Head|Tail] = Subs,
+	List=get({msgtype, Head}),
+	add_client(List, Client, Head, Tail).
+
+
+%% Only one Msgtype for Client...
+%% Generate notification
+add_client(undefined, Client, HMsgtype, []) ->
+	NewList= [Client],
+	put({msgtype, HMsgtype}, NewList),
+	Client ! {from_reflector, subscribed},
+	ok;
+
+add_client(undefined, Client, HMsgtype, TMsgtype) ->
+	NewList= [Client],
+	put({msgtype, HMsgtype}, NewList),
+	[NewHead, NewTail] = TMsgtype,
+	add_client(NewList, Client, NewHead, NewTail);
+
+%% Last entry in the list...
+%% Time to notify the client that its subs are done
+add_client(Liste, Client, HMsgtype, []) ->
+	add_client(Liste, Client, HMsgtype),
+	Client ! {from_reflector, subscribed},
+	ok;
+	
+
+add_client(Liste, Client, HMsgtype, TMsgtype) ->
+	[NewHead, NewTail] = TMsgtype,
+	add_client(Liste, Client, HMsgtype),
+	add_client(Liste, Client, NewHead, NewTail).
+
 
 %no Client yet for Msgtype
 add_client(undefined, Client, Msgtype) when is_atom(Msgtype) ->
 	New_liste = [Client],
 	put({msgtype,Msgtype}, New_liste),
+	
+	%% Successful subscription
+	Client ! {from_reflector, subscribed},
 	ok;
 
 add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
@@ -272,6 +319,9 @@ add_client(Liste, Client, Msgtype) when is_atom(Msgtype) ->
 	
 	New_liste = Filtered_liste ++ [Client],
 	put({msgtype, Msgtype}, New_liste),
+
+	%% Successful subscription
+	Client ! {from_reflector, subscribed, Msgtype},
 	ok.
 
 

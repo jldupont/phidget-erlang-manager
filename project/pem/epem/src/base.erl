@@ -46,7 +46,11 @@
 		 ctl_file/1,
 		 getport/0,
 		 extract_port/1,
-		 saveport/1
+		 saveport/1,
+		 add_to_list/2,
+		 add_to_list/3,
+		 send_to_list/2
+		 
 		 ]).
 %%
 %% API Functions
@@ -357,3 +361,33 @@ send_ready_signal(_From, undefined, _) ->
 
 send_ready_signal(From, Recipient, Msg) ->
 	Recipient ! {ready, From, Msg}.
+
+
+
+
+add_to_list(List, Element) ->
+	ListVar=get(List),
+	add_to_list(ListVar, List, Element).
+
+%% First element in the List
+add_to_list(undefined, List, Element) ->
+	put(List, [Element]);
+
+add_to_list(ListVar, Liste, Element) ->
+	NewList = Liste ++ [Element],
+	put(ListVar, NewList).
+
+
+
+send_to_list(ListName, Msg) when is_atom(ListName) ->
+	List = get(ListName),
+	send_to_list(List, Msg);
+
+send_to_list([], _Msg) ->
+	ok;
+
+send_to_list(List, Msg) ->
+	[Current|Rest] = List,
+	Current ! Msg,
+	send_to_list(Rest, Msg).
+
