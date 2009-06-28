@@ -22,35 +22,43 @@ usage = \
 class Command(object):
     """ Communicates Command to the PEM daemon
     """
-    erlcmd = "erl -noshell -pa ./ebin -s pem_admin start %s"
+    erladmincmd  = "erl -noshell -pa ./ebin -s pem_admin start %s"
+    erldaemoncmd = "erl -noshell -boot start_sasl -config elog.config -pa ./ebin -s pem_app"
     
-    codes = {   0:{m:"cannot start"            },
-                1:{m:"stop sent"               },
-                2:{m:"unknown command"         },
-                3:{m:"cannot stop"             },
-                4:{m:"communication error"     },
-                5:{m:"daemon present"          },
-                6:{m:"no daemon"               },
-                10:{m:"unknown error"          }
+    codes = {   0: {"m":"cannot start",         "start":False,   "stop":True     },
+                1: {"m":"stop sent",            "start":False,   "stop":True     },
+                2: {"m":"unknown command",      "start":False,   "stop":False    },
+                3: {"m":"cannot stop",          "start":True,    "stop":False    },
+                4: {"m":"communication error",  "start":True,    "stop":False    },
+                5: {"m":"daemon present",       "start":False,   "stop":True     },
+                6: {"m":"no daemon",            "start":True,    "stop":False    },
+                10:{"m":"unknown error",        "start":False,   "stop":False    }
              }
     
-    def erl(self, cmd):
+    def erladmin(self, cmd):
         """Executes the Erlang administration program for PEM
         """
-        proc = subprocess.Popen(erlcmd % cmd, shell=True)
+        proc = subprocess.Popen(self.erladmincmd % cmd, shell=True)
         return proc.wait()
     
     def cmd_start(self):
         """
         """
-        print "start!"
-        return 0
+        ret = self.erladmin("start")
+        action = self.lookup("start", ret)
+        return ret
         
     def cmd_stop(self):
         """
         """
-        print "stop!"
-        return 0
+        ret = self.erladmin("stop")
+        action = self.lookup("start", ret)
+        return ret
+    
+    def lookup(self, context, retcode):
+        state=self.codes.get(retcode, 10)
+        return state[context]
+        
     
 
 def main():
@@ -70,12 +78,18 @@ def main():
     cmd = Command()
     
     try:
-        # DISPATCH COMMAND
-        ret = getattr(cmd, fun)()
+        func = getattr(cmd, fun)
     except:
         parser.error("invalid command")
         sys.exit(1)
+
+    try:
+        ret = func()
+    except Exception,e:
+        print "Error in command [%s]" % (str(e))
+        sys.exit(1)
         
+    print ret
     sys.exit(ret)
     
 
