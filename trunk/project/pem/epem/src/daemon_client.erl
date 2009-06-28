@@ -54,7 +54,7 @@ start_link()->
 	Pid = spawn_link(?MODULE, loop_connection, []),
 	register(daemon_client, Pid),
 	?MODULE ! {sync,undefined, undefined},
-	base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
+	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
 %% Once started, sends Msg to Recipient
@@ -62,7 +62,7 @@ start_link({Recipient, Msg}) ->
 	Pid = spawn_link(?MODULE, loop_connection, []),
 	register(daemon_client, Pid),
 	?MODULE ! {sync,Recipient, Msg},
-	base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
+	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
 stop() ->

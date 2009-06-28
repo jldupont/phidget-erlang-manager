@@ -126,7 +126,7 @@ loop() ->
 		%% Step #3
 		modules_synced ->
 			%%base:send_to_list(modules_synced, mods_synced),
-			base:ilog(?MODULE, "modules sync'ed [~p]~n",[get(modules_synced)]),
+			%%base:ilog(?MODULE, "modules sync'ed [~p]~n",[get(modules_synced)]),
 			hevent(modules_synced);
 		
 		%% Accumulate modules ready
@@ -134,7 +134,7 @@ loop() ->
 		%% once it is ready to process more messages ie.
 		%% its message loop is ready.
 		{ready, From, ready} ->
-			base:ilog(?MODULE, "module [~p] is ready~n", [From]),
+			%%base:ilog(?MODULE, "module [~p] is ready~n", [From]),
 			put({ready, From}, true),
 			
 			%% keep track of modules ready
@@ -145,7 +145,7 @@ loop() ->
 		%% In Step #2, a module sends the following message
 		%% once it is synced to the Reflector
 		{synced, From} ->
-			base:ilog(?MODULE, "module [~p] is synced~n", [From]),
+			%%base:ilog(?MODULE, "module [~p] is synced~n", [From]),
 			put({synced, From}, true),
 			
 			%% keep track of modules synced
@@ -217,9 +217,9 @@ hcevent(_  , _    , modules_synced) ->
 
 %% We've got a valid port... let's try to connect
 hcevent(_, synced, {port, {port, Port}} ) ->
-	put(state, try_connect),
+	put(state, tryconnect),
 	reflector:send(pem_admin, management_port, Port),
-	reflector:send(pem_admin, client, connect),
+	reflector:send(pem_admin, client, doconnect),
 	ok;
 
 %% Can't get a port... no daemon (probably)
