@@ -105,6 +105,11 @@ hevent(E) ->
 loop() ->
 	receive
 		
+		%% We don't really need the feedback...
+		%% Just suppress it.
+		{from_reflector, subscribed} ->
+			ok;
+		
 		%% Step #1
 		{run, Cmd} ->
 			put(cmd, Cmd),
@@ -173,7 +178,7 @@ loop() ->
 
 
 hcevent(_, _, {ready, _From}) ->
-	Count = base:pvadd(module_synced, 1),
+	Count = base:pvadd(count_modules_ready, 1),
 	case Count of
 		1 ->
 			ok;
@@ -183,7 +188,7 @@ hcevent(_, _, {ready, _From}) ->
 	end;
 
 hcevent(_, _, {synced, _From}) ->
-	Count = base:pvadd(modules_synced, 1),
+	Count = base:pvadd(count_modules_synced, 1),
 	case Count of
 		1 ->
 			put(state, modules_synced),

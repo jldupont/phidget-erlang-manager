@@ -88,7 +88,7 @@ subscribe(Client, Msgtype) when is_atom(Msgtype) ->
 %%       Item = atom()
 subscribe(Client, Subs) ->
 	Ret = rpc({subscribe, Client, Subs}),
-	base:ilog(?MODULE, "subscribe: Client[~p] Subs[~p] Ret[~p]~n", [Client, Subs, Ret]),
+	%%base:ilog(?MODULE, "subscribe: Client[~p] Subs[~p] Ret[~p]~n", [Client, Subs, Ret]),
 	Ret.
 
 
@@ -306,7 +306,7 @@ add_client_to_lists(Client, HMsgType, []) ->
 
 	
 add_client_to_lists(Client, HMsgType, TMsgType) ->
-	base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
+	%%base:ilog(?MODULE, "add_client_to_lists: Client[~p] HMsgType[~p] TMsgType[~p]~n",[Client, HMsgType, TMsgType]),
 	[NewHead|NewTail] = TMsgType,
 	List=get({msgtype, HMsgType}),
 	add_client(List, Client, HMsgType),
