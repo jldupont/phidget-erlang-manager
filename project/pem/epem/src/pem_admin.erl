@@ -118,13 +118,15 @@ loop() ->
 
 		%% Step #2
 		modules_ready ->
+			%%base:ilog(?MODULE, "modules ready~n",[]),
 			reflector:sync_to_reflector(?SUBS),
 			base:send_to_list(modules_ready, mods_ready),
 			hevent(modules_ready);
 		
 		%% Step #3
 		modules_synced ->
-			base:send_to_list(modules_synced, mods_synced),
+			%%base:send_to_list(modules_synced, mods_synced),
+			base:ilog(?MODULE, "modules sync'ed [~p]~n",[get(modules_synced)]),
 			hevent(modules_synced);
 		
 		%% Accumulate modules ready
@@ -169,9 +171,9 @@ loop() ->
 			io:format("something is wrong... unhandled event[~p]~n", [Other])
 	
 	
-	after ?TIMEOUT ->
+	%%after ?TIMEOUT ->
 			
-		reflector:sync_to_reflector(?SUBS)
+		%%reflector:sync_to_reflector(?SUBS)
 	
 	end,	
 	loop().
@@ -184,7 +186,9 @@ hcevent(_, _, {ready, _From}) ->
 			ok;
 		2 ->
 			put(state, modules_ready),
-			gevent(modules_ready)
+			gevent(modules_ready);
+		_ ->
+			ok
 	end;
 
 hcevent(_, _, {synced, _From}) ->
@@ -192,7 +196,9 @@ hcevent(_, _, {synced, _From}) ->
 	case Count of
 		1 ->
 			put(state, modules_synced),
-			gevent(modules_synced)
+			gevent(modules_synced);
+		_ ->
+			 ok
 	end;
 
 

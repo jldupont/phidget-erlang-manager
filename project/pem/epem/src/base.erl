@@ -51,7 +51,12 @@
 		 add_to_list/2,
 		 add_to_list/3,
 		 send_to_list/2
-		 
+		 ]).
+
+-export([
+		 send_on_count/4,
+		 getvar/2,
+		 getvar/3
 		 ]).
 %%
 %% API Functions
@@ -403,3 +408,31 @@ send_to_list(List, Msg) ->
 	Current ! Msg,
 	send_to_list(Rest, Msg).
 
+
+
+getvar(VarName, Default) ->
+	VarValue=get(VarName),
+	getvar(VarName, VarValue, Default).
+
+getvar(VarName, undefined, Default) ->
+	put(VarName, Default),
+	Default;
+
+getvar(_VarName, VarValue, _Default) ->
+	VarValue.
+
+
+
+send_on_count(Recipient, Msg, CountVar, TargetCount) ->
+	CurrentCount=getvar(CountVar, 0),
+	case CurrentCount of
+		TargetCount ->
+			Recipient ! Msg,
+			{ok, sent};
+		_ ->
+			base:pvadd(CountVar, 1),
+			ok
+	end.
+	
+												   
+	
