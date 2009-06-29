@@ -4,7 +4,7 @@
 %%%
 %%% Created : 2009-06-22
 %%% -------------------------------------------------------------------
--module(pem_sup).
+-module(pem_admin_sup).
 
 -behaviour(supervisor).
 
@@ -19,35 +19,26 @@
 %% ====================================================================
 %% Server functions
 %% ====================================================================
-start_link(Args) ->
+start_link({Recipient, Msg}) ->
 	process_flag(trap_exit,true),
-	supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
+	supervisor:start_link({local, ?MODULE}, ?MODULE, [{Recipient, Msg}]).
+
 
 %% --------------------------------------------------------------------
-%% Func: init/1
+%% Func: init/0
 %% Returns: {ok,  {SupFlags,  [ChildSpec]}} |
 %%          ignore                          |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-init(Args) ->
+init([Params]) ->
 	
-    Child_reflector = {reflector,{reflector,start_link,[Args]},
+    Child_reflector = {reflector,{reflector,start_link,[Params]},
 	      permanent,2000,worker,[reflector]},
 
-    Child_journal = {journal,{journal,start_link,[Args]},
-	      permanent,2000,worker,[journal]},
-
-    Child_control = {daemon_ctl,{daemon_ctl,start_link,[Args]},
-	      permanent,2000,worker,[daemon_ctl]},
-
-    Child_manager = {manager,{manager,start_link,[Args]},
-	      permanent,2000,worker,[manager]},
-
-    Child_ifk = {ifk,{ifk,start_link,[Args]},
-	      permanent,2000,worker,[ifk]},
+    Child_client = {daemon_client,{daemon_client,start_link,[Params]},
+	      permanent,2000,worker,[daemon_client]},
+	
 	
     {ok,{{one_for_one,5,1}, [Child_reflector,
-							 Child_control,
-							 Child_journal,
-							 Child_manager, 
-							 Child_ifk]}}.
+							 Child_client
+							 ]}}.
