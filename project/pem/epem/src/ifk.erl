@@ -85,6 +85,9 @@ stop() ->
 %% =====================================================
 loop() ->
 	receive
+		{from_reflector, subscribed} ->
+			ok;
+		
 		{driver_path, DriverPath} ->
 			put(driver_path, DriverPath);
 		

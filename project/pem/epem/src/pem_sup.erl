@@ -38,6 +38,9 @@ init(Args) ->
     Child_journal = {journal,{journal,start_link,[]},
 	      permanent,2000,worker,[journal]},
 
+    Child_control = {daemon_ctl,{daemon_ctl,start_link,[]},
+	      permanent,2000,worker,[daemon_ctl]},
+
     Child_manager = {manager,{manager,start_link,[Debug]},
 	      permanent,2000,worker,[manager]},
 
@@ -45,6 +48,7 @@ init(Args) ->
 	      permanent,2000,worker,[ifk]},
 	
     {ok,{{one_for_one,5,1}, [Child_reflector,
+							 Child_control,
 							 Child_journal,
 							 Child_manager, 
 							 Child_ifk]}}.

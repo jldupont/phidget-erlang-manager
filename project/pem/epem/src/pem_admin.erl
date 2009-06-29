@@ -243,7 +243,7 @@ hcevent(start, wait_pid, {management, {txok, _}}) ->
 
 %% We received a pid from the daemon... this means
 %% one is (probably) running -> we can't start another one!
-hcevent(start, wait_pid, {from_daemon, {pid, Pid}}) ->
+hcevent(start, wait_pid, {from_daemon, {pid, _Pid}}) ->
 	%%io:format("daemon already running, Pid[~p]~n", [Pid]),
 	halt(?DAEMON_PRESENT);	
 
@@ -275,7 +275,7 @@ hcevent(stop, tryconnect, {management, _Other}) ->
 	%%io:format("no daemon found~n"),
 	halt(?NODAEMON);
 
-hcevent(Cmd, State, Event) ->
+hcevent(_Cmd, _State, _Event) ->
 	%%io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
 	halt(?EUNKNOWN).
 

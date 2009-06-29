@@ -337,7 +337,7 @@ remove_client(Client, Msgtype) ->
 %% =======================================================================================
 
 spublish(M) ->
-	{From, MsgType, Msg} = M,
+	{_From, MsgType, _Msg} = M,
 	%%base:ilog(?MODULE, "spublish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),	
 	To = get({msgtype, MsgType}),
 	spublish(To, M).
@@ -353,7 +353,7 @@ spublish(undefined, _M) ->
 	ok;
 
 spublish(To, M) ->
-	{From, MsgType, Msg} = M,
+	{_From, MsgType, Msg} = M,
 	[Current|Rest] = To,
 	
 	%%base:ilog(?MODULE, "spublish: Sending From[~p] To[~p] MsgType[~p] Msg[~p]~n", [From, To, MsgType, Msg]),

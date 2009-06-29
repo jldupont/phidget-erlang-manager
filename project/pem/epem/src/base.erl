@@ -41,6 +41,11 @@
 		 ]).
 
 -export([
+		 kfind/2,
+		 key_present/2
+		 ]).
+
+-export([
 		 do_create_ctl_file/2,
 		 tmpdir/0,
 		 id_dir/1,
@@ -74,28 +79,25 @@ elog(M, X,Y) ->
 ilog(M, X,Y) ->
 	error_logger:info_msg("~p: "++X, [M|Y]).
 
-%% Verifies if an ATOM(debug) is present in Args
-%% The paramter Args can either be a single ATOM
-%% or a list
+
+
+key_present(Key, List) ->
+	case base:kfind(Key, List) of
+		{Key, Value} ->
+			Value;
+		_ ->
+			false
+	end.
+
+
+
 is_debug(Args) ->
-	case is_list(Args) of
-		true ->
-			Dbg = Args--[debug],
-			case Dbg of
-				debug ->
-					Debug = true;
-				_ ->
-					Debug = false
-			end;
-		false ->
-			case Args of
-				debug ->
-					Debug = true;
-				_ ->
-					Debug = false
-			end
-	end,
-	Debug.
+	case base:kfind(debug, Args) of
+		{debug, Value} ->
+			Value;
+		_ ->
+			false
+	end.
 
 
 home() ->
@@ -355,6 +357,27 @@ extract_port(Terms) ->
 					error
 			end
 	end.
+
+
+
+kfind(_Key, []) ->
+	error;
+
+%% Searches through a list for a Key
+kfind(Key, List) ->
+	case erlang:is_builtin(lists, keyfind, 3) of
+		true  ->
+			lists:keyfind(Key,1,List);
+		false ->
+			case lists:keysearch(Key,1,List) of
+				{value, Value} ->
+					Value;
+				_ ->
+					error
+			end
+	end.
+	
+
 
 
 %% Save the used by this daemon

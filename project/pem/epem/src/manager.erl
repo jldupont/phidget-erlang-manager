@@ -91,6 +91,9 @@ mng_drv(ExtPrg) ->
 loop() ->
 	receive
 		
+		{from_reflector, subscribed} ->
+			ok;
+		
 		%% Only start when we are actually in daemon mode
 		{daemonized, _} ->
 			DrvPath=get(driver_path),
