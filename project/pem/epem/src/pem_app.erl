@@ -2,41 +2,16 @@
 %% Created: 2009-06-22
 %% Description: TODO: Add description to pem
 %%
-%% API:
+%% Duties:
+%% =======
 %%
-%%   start()            -> starts daemon
-%%   start(debug)       -> starts daemon
-%%   start(debug,start) -> starts daemon
-%%
-%%   start(debug,stop)  -> stops daemon
-%%   start(stop)        -> stops daemon
-%%
-%%
-%% MESSAGES GENERATED:
-%% ===================
-%%
-%% daemonized
+%% - Start Supervisor tree
+%% - Start Daemon
+%% - Act a Message Switch
+%%   - support subscribe / unsubscribe
+%% - Stop Daemon on command from pem_admin
 %%
 %%
-%% SUBSCRIPTIONS:
-%% ==============
-%%
-%% {control, canstart}
-%% {control, daemon_not_found}
-%% {daemon_pid, Pid}
-%%
-%%
-%% Contexts:
-%% 
-%%  - Client (for managing a running daemon)
-%%  - Daemon (a running daemon)
-%%
-%% States:
-%% 
-%%  - Client
-%%    * try_start:  trying to start a daemon
-%%    * try_stop:   trying to stop a running daemon
-%%    
 %%
 -module(pem_app).
 
@@ -45,15 +20,32 @@
 -define(SUBS, [control, daemon_pid, daemon_exit]).
 
 %% --------------------------------------------------------------------
-%% Behavioural exports
+%% COMMAND LINE API
 %% --------------------------------------------------------------------
 -export([
-	 stop/0,
-	 start/0,
-	 start/1,
-	 loop/0,
-	 loop_main/0
+		 start/0,
+		 start/1
+		 ]).
+
+%% --------------------------------------------------------------------
+%% DEBUG API
+%% --------------------------------------------------------------------
+-export([
+	 stop/0
         ]).
+
+%% --------------------------------------------------------------------
+%% INTERNAL API
+%% --------------------------------------------------------------------
+
+
+%% --------------------------------------------------------------------
+%% INTERNAL FUNCTIONS
+%% --------------------------------------------------------------------
+-export([
+	 loop/0
+        ]).
+
 
 -export([
 		 start_daemon/1
@@ -86,11 +78,9 @@ start_daemon(Args) ->
 	Args2=lists:append(Args, [{root, Pid}]),
 	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Args2]),
 	put(args, Args2),	
-	put(context, client),
-	Pid ! {start_daemon, Args2},
+	?MODULE ! {args, Args2},
 	{ok, Pid}.
 
-	
 
 %% --------------------------------------------------------------------
 %% Func: stop/1
@@ -106,58 +96,21 @@ stop() ->
 
 loop() ->
 	receive
+		{args, Args} ->
+			put(args, Args),
+			pem_sup:start_link(Args);
 		
-		%% Try starting the daemon
-		{start_daemon, Args} ->
-			pem_sup:start_link(Args),
-			
-			reflector:sync_to_reflector(?SUBS),
-			put(state, try_start),
-			daemon_ctl:start_link(),
-			daemon_ctl:start_daemon(Args);
+		stop ->
+			base:ilog(?MODULE, "exiting~n", []),
+			halt();
 
-		{ready, From, Msg} ->
-			hevent({ready, From, Msg});
-
+		
+		
 		
 		Other->
 			base:elog(?MODULE, "received unknown message [~p]~n", [Other])
 
-	after ?TIMEOUT ->
-		 
-		reflector:sync_to_reflector(?SUBS)
-		
 	end,    %%loop
 	loop().
 
 
-hevent({ready, From, Msg}) ->
-	ok.
-
-
-
-%% Main loop - does not have
-%% a timer constraint -> less CPU overhead
-%%
-%% We need to respond to messages/commands sent
-%% from management Client.
-%%
-loop_main() ->
-	receive
-		
-		stop ->
-			base:ilog(?MODULE, "exiting~n", []),
-			exit(ok);
-		
-		{daemon_exit, Pid} ->
-			base:ilog(?MODULE, "exiting daemon, Pid[~p]~n", [Pid]);
-	
-		Other -> 
-			base:ilog(?MODULE, "received unexpected Message[~p]~n", [Other])
-	
-	after ?TIMEOUT ->
-			
-		reflector:sync_to_reflector(?SUBS)			
-	
-	end,
-	loop_main().
