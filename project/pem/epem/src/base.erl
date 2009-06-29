@@ -466,7 +466,7 @@ send_to_list(List, Msg) ->
 	send_to_list(Rest, Msg).
 
 
-
+%% @spec getvar(VarName, Default)
 getvar(VarName, Default) ->
 	VarValue=get(VarName),
 	getvar(VarName, VarValue, Default).
