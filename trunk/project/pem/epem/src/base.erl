@@ -57,6 +57,7 @@
 		 saveport/1,
 		 add_to_list/2,
 		 add_to_list/3,
+		 add_to_list_no_duplicates/2,
 		 send_to_list/2
 		 ]).
 
@@ -442,6 +443,14 @@ add_to_list(ListVar, List, Element) ->
 	NewList = ListVar ++ [Element],
 	put(List, NewList).
 
+
+add_to_list_no_duplicates(List, Element) ->
+	ListVar=base:getvar(List, []),
+	FilteredList = ListVar      -- [Element],
+	NewListe     = FilteredList ++ [Element],
+	put(List, NewListe).
+
+	
 
 
 send_to_list(ListName, Msg) when is_atom(ListName) ->
