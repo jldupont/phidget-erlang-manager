@@ -38,8 +38,8 @@ init(Args) ->
     Child_journal = {journal,{journal,start_link,[Args]},
 	      permanent,2000,worker,[journal]},
 
-%%    Child_control = {daemon_ctl,{daemon_ctl,start_link,[Args]},
-%%	      permanent,2000,worker,[daemon_ctl]},
+    Child_control = {daemon_ctl,{daemon_ctl,start_link,[Args]},
+	      permanent,2000,worker,[daemon_ctl]},
 
 %%    Child_manager = {manager,{manager,start_link,[Args]},
 %%	      permanent,2000,worker,[manager]},
@@ -51,6 +51,6 @@ init(Args) ->
 							 %%Child_manager, 
 							 %%Child_ifk,
 							 
-							 %%Child_control,
+							 Child_control,
 							 Child_journal
 							]}}.
