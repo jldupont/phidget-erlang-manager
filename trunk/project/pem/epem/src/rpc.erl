@@ -11,8 +11,8 @@
 %% Exported Functions
 %%
 -export([
-		 call/1,
-		 handlecb/2
+		 call/1
+
 		 ]).
 
 %%
@@ -30,10 +30,6 @@ call({Cmd, Cb, Args}) ->
 			error
 	end.
 
-
-
-handlecb(Client, Cb) ->
-	ok;
 
 
 %%

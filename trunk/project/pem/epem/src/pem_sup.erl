@@ -31,9 +31,6 @@ start_link(Args) ->
 %% --------------------------------------------------------------------
 init(Args) ->
 	
-    Child_reflector = {reflector,{reflector,start_link,[Args]},
-	      permanent,2000,worker,[reflector]},
-
     Child_journal = {journal,{journal,start_link,[Args]},
 	      permanent,2000,worker,[journal]},
 
@@ -46,7 +43,7 @@ init(Args) ->
     Child_ifk = {ifk,{ifk,start_link,[Args]},
 	      permanent,2000,worker,[ifk]},
 	
-    {ok,{{one_for_one,5,1}, [Child_reflector,
+    {ok,{{one_for_one,5,1}, [
 							 Child_control,
 							 Child_journal,
 							 Child_manager, 
