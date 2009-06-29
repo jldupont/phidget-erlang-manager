@@ -50,7 +50,7 @@
 -define(TIMEOUT, 2000).
 
 %% Reflector subscriptions
--define(SUBS, [assignedport, from_client]).
+-define(SUBS, [management_port, from_client]).
 
 
 %% =============================
@@ -109,13 +109,13 @@ loop() ->
 		%% Send the 'ready' signal
 		{switch, subscribed} ->
 			put(state, subscribed),
-			base:ilog(?MODULE, "subscribed~n",[]),
+			%%base:ilog(?MODULE, "subscribed~n",[]),
 			switch:publish(?MODULE, ready, self());
 		
 		
 		%% SAVE the assigned port to the CTL file
-		{assignedport, Port} ->
-			hevent({assignedport, Port});
+		{_From, management_port, Port} ->
+			hevent({management_port, Port});
 		
 		
 		{from_client, Msg} ->
@@ -132,19 +132,20 @@ loop() ->
 
 hevent(E) ->
 	State   = get(state),
-	base:ilog(?MODULE, "hevent: State[~p] Event[~p]~n",[State, E]),	
+	%%base:ilog(?MODULE, "hevent: State[~p] Event[~p]~n",[State, E]),	
 	hcevent(State, E).
 	
 
 %% DAEMON STARTED
 %% ==============
 
-hcevent(_, {assignedport, Port}) ->
-	do_save = fun(Porte) ->
+hcevent(_, {management_port, Port}) ->
+	DoSave = fun(Porte) ->
 					base:ilog(daemon_client, "saving port [~p] in CTL file~n", [Porte]),
-					base:saveport(Porte)
+					base:saveport(Porte),
+					put(management_port, Porte)
 			  end,
-	base:condexec(diff_value, assignedport, Port, do_save, Port);
+	base:condexec(diff_value, management_port, Port, DoSave, Port);
 
 
 %% The management client is asking us to exit daemon state...

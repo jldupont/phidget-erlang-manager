@@ -62,7 +62,7 @@ publish(From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
 
 to_switch(From, Cmd, Msg) ->
 	
-	base:ilog(?MODULE, "to_switch: From[~p] Cmd[~p] Msg[~p]~n", [From, Cmd, Msg]),
+	%%base:ilog(?MODULE, "to_switch: From[~p] Cmd[~p] Msg[~p]~n", [From, Cmd, Msg]),
 	try switch ! {From, Cmd, Msg} of
 		{From, Cmd, Msg} ->
 			ok;
@@ -127,8 +127,13 @@ add_type(Type) ->
 do_publish(From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
 	%%base:ilog(?MODULE,"do_publish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),
 	ToList = base:getvar({msgtype, MsgType}, []),
-	[To|Rest] = ToList,
-	do_publish_list(To, Rest, From, MsgType, Msg).
+	case ToList of
+		[] ->
+			ok;
+		_ ->
+		[To|Rest] = ToList,
+		do_publish_list(To, Rest, From, MsgType, Msg)
+	end.
 
 
 

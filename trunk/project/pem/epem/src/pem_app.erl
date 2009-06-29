@@ -139,7 +139,8 @@ loop() ->
 		
 
 		{From, ready, Pid} ->
-			base:ilog(?MODULE, "ready [~p][~p]~n", [From, Pid]);
+			ok;
+			%%base:ilog(?MODULE, "ready [~p][~p]~n", [From, Pid]);
 			
 		
 		

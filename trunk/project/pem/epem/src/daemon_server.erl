@@ -38,7 +38,7 @@
 
 -module(daemon_server).
 
--define(REFLECTOR_SYNC_TIMEOUT, 2000).
+-define(ASSIGNEDPORT_TIMEOUT, 2000).
 
 %% Reflector subscriptions
 %%  We just need to grab the messages destined
@@ -49,8 +49,8 @@
 %% Exported Functions
 %%
 -export([
-		 start/0,
 		 start_link/0,
+		 start_link/1,
 		 stop/0,
 		 send_message/2
 		]).
@@ -63,24 +63,20 @@
 		 loop_daemon/0,
 		 loop_socket/2,
 		 send_for_client/3,
-		 send_to_client/3,
-		 send_to_reflector/1
+		 send_to_client/3
 		 ]).
 
 
 %% ======================================================================
 %% API Functions
 %% ======================================================================
-start() ->
-	Pid = spawn(?MODULE, loop_daemon, []),
-	register(daemon_server, Pid),
-	start_socket(0), %% pick a socket
-	{ok, Pid}.
-	
-
 start_link() ->
+	start_link([]).
+
+start_link(Args) ->
 	Pid = spawn_link(?MODULE, loop_daemon, []),
 	register(daemon_server, Pid),
+	?MODULE ! {args, Args},
 	start_socket(0), %% pick a socket
 	{ok, Pid}.
 
@@ -99,25 +95,31 @@ send_message(MsgId, Msg) ->
 %% ======================================================================
 loop_daemon() ->  %%daemon_server loop
 	receive
-		{from_reflector, subscribed} ->
-			ok;
+		{args, Args} ->
+			put(args, Args),
+			switch:subscribe(daemon_server, ?SUBS);
+		
+		{switch, subscribed} ->
+			%%base:ilog(?MODULE, "subscribed~n",[]),
+			switch:publish(daemon_server, ready, self());
 		
 		stop ->
 			exit(ok);
 		
 		%% Status of transmission to client side
 		{tx_status, {info, Code, MsgId}} ->
-			send_to_reflector( {to_client_tx_status, {MsgId, Code} } );
+			switch:publish(?MODULE, to_client_tx_status, {MsgId, Code});
+
 		
 		%% The listen port could have been assigned
 		%% by the OS: we need to keep track of it
 		%% for managing the daemon through a management
 		%% client interface. 
 		
-		%% @TODO repeat... for daemon_ctl
 		{assignedport, Port} ->
 			put(assignedport, Port),
-			send_to_reflector({management_port, Port});
+			switch:publish(?MODULE, management_port, Port);
+
 		
 		%% message to send down the socket ... if any.
 		%% send to socket process for delivery
@@ -130,7 +132,8 @@ loop_daemon() ->  %%daemon_server loop
 		%% (from the Client side) and needs to be relayed.
 		%% The message is sent on the Reflector.
 		{from_client, Message} ->
-			send_to_reflector(Message);
+			switch:publish(?MODULE, from_client, Message);
+
 
 		
 		%% Need to track the socket process Pid in order
@@ -158,17 +161,14 @@ loop_daemon() ->  %%daemon_server loop
 	%% We always have to sync to the reflector;
 	%% we can't rely on the having to send stuff
 	%% to re-sync.
-	after ?REFLECTOR_SYNC_TIMEOUT ->
-			
-		reflector:sync_to_reflector(?SUBS)
+	after ?ASSIGNEDPORT_TIMEOUT ->
+
+		Port=get(assignedport),
+		switch:publish(?MODULE, management_port, Port)
 	
 	end,
 	loop_daemon().
 
-
-
-send_to_reflector(Message) ->
-	reflector:send_sync(daemon_server, from_client, Message, ?SUBS).
 
 
 
@@ -195,12 +195,14 @@ start_socket(Port) ->
 			AssignedPort = inet:port(LSocket),
 			daemon_server ! {lsocket, LSocket},
 
-			%%TODO check this: process_flag(trap_exit, true),
 			Pid = spawn_link(?MODULE, loop_socket, [AssignedPort, LSocket]),
 			register(daemon_socket, Pid),
 			
 			%% info back to the main loop 'daemon_server'
-			daemon_server ! {assignedport, AssignedPort},
+			{_, Porte} = AssignedPort,
+			base:ilog(?MODULE, "assignedport [~p]~n",[Porte]),
+			
+			daemon_server ! {assignedport, Porte},
 			daemon_server ! {daemon_socket_pid, Pid},
 			
 			%% Start accepting calls!

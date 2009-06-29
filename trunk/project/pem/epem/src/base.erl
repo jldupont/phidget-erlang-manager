@@ -504,19 +504,27 @@ condexec(Cond, VarName, Param, Fun, Args) ->
 		%% not hold the same value as Param
 		diff_value ->
 			Value = get(VarName),
+			
 			if
 				Value /= Param ->
-					apply(Fun, Args)			
+					Ret = erlang:apply(Fun, [Args]);
+				Value == Param ->
+					Ret = ok
 			end;
 		
 		equal_value ->
 			Value = get(VarName),
 			if
 				Value == Param ->
-					apply(Fun, Args)
+					Ret = erlang:apply(Fun, [Args]);
+				Value /= Param ->
+					Ret = ok
 			end;
 		
 		_ ->
-			{error, unknown_cond}
+			Ret = {error, unknown_cond}
 		
-	end.
+	end,
+	Ret.
+
+

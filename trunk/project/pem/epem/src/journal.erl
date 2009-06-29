@@ -69,7 +69,7 @@ loop() ->
 
 		%% Send the 'ready' signal
 		{switch, subscribed} ->
-			base:ilog(?MODULE, "subscribed~n",[]),
+			%%base:ilog(?MODULE, "subscribed~n",[]),
 			switch:publish(journal, ready, self());
 
 			
