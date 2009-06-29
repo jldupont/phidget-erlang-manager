@@ -67,7 +67,7 @@
 -export([
 		 loop/0,
 		 hevent/1,
-		 hcevent/3
+		 hcevent/2
 		 ]).
 
 %% =======================================
@@ -101,22 +101,29 @@ loop() ->
 	receive
 		%% Send the 'ready' signal
 		{args, Args} ->
+			put(state, started),
 			put(args, Args),
 			switch:subscribe(daemon_ctl, ?SUBS);
 
+		%% Send the 'ready' signal
+		{switch, subscribed} ->
+			put(state, subscribed),
+			base:ilog(?MODULE, "subscribed~n",[]),
+			switch:publish(?MODULE, ready, self());
+		
+		
 		%% SAVE the assigned port to the CTL file
 		{assignedport, Port} ->
-			base:saveport(Port);
+			put(state, assignedport),
+			base:saveport(Port),
+			hevent(assignedport);
 		
-		{switch, subscribed} ->
-			switch:publish(daemon_ctl, ready, self());
 		
 		{from_client, Msg} ->
+			hevent({from_client, Msg}),
 			ok;
-		
-		{daemonized} ->
-			hevent(daemonized);
-		
+
+
 		{management, Msg} ->
 			hevent({management, Msg});
 		
@@ -133,85 +140,36 @@ loop() ->
 
 
 hevent(E) ->
-	Context = get(context),
 	State   = get(state),
-	base:ilog(?MODULE, "hevent: Context[~p] State[~p]~n",[Context, State]),	
-	hcevent(Context, State, E).
+	base:ilog(?MODULE, "hevent: State[~p] Event[~p]~n",[State, E]),	
+	hcevent(State, E).
 	
 
 %% DAEMON STARTED
 %% ==============
 
-hcevent(_, daemonized) ->
-	put(context, daemon);
+hcevent(_, assignedport) ->
+	put(state, wait_command);
 
-
-
-%% Management channel found: ask for PID to running daemon
-hcevent(client, wait_management, start, {management, open}) ->
-	reflector:send_sync(self(), to_daemon, {asked_pid, what_pid}, ?SUBS),  %% {to_daemon, {asked_pid, what_pid}}
-	put(state, wait_pid);
-
-%% Couldn't reach a running daemon
-hcevent(client, wait_management, start, timeout) ->
-	put(state, daemon_not_found),
-	reflector:send_sync(self(), control, canstart, ?SUBS);           %% {control, canstart}
-
-%% We received a PID; that means that a daemon is effectively running
-%% and we can't be starting a new one!
-hcevent(client, wait_pid, start, {from_daemon, {pid, Pid}}) ->
-	put(state, daemon_present),
-	reflector:send_sync(self(), daemon_pid, Pid, ?SUBS);             %% {daemon_pid, Pid}
-	
-%% Timed-out whilst waiting for a PID from the daemon...
-%% assume the "best case" i.e. no daemon running
-hcevent(client, wait_pid, start, timeout) ->
-	put(state, daemon_not_found),
-	reflector:send_sync(self(), control, canstart, ?SUBS);           %% {control, canstart}
-
-%% Out "what_pid" was successfully sent... good
-hcevent(client, wait_pid, start, {management, {txok, _MsgId} }) ->
-	ok;
-
-%% Error in transmitting to daemon... assume "best case"
-hcevent(client, wait_pid, start, {management, {_, _MsgId} }) ->
-	put(state, daemon_not_found),
-	reflector:send_sync(self(), control, canstart, ?SUBS);           %% {control, canstart}
-
-
-
-%%%%CATCH-ALL%%%%
-hcevent(client, State, start, Event) ->
-	base:elog(?MODULE, "hcevent: INVALID PATTERN, Client: State[~p] Command[Start] Event[~p]~n", [State, Event]);
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%               DAEMON SIDE 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% We don't need the timer in this context.
-hcevent(daemon, _, _, timeout) ->
+hcevent(_, timeout) ->
 	ok;
 
 %% The management client is asking us to exit daemon state...
-hcevent(daemon, started, _, {from_client, do_exit}) ->
+hcevent(wait_command, {from_client, do_exit}) ->
 	Pid = os:getpid(),
-	reflector:send_sync(self(), daemon_exit, Pid, ?SUBS);                   %% {daemon_exit, Pid}
+	reflector:send_sync(self(), daemon_exit, Pid, ?SUBS);
 
 
 %% The management client is inquiring about our PID...
-hcevent(daemon, started, _, {from_client, what_pid}) ->
+hcevent(wait_command, {from_client, what_pid}) ->
 	Pid = os:getpid(),
-	reflector:send_sync(self(), to_client, {pid, Pid}, ?SUBS);              %% {to_client, {pid, Pid}}
+	reflector:send_sync(self(), to_client, {pid, Pid}, ?SUBS);
 
 %%%%CATCH-ALL%%%%
-hcevent(daemon, State, Command, Event) ->
-	base:elog(?MODULE, "hcevent: INVALID PATTERN, Daemon: State[~p] Command[~p] Event[~p]~n", [State, Command, Event]);
-
-
-hcevent(Context, State, Command, Event) ->
-	base:elog(?MODULE, "hcevent: INVALID PATTERN, Context[~p] State[~p] Command[~p] Event[~p]~n", [Context, State, Command, Event]).
+hcevent(State, Event) ->
+	base:elog(?MODULE, "hcevent: INVALID PATTERN, Daemon: State[~p] Event[~p]~n", [State, Event]).
 
 
 
