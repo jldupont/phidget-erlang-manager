@@ -113,6 +113,8 @@ loop_daemon() ->  %%daemon_server loop
 		%% by the OS: we need to keep track of it
 		%% for managing the daemon through a management
 		%% client interface. 
+		
+		%% @TODO repeat... for daemon_ctl
 		{assignedport, Port} ->
 			put(assignedport, Port),
 			send_to_reflector({management_port, Port});

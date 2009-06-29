@@ -50,7 +50,7 @@
 -define(TIMEOUT, 2000).
 
 %% Reflector subscriptions
--define(SUBS, [assignedport, management, daemonized, from_client]).
+-define(SUBS, [assignedport, from_client]).
 
 
 %% =============================
@@ -94,6 +94,7 @@ start_link(Args) ->
 
 
 
+
 %% ================================================================
 %% MAIN LOOP
 %% ================================================================
@@ -114,26 +115,16 @@ loop() ->
 		
 		%% SAVE the assigned port to the CTL file
 		{assignedport, Port} ->
-			put(state, assignedport),
-			base:saveport(Port),
-			hevent(assignedport);
+			hevent({assignedport, Port});
 		
 		
 		{from_client, Msg} ->
 			hevent({from_client, Msg}),
 			ok;
 
-
-		{management, Msg} ->
-			hevent({management, Msg});
 		
 		Other ->
 			base:ilog(?MODULE, "received [~p]~n", [Other])
-	
-	after ?TIMEOUT ->
-
-		reflector:sync_to_reflector(?SUBS),
-		hevent(timeout)
 	
 	end,
 	loop().
@@ -148,24 +139,25 @@ hevent(E) ->
 %% DAEMON STARTED
 %% ==============
 
-hcevent(_, assignedport) ->
-	put(state, wait_command);
+hcevent(_, {assignedport, Port}) ->
+	do_save = fun(Porte) ->
+					base:ilog(daemon_client, "saving port [~p] in CTL file~n", [Porte]),
+					base:saveport(Porte)
+			  end,
+	base:condexec(diff_value, assignedport, Port, do_save, Port);
 
-
-%% We don't need the timer in this context.
-hcevent(_, timeout) ->
-	ok;
 
 %% The management client is asking us to exit daemon state...
-hcevent(wait_command, {from_client, do_exit}) ->
+hcevent(_, {from_client, do_exit}) ->
 	Pid = os:getpid(),
-	reflector:send_sync(self(), daemon_exit, Pid, ?SUBS);
+	switch:publish(daemon_ctl, daemon_exit, Pid);
 
 
 %% The management client is inquiring about our PID...
-hcevent(wait_command, {from_client, what_pid}) ->
+hcevent(_, {from_client, what_pid}) ->
 	Pid = os:getpid(),
-	reflector:send_sync(self(), to_client, {pid, Pid}, ?SUBS);
+	switch:publish(daemon_ctl, to_client, {pid, Pid});
+
 
 %%%%CATCH-ALL%%%%
 hcevent(State, Event) ->

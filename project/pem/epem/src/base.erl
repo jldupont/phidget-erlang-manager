@@ -64,7 +64,8 @@
 -export([
 		 send_on_count/4,
 		 getvar/2,
-		 getvar/3
+		 getvar/3,
+		 condexec/5
 		 ]).
 %%
 %% API Functions
@@ -491,5 +492,31 @@ send_on_count(Recipient, Msg, CountVar, TargetCount) ->
 			ok
 	end.
 	
-												   
-	
+
+%% Execute the Fun with Args when
+%% Cond on Params evaluates to true
+%%
+%%
+condexec(Cond, VarName, Param, Fun, Args) ->
+	case Cond of
+		
+		%% When the variable VarName does
+		%% not hold the same value as Param
+		diff_value ->
+			Value = get(VarName),
+			if
+				Value /= Param ->
+					apply(Fun, Args)			
+			end;
+		
+		equal_value ->
+			Value = get(VarName),
+			if
+				Value == Param ->
+					apply(Fun, Args)
+			end;
+		
+		_ ->
+			{error, unknown_cond}
+		
+	end.
