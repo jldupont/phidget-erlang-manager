@@ -17,7 +17,7 @@
 
 -define(TIMEOUT, 3000).
 
--define(SUBS, [control, daemon_pid, daemon_exit]).
+-define(SUBS, [ready, control, daemon_pid, daemon_exit]).
 
 %% --------------------------------------------------------------------
 %% COMMAND LINE API
@@ -65,10 +65,10 @@ start() ->
 
 %% START
 start([debug]) ->
-	base:ilog(?MODULE, "start(debug)~n", []),
 	start_daemon([{debug, true}]).
 
 start_daemon(Args) ->
+	base:ilog(?MODULE, "start_daemon~n",[]),
 	process_flag(trap_exit,true),
 	Pid = spawn_link(?MODULE, loop, []),
 	register(?MODULE, Pid),
@@ -110,6 +110,10 @@ loop() ->
 		{_From, daemon_exit, _} ->
 			?MODULE ! stop;
 		
+
+		{From, ready, Pid} ->
+			base:ilog(?MODULE, "ready [~p][~p]~n", [From, Pid]);
+			
 		
 		%% SWITCH DUTY: subscribe
 		{From, subscribe, Type} ->
