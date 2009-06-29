@@ -39,21 +39,18 @@
 %%
 %% API Functions
 %%
+
+start_link() ->
+	start_link([]).
+
+
 start_link(Args) ->
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
 	base:ilog(?MODULE, "start_link: PID[~p]~n", [Pid]),
 	?MODULE ! {args, Args},
-	?MODULE ! start,
 	{ok, Pid}.
 
-
-start_link() ->
-	Pid = spawn_link(?MODULE, loop, []),
-	register( ?MODULE, Pid ),
-	base:ilog(?MODULE, "start_link: PID[~p]~n", [Pid]),
-	?MODULE ! start,
-	{ok, Pid}.
 
 stop() ->
 	?MODULE ! stop.
@@ -68,11 +65,13 @@ loop() ->
 		
 		%% Send the 'ready' signal
 		{args, Args} ->
-			put(args, Args);
-		
-		start ->
+			put(args, Args),
 			switch:subscribe(journal, ?SUBS);
 		
+		{switch, subscribed} ->
+			switch:publish(journal, ready, self());
+
+			
 		stop ->
 			exit(ok);
 		

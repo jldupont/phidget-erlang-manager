@@ -57,7 +57,6 @@
 %% API Exported Functions
 %% =============================
 -export([
-		 start/0,
 		 start_link/0,
 		 start_link/1
 		 ]).
@@ -74,17 +73,10 @@
 %% =======================================
 %% API Functions
 %% =======================================
-start() ->
-	Pid = spawn(?MODULE, loop, []),
-	register(daemon_ctl, Pid),
-	Pid ! started,
-	{ok, Pid}.
 	
 start_link() ->
-	Pid = spawn_link(?MODULE, loop, []),
-	register(daemon_ctl, Pid),
-	Pid ! started,
-	{ok, Pid}.
+	start_link([]).
+
 
 start_link(Args) ->
 	Pid = spawn_link(?MODULE, loop, []),
@@ -110,20 +102,14 @@ loop() ->
 		%% Send the 'ready' signal
 		{args, Args} ->
 			put(args, Args),
-			{root, Root} = base:kfind(root, Args),
-			base:send_ready_signal(reflector, Root, {});
-
-		{from_reflector, subscribed} ->
-			ok;
-		
-		
-		started ->
-			reflector:subscribe(daemon_ctl, ?SUBS),
-			put(state,  started);
+			switch:subscribe(daemon_ctl, ?SUBS);
 
 		%% SAVE the assigned port to the CTL file
 		{assignedport, Port} ->
 			base:saveport(Port);
+		
+		{switch, subscribed} ->
+			switch:publish(daemon_ctl, ready, self());
 		
 		{from_client, Msg} ->
 			ok;
@@ -158,7 +144,6 @@ hevent(E) ->
 
 hcevent(_, daemonized) ->
 	put(context, daemon);
-
 
 
 

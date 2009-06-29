@@ -27,7 +27,8 @@
 		 to_switch/3,
 		 add_type/1,
 		 do_publish_list/5,
-		 do_publish/3
+		 do_publish/3,
+		 do_add_subscriber/2
 		 ]).
 
 
@@ -36,6 +37,10 @@
 %% !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+%% Subscription is not synchronous: the caller will
+%% be serviced asynchronously i.e. don't count on
+%% the ability to receive message(s) from subscribed
+%% types after this function call returns.
 %%
 %% @spec subscribe(Type)
 %%
@@ -84,16 +89,24 @@ add_subscriber(Client, undefined) when is_atom(Client) ->
 %%       Client = Atom()
 %%       Type   = Atom()
 add_subscriber(Client, Type) when is_atom(Type), is_atom(Client) ->
-	base:add_to_list_no_duplicates({msgtype, Type}, Client),
-	base:add_type(Type);
+	do_add_subscriber(Client, Type),
+	Client ! {switch, subscribed};
+
 
 add_subscriber(Client, []) when is_atom(Client) ->
 	ok;
 
 add_subscriber(Client, TypeList) when is_atom(Client), is_list(TypeList) ->
 	[H|T] = TypeList,
-	add_subscriber(Client, H),
+	do_add_subscriber(Client, H),
 	add_subscriber(Client, T).
+
+
+
+
+do_add_subscriber(Client, Type) ->
+	base:add_to_list_no_duplicates({msgtype, Type}, Client),
+	base:add_type(Type).
 
 
 
