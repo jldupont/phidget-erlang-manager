@@ -44,6 +44,7 @@ start_link(Args) ->
 	register( ?MODULE, Pid ),
 	base:ilog(?MODULE, "start_link: PID[~p]~n", [Pid]),
 	?MODULE ! {args, Args},
+	?MODULE ! start,
 	{ok, Pid}.
 
 
@@ -67,26 +68,16 @@ loop() ->
 		
 		%% Send the 'ready' signal
 		{args, Args} ->
-			put(args, Args),
-			{root, Root} = base:kfind(root, Args),
-			base:send_ready_signal(journal, Root, {});
-		
+			put(args, Args);
 		
 		start ->
-			reflector:sync_to_reflector(?SUBS);
+			switch:subscribe(journal, ?SUBS);
 		
 		stop ->
 			exit(ok);
 		
-		{reflector, subscribe, ok} ->
-			ok;
-	
 		Other ->
 			base:ilog(?MODULE, "received Msg[~p]~n", [Other])
-
-	after 5000 ->
-			
-		reflector:sync_to_reflector(?SUBS)
 
 	end,
 	loop().

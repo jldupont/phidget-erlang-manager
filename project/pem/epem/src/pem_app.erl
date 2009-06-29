@@ -51,9 +51,6 @@
 		 start_daemon/1
 		 ]).
 
--export([
-		 hevent/1
-		 ]).
 
 %% ====================================================================!
 %% API functions
@@ -75,9 +72,14 @@ start_daemon(Args) ->
 	process_flag(trap_exit,true),
 	Pid = spawn_link(?MODULE, loop, []),
 	register(?MODULE, Pid),
+	
+	%% Register ourselves as message switch
+	register(switch, Pid),
+	
 	Args2=lists:append(Args, [{root, Pid}]),
 	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Args2]),
-	put(args, Args2),	
+	put(args, Args2),
+	
 	?MODULE ! {args, Args2},
 	{ok, Pid}.
 
@@ -105,7 +107,17 @@ loop() ->
 			halt();
 
 		
+		{_From, daemon_exit, _} ->
+			?MODULE ! stop;
 		
+		
+		%% SWITCH DUTY: subscribe
+		{From, subscribe, Type} ->
+			switch:add_subscriber(From, Type);
+		
+		%% SWITCH DUTY: publish
+		{From, publish, {MsgType, Msg}} ->
+			switch:publish(From, MsgType, Msg);
 		
 		Other->
 			base:elog(?MODULE, "received unknown message [~p]~n", [Other])
