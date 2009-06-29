@@ -63,12 +63,13 @@ stop() ->
 loop() ->
 	receive
 		
-		%% Send the 'ready' signal
 		{args, Args} ->
 			put(args, Args),
 			switch:subscribe(journal, ?SUBS);
-		
+
+		%% Send the 'ready' signal
 		{switch, subscribed} ->
+			base:ilog(?MODULE, "subscribed~n",[]),
 			switch:publish(journal, ready, self());
 
 			

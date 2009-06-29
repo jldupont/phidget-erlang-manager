@@ -61,15 +61,18 @@ publish(From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
 %% !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 to_switch(From, Cmd, Msg) ->
+	
+	base:ilog(?MODULE, "to_switch: From[~p] Cmd[~p] Msg[~p]~n", [From, Cmd, Msg]),
 	try switch ! {From, Cmd, Msg} of
 		{From, Cmd, Msg} ->
 			ok;
+		
 		Error ->
 			base:elog(?MODULE, "to_switch: ERROR, From[~p] Cmd[~p] Msg[~p] ERROR[~p]~n", [From, Cmd, Msg, Error]),
 			error
 	catch
 		X:Y ->
-			base:elog(?MODULE, "to_switch: EXCEPTION, From[~p] Cmd[~p] From[~p] MsgType[~p] Msg[~p] X[~p] Y[~p]~n", [From, Cmd, Msg, X, Y]),
+			base:elog(?MODULE, "to_switch: EXCEPTION, From[~p] Cmd[~p] Msg[~p] X[~p] Y[~p]~n", [From, Cmd, Msg, X, Y]),
 			error
 	end.
 
@@ -94,9 +97,12 @@ add_subscriber(Client, Type) when is_atom(Type), is_atom(Client) ->
 
 
 add_subscriber(Client, []) when is_atom(Client) ->
+	base:ilog(?MODULE, "finished subscribing Client[~p]~n", [Client]),
+	Client ! {switch, subscribed},
 	ok;
 
 add_subscriber(Client, TypeList) when is_atom(Client), is_list(TypeList) ->
+	%%base:ilog(?MODULE, "add_subscriber: Client[~p] List[~p]~n", [Client, TypeList]),
 	[H|T] = TypeList,
 	do_add_subscriber(Client, H),
 	add_subscriber(Client, T).
@@ -106,7 +112,7 @@ add_subscriber(Client, TypeList) when is_atom(Client), is_list(TypeList) ->
 
 do_add_subscriber(Client, Type) ->
 	base:add_to_list_no_duplicates({msgtype, Type}, Client),
-	base:add_type(Type).
+	switch:add_type(Type).
 
 
 
@@ -119,6 +125,7 @@ add_type(Type) ->
 
 
 do_publish(From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
+	%%base:ilog(?MODULE,"do_publish: From[~p] MsgType[~p] Msg[~p]~n", [From, MsgType, Msg]),
 	ToList = base:getvar({msgtype, MsgType}, []),
 	[To|Rest] = ToList,
 	do_publish_list(To, Rest, From, MsgType, Msg).
@@ -128,8 +135,13 @@ do_publish(From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
 
 do_publish_list([], [], From, MsgType, _Msg) when is_atom(From), is_atom(MsgType) ->
 	ok;											  
-														
+
+do_publish_list([], _, From, MsgType, _Msg) when is_atom(From), is_atom(MsgType) ->
+	ok;											  
+
+
 do_publish_list(CurrentTo, RestTo, From, MsgType, Msg) when is_atom(From), is_atom(MsgType) ->
+	%%base:ilog(?MODULE, "do_publish_list: CurrentTo[~p] RestTo[~p] From[~p] MsgType[~p] Msg[~p]~n", [CurrentTo, RestTo, From, MsgType, Msg]),
 	try CurrentTo ! {From, MsgType, Msg} of
 		{From, MsgType, Msg} ->
 			ok;
@@ -139,7 +151,14 @@ do_publish_list(CurrentTo, RestTo, From, MsgType, Msg) when is_atom(From), is_at
 		X:Y ->
 			base:elog(?MODULE, "do_publish: EXCEPTION, From[~p] MsgType[~p] Msg[~p] X[~p] Y[~p]~n", [From, MsgType, Msg, X, Y])
 	end,
-	[NewTo|NewRest] = RestTo,
-	do_publish_list(NewTo, NewRest, From, MsgType, Msg).
+	case RestTo of 
+		[] ->
+			ok;
+		_ ->
+			[NewTo|NewRest] = RestTo,
+			%%base:ilog(?MODULE, "do_publish_list: NewTo[~p] NewRest[~p]~n", [NewTo, NewRest]),
+			do_publish_list(NewTo, NewRest, From, MsgType, Msg)
+	end.
+
 
 
