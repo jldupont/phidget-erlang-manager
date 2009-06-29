@@ -140,23 +140,28 @@ loop_daemon() ->  %%daemon_server loop
 		%% to establish a communication link between
 		%% a Client and a resident daemon
 		{daemon_socket_pid, Pid} ->
-			put(socket_pid, Pid),
-			base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
+			put(socket_pid, Pid);
+			%%base:ilog(?MODULE, "socket Pid[~p]~n", [Pid]);
 			
-		{closed, Sock} ->
-			base:ilog(?MODULE,"Socket[~p] closed~n", [Sock]);
+		{closed, _Sock} ->
+			ok;
+			%%base:ilog(?MODULE,"Socket[~p] closed~n", [Sock]);
 		
-		{lsocket, LSocket} ->
-			base:ilog(?MODULE,"LSocket[~p]~n", [LSocket]);
+		{lsocket, _LSocket} ->
+			ok;
+			%%base:ilog(?MODULE,"LSocket[~p]~n", [LSocket]);
 		
-		{socket, Socket} ->
-			base:ilog(?MODULE,"Socket[~p]~n", [Socket]);
+		{socket, _Socket} ->
+			ok;
+			%%base:ilog(?MODULE,"Socket[~p]~n", [Socket]);
 		
-		{error, lsocket, Reason} ->
-			base:elog(?MODULE,"LSocket Error[~p]~n", [Reason]);
+		{error, lsocket, _Reason} ->
+			ok;
+			%%base:elog(?MODULE,"LSocket Error[~p]~n", [Reason]);
 		
-		{error, socket, Reason} ->
-			base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
+		{error, socket, _Reason} ->
+			ok
+			%%base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
 
 	%% We always have to sync to the reflector;
 	%% we can't rely on the having to send stuff
