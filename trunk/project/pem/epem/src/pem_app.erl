@@ -56,8 +56,7 @@
         ]).
 
 -export([
-		 start_daemon/1,
-		 stop_daemon/1
+		 start_daemon/1
 		 ]).
 
 %% ====================================================================!
@@ -66,7 +65,7 @@
 
 %% START
 start() ->
-	start_daemon([]).
+	start_daemon([{debug, false}]).
 	
 %%	base:ilog(?MODULE, "start~n", []),
 %%	start_daemon(undefined).
@@ -74,39 +73,18 @@ start() ->
 %% START
 start([debug]) ->
 	base:ilog(?MODULE, "start(debug)~n", []),
-	start_daemon(debug);
-
-%% ##STOP##
-start([stop]) ->
-	stop_daemon(undefined);
-
-%% START
-start([debug, start]) ->
-	start_daemon(debug);
-
-%% ##STOP##
-start([debug, stop]) ->
-	stop_daemon(debug).
-
+	start_daemon([{debug, true}]).
 
 start_daemon(Args) ->
 	process_flag(trap_exit,true),
-	Pid = spawn(?MODULE, loop, []),
-	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
-	put(args, Args),	
+	Pid = spawn_link(?MODULE, loop, []),
+	register(?MODULE, Pid),
+	Args2=lists:append(Args, [{root, Pid}]),
+	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Args2]),
+	put(args, Args2),	
 	put(context, client),
-	Pid ! {start_daemon, Args},
+	Pid ! {start_daemon, Args2},
 	{ok, Pid}.
-
-stop_daemon(Args) ->
-	process_flag(trap_exit,true),
-	Pid = spawn(?MODULE, loop, []),
-	base:ilog(?MODULE, "start_daemon: Pid[~p] Args[~p]~n", [Pid, Args]),
-	put(args, Args),
-	put(context, client),
-	Pid ! {stop_daemon, Args},
-	{ok, Pid}.
-
 
 	
 
@@ -131,13 +109,6 @@ loop() ->
 			put(state, try_start),
 			daemon_ctl:start_link(),
 			daemon_ctl:start_daemon(Args);
-
-		%% Try stopping the daemon
-		{stop_daemon, Args} ->
-			reflector:sync_to_reflector(?SUBS),
-			put(state, try_stop),
-			daemon_ctl:start_link(),
-			daemon_ctl:stop_daemon(Args);
 
 		%% we can start the daemon!
 		{control, canstart} ->

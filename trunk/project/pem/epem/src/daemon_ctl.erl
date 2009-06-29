@@ -2,6 +2,13 @@
 %% Created: 2009-06-23
 %% Description: Control for the daemon
 %%
+%% Duties:
+%% =======
+%%
+%%  - Writes assigned port to CTL file
+%%  - Responds to client messages:
+%%    - what_pid
+%%    - do_exit
 %%
 %% SUBSCRIPTIONS:
 %% ==============
@@ -11,7 +18,6 @@
 %%
 %%  {management,  X}             %% Client context: status from sending activity to DAEMON
 %%
-%%  {from_daemon, M}             %% Client context: Rx messages from DAEMON
 %%  {from_client, M}             %% Daemon context: Rx messages from CLIENT
 %%
 %%
@@ -27,7 +33,7 @@
 %% {daemon_exit, Pid}            %% Daemon context: client asked for daemon to exit
 %%
 %%
-%% MESSAGES SENT TO THE DAEMON through daemon_client:
+%% MESSAGES RECEIVED from PEM_ADMIN (daemon_client):
 %%
 %%  what_pid  
 %%  do_exit
@@ -44,7 +50,7 @@
 -define(TIMEOUT, 2000).
 
 %% Reflector subscriptions
--define(SUBS, [assignedport, management, from_daemon, daemonized, from_client]).
+-define(SUBS, [assignedport, management, daemonized, from_client]).
 
 
 %% =============================
@@ -52,11 +58,7 @@
 %% =============================
 -export([
 		 start/0,
-		 start_link/0,
-		 start_daemon/1,
-		 stop_daemon/1,
-		 getpid_daemon/0,
-		 getpid_daemon/1
+		 start_link/0
 		 ]).
 
 %%
@@ -64,12 +66,8 @@
 %%
 -export([
 		 loop/0,
-		 try_start/1,
-		 try_start/2,
-		 try_stop/1,
-		 try_stop/2,
 		 hevent/1,
-		 hcevent/4
+		 hcevent/3
 		 ]).
 
 %% =======================================
@@ -88,12 +86,6 @@ start_link() ->
 	{ok, Pid}.
 
 
-start_daemon(Args) ->
-	?MODULE ! {command, start, Args},
-	ok.
-	
-stop_daemon(Args) ->
-	?MODULE ! {command, stop, Args}.
 
 	
 
@@ -112,38 +104,17 @@ loop() ->
 		
 		started ->
 			reflector:subscribe(daemon_ctl, ?SUBS),
-			put(command, none),
-			put(state,  started),
-			put(context, client);
-		
+			put(state,  started);
+
+		%% SAVE the assigned port to the CTL file
 		{assignedport, Port} ->
 			base:saveport(Port);
 		
-		%% TODO is there a daemon already running?
-		%%      Wait x time for response back
-
-		{command, start, Args} ->
-			put(args, Args),
-			put(state,   started),
-			put(command, start),
-			put(context, client),
-			hevent(command_start);
-	
-		{command, stop, Args} ->
-			put(args,    Args),
-			put(state,   started),
-			put(command, stop),
-			put(context, client),
-			hevent(command_stop);			
-
-		cannot_reach_daemon ->
-			hevent(cannot_reach_daemon);
+		{from_client, Msg} ->
+			ok;
 		
 		{daemonized} ->
 			hevent(daemonized);
-		
-		{from_daemon, Msg} ->
-			hevent({from_daemon, Msg});
 		
 		{management, Msg} ->
 			hevent({management, Msg});
@@ -161,37 +132,18 @@ loop() ->
 
 
 hevent(E) ->
-	Command = get(command),
 	Context = get(context),
 	State   = get(state),
-	base:ilog(?MODULE, "hevent: Context[~p] State[~p] Command[~p]~n",[Context, State, Command]),	
-	hcevent(Context, State, Command, E).
+	base:ilog(?MODULE, "hevent: Context[~p] State[~p]~n",[Context, State]),	
+	hcevent(Context, State, E).
 	
 
 %% DAEMON STARTED
 %% ==============
 
-hcevent(_,_,_, daemonized) ->
-	put(context, daemon),
-	put(state, started),
-	put(command, none);
+hcevent(_, daemonized) ->
+	put(context, daemon);
 
-
-%%               CLIENT CONTEXT
-%%
-%%      Context, State, Command, Msg
-%% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-hcevent(client, started, start, command_start) ->
-	Args=get(args),
-	try_start(Args),
-	put(state, wait_management);
-
-hcevent(client, started, start, command_stop) ->
-	Args=get(args),
-	try_stop(Args),
-	put(state, wait_management);
 
 
 
@@ -233,42 +185,6 @@ hcevent(client, State, start, Event) ->
 	base:elog(?MODULE, "hcevent: INVALID PATTERN, Client: State[~p] Command[Start] Event[~p]~n", [State, Event]);
 
 
-%% STOP COMMAND
-%% ^^^^^^^^^^^^
-
-
-%% Management channel found: ask the running daemon to stop
-hcevent(client, wait_management, stop, {management, open}) ->
-	reflector:send_sync(self(), to_daemon, {asked_exit, do_exit}, ?SUBS),   %% {to_daemon, {asked_exit, do_exit}}
-	put(state, wait_txok_exit);
-
-%% We sent a 'stop' command to the daemon and our request
-%% was transmitted OK.
-hcevent(client, wait_txok_exit, stop, {management, {txok, _X} }) ->
-	reflector:send_sync(self(), control, stop_sent_ok, ?SUBS),              %% {control, stop_sent_ok}	
-	put(state, stop_sent_ok);
-
-
-%% We sent a 'stop' command *BUT* the transmission wasn't successful...
-hcevent(client, wait_txok_exit, stop, {management, {txerror, _X} }) ->
-	reflector:send_sync(self(), control, stop_sent_error, ?SUBS),           %% {control, stop_sent_error}
-	put(state, stop_sent_error);
-
-%% We sent a 'stop' command *BUT* the management channel went down 
-hcevent(client, wait_txok_exit, stop, {management, _X }) ->
-	reflector:send_sync(self(), control, stop_sent_error, ?SUBS),           %% {control, stop_sent_error}
-	put(state, stop_sent_error);
-
-%% Couldn't reach a running daemon
-hcevent(client, wait_management, stop, timeout) ->
-	put(state, daemon_not_found),
-	reflector:send_sync(self(), control, daemon_not_found, ?SUBS);          %% {control, daemon_not_found}
-
-
-%%%%CATCH-ALL%%%%
-hcevent(client, State, stop, Event) ->
-	base:elog(?MODULE, "hcevent: INVALID PATTERN, Client: State[~p] Command[Stop] Event[~p]~n", [State, Event]);
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%               DAEMON SIDE 
@@ -296,63 +212,6 @@ hcevent(daemon, State, Command, Event) ->
 
 hcevent(Context, State, Command, Event) ->
 	base:elog(?MODULE, "hcevent: INVALID PATTERN, Context[~p] State[~p] Command[~p] Event[~p]~n", [Context, State, Command, Event]).
-
-
-
-
-
-
-%% Asks the daemon side for its Pid.
-%% The answer will be relayed to the process configured
-%% through the "set_routeto" function.
-getpid_daemon() ->
-	Port=?MODULE:getport(),
-	getpid_daemon(Port).
-
-getpid_daemon({port, Port}) ->
-	daemon_client:send_command(Port, {command, pid});
-
-getpid_daemon({Code, Error}) ->
-	{Code, Error}.
-
-
-
-
-try_start(Args) ->
-	Port=daemon_ctl:getport(),
-	try_start(Args, Port).
-	
-%% Can't find port in CTL file...
-try_start(_Args, {error, _X}) ->
-	?MODULE ! cannot_reach_daemon;
-
-
-%% Found a port... but is the daemon
-%% really there and active?
-try_start(_Args, {port, Port}) ->
-	daemon_client:start(Port);
-	
-						
-%% Didn't find a port... but
-%% there could still be a zombie/unreachable
-%% daemon lying around... can't do anything from here
-try_start(_Args, _) ->
-	?MODULE ! cannot_reach_daemon.
-
-
-%% Trying to stop an active daemon
-try_stop(Args) ->
-	Port=daemon_ctl:getport(),
-	try_stop(Args, Port).
-
-try_stop(_Args, {port, Port}) ->
-	daemon_client:start(Port);
-
-%% Can't find a communication channel down to daemon...
-%% Maybe the daemon just isn't there of course.
-try_stop(_Args, _) ->
-	?MODULE ! cannot_reach_daemon,
-	reflector:send_sync(self(), control, daemon_not_found, ?SUBS).
 
 
 

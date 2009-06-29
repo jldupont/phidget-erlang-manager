@@ -99,6 +99,8 @@ send_message(MsgId, Msg) ->
 %% ======================================================================
 loop_daemon() ->  %%daemon_server loop
 	receive
+		{from_reflector, subscribed} ->
+			ok;
 		
 		stop ->
 			exit(ok);
