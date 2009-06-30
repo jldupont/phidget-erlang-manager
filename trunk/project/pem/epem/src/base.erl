@@ -340,6 +340,7 @@ cond_ilog(Prob, M, X,Y) ->
 %%
 getport() ->
 	{Code, X} = base:read_ctl_file(),
+	%%io:format("getport: ~p~n", [X]),
 	Terms=X,
 	case Code of 
 		ok ->
@@ -357,7 +358,8 @@ extract_port(Terms) ->
 			case lists:keysearch(port,1,Terms) of
 				{value, Value} ->
 					Value;
-				_ ->
+				_Other ->
+					%%io:format("extract_port: ~p Terms[~p]~n", [Other, Terms]),
 					error
 			end
 	end.
@@ -409,8 +411,8 @@ pole(Var, TrueValue, FalseValue, TrueResult, FalseResult) ->
 
 %% Save the used by this daemon
 saveport(Port) ->
-	base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
-	base:create_ctl_file([{port, Port}]).
+	%%base:ilog(?MODULE, "saved daemon port[~p]~n",[Port]),
+	base:create_ctl_file({port, Port}).
 
 
 

@@ -118,7 +118,8 @@ loop() ->
 			hevent({management_port, Port});
 		
 		
-		{from_client, Msg} ->
+		{_From, from_client, Msg} ->
+			base:ilog(?MODULE, "from_client: ~p~n", [Msg]),
 			hevent({from_client, Msg}),
 			ok;
 
@@ -157,7 +158,7 @@ hcevent(_, {from_client, do_exit}) ->
 %% The management client is inquiring about our PID...
 hcevent(_, {from_client, what_pid}) ->
 	Pid = os:getpid(),
-	switch:publish(daemon_ctl, to_client, {pid, Pid});
+	switch:publish(daemon_ctl, to_client, {reply_pid, {pid, Pid}});
 
 
 %%%%CATCH-ALL%%%%

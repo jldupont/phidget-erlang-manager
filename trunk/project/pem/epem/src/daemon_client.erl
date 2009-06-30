@@ -105,6 +105,7 @@ loop_connection() ->
 		
 		%% Starts a connection towards the Server
 		{client, doconnect} ->
+			%%io:format("doconnect~n"),
 			close_socket(),
 			Port=get(management_port),
 			{Code, Socket} = gen_tcp:connect("localhost", Port, [binary, {active, true}, {packet, 2}], ?TIMEOUT),
@@ -123,6 +124,7 @@ loop_connection() ->
 		%% From socket
 		{tcp, _Sock, Data} ->
 			Message = binary_to_term(Data),
+			io:format("received: ~p~n",[Message]),
 			send_to_reflector(Message);
 
 		%% From socket
@@ -153,7 +155,7 @@ close_socket(Socket) ->
 
 
 send_to_reflector({MsgType, Msg}) ->
-	reflector:send_sync(daemon_server, MsgType, Msg, ?SUBS);
+	reflector:send_sync(daemon_server, from_daemon, {MsgType, Msg}, ?SUBS);
 
 send_to_reflector(Message) ->
 	base:elog(?MODULE, "INVALID FORMAT: Message[~p]~n", [Message]).

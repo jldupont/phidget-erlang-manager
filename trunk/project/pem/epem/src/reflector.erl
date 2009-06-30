@@ -101,7 +101,7 @@ unsubscribe(Client, Msgtype) ->
 send(From, Msgtype, Msg) when is_atom(From), is_atom(Msgtype) ->
 	%%base:ilog(?MODULE, "send: From[~p] Msgtype[~p] Msg[~p]~n", [From, Msgtype, Msg]),
 	case ?MODULE ! {From, {send, Msgtype, Msg}} of
-		{From, Msgtype, Msg} ->
+		{From, {send,Msgtype, Msg}} ->
 			ok;
 		_ ->
 			error
