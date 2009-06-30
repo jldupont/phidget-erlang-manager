@@ -94,7 +94,7 @@ add_subscriber(Client, Type) when is_atom(Type), is_atom(Client) ->
 
 
 add_subscriber(Client, []) when is_atom(Client) ->
-	base:ilog(?MODULE, "finished subscribing Client[~p]~n", [Client]),
+	%%base:ilog(?MODULE, "finished subscribing Client[~p]~n", [Client]),
 	Client ! {switch, subscribed},
 	ok;
 
