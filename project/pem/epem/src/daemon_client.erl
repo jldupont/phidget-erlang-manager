@@ -51,16 +51,12 @@
 %% ======================================================
 
 start_link()->
-	Pid = spawn_link(?MODULE, loop_connection, []),
-	register(daemon_client, Pid),
-	?MODULE ! {args, []},
-	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
-	{ok, Pid}.
+	start_link([]).
 
 %% Once started, sends Msg to Recipient
 start_link(Args) ->
 	Pid = spawn_link(?MODULE, loop_connection, []),
-	register(daemon_client, Pid),
+	register(?MODULE, Pid),
 	?MODULE ! {args, Args},
 	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
@@ -80,7 +76,7 @@ loop_connection() ->
 		%% When we need to notify a root proc of our progress
 		{args, Args} ->
 			put(args, Args),
-			switch:subscribe(daemon_client, ?SUBS);			
+			switch:subscribe(?MODULE, ?SUBS);			
 		
 		{switch, subscribed} ->
 			switch:publish(?MODULE, ready, {});			
@@ -103,7 +99,7 @@ loop_connection() ->
 					switch:publish(?MODULE, management, error)					
 			end;
 
-		{to_daemon, {MsgId, Msg}} ->
+		{_From, to_daemon, {MsgId, Msg}} ->
 			send_to_server(MsgId, Msg);
 			
 		%% From socket

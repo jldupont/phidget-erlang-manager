@@ -84,8 +84,7 @@ start_daemon(Args) ->
 	put(args, Args2),
 	
 	?MODULE ! {args, Args2},
-	loop().
-	%%{ok, Pid}.
+	{ok, Pid}.
 
 
 %% --------------------------------------------------------------------
