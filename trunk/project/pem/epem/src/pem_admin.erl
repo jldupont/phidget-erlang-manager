@@ -142,12 +142,12 @@ loop() ->
 		%% We don't really need the feedback...
 		%% Just suppress it.
 		{switch, subscribed} ->
-			pem_admin_sup:start_link({?MODULE, ready});			
+			pem_admin_sup:start_link();			
 
 		
 		%% Step #1
 		{run, Cmd} ->
-			switch:subscribe(pem_app, ?SUBS),			
+			switch:subscribe(?MODULE, ?SUBS),			
 			put(cmd, Cmd),
 			put(state, run);
 
@@ -169,12 +169,12 @@ loop() ->
 			hevent({port, Port});
 	
 		%%from daemon_client
-		{management, Msg} ->
+		{_From, management, Msg} ->
 			%%io:format("management: ~p~n", [Msg]),
 			hevent({management, Msg});
 		
 		%%from daemon_client on behalf of daemon
-		{from_daemon, Msg} ->
+		{_From, from_daemon, Msg} ->
 			%%io:format("from_daemon: ~p~n", [Msg]),
 			hevent({from_daemon, Msg});
 		

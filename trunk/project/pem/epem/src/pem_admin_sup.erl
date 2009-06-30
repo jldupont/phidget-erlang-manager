@@ -13,15 +13,19 @@
 %% --------------------------------------------------------------------
 -export([
 	 init/1,
+	 start_link/0,	 
 	 start_link/1
         ]).
 
 %% ====================================================================
 %% Server functions
 %% ====================================================================
-start_link({Recipient, Msg}) ->
+start_link() ->
+	start_link([]).
+
+start_link(Args) ->
 	process_flag(trap_exit,true),
-	supervisor:start_link({local, ?MODULE}, ?MODULE, [{Recipient, Msg}]).
+	supervisor:start_link({local, ?MODULE}, ?MODULE, [Args]).
 
 
 %% --------------------------------------------------------------------
@@ -37,6 +41,5 @@ init([Params]) ->
 	
 	
     {ok,{{one_for_one,5,1}, [
-							 
 							 Child_client
 							 ]}}.
