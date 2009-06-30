@@ -36,8 +36,8 @@
 		 join/2,
 		 add/2,
 		 pvadd/2,
-		 send_ready_signal/3,
-		 send_synced_signal/2
+		 send_ready_signal/2,
+		 send_synced_signal/1
 		 ]).
 
 -export([
@@ -416,20 +416,15 @@ saveport(Port) ->
 
 
 
-send_ready_signal(_From, undefined, _) ->
-	ok;	
-
-send_ready_signal(From, Recipient, Msg) ->
-	Recipient ! {ready, From, Msg}.
+send_ready_signal(From, Msg) ->
+	switch:publish(From, ready, Msg).
 
 
 
 
-send_synced_signal(_From, undefined) ->
-	ok;
 
-send_synced_signal(From, RootProc) ->
-	RootProc ! {synced, From}.
+send_synced_signal(From) ->
+	switch:publish(From, synced, {}).
 
 
 

@@ -6,7 +6,6 @@
 %% ==============
 %%
 %% {to_daemon,       {MsgId, Msg}}
-%% {management_port, Port}
 %% {client,          doconnect}
 %%
 %%
@@ -18,6 +17,8 @@
 %% {management,  error}             Socket cannot be opened
 %% {management,  {txerror, MsgId}}  Error transmitting message to Server
 %% {management,  {txok,    MsgId}}  Transmission to Server OK
+%%
+%% {ready, {}}
 
 -module(daemon_client).
 
@@ -26,7 +27,7 @@
 %%
 -define(TIMEOUT, 2000).
 
--define(SUBS, [to_daemon, management_port, client]).
+-define(SUBS, [to_daemon, client]).
 
 %%
 %% Exported Functions
@@ -41,7 +42,6 @@
 		 loop_connection/0,
 		 close_socket/0,
 		 close_socket/1,
-		 send_to_reflector/1,
 		 send_to_server/2,
 		 send_to_server/3
 		 ]).
@@ -53,15 +53,15 @@
 start_link()->
 	Pid = spawn_link(?MODULE, loop_connection, []),
 	register(daemon_client, Pid),
-	?MODULE ! {sync,undefined, undefined},
+	?MODULE ! {args, []},
 	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
 %% Once started, sends Msg to Recipient
-start_link({Recipient, Msg}) ->
+start_link(Args) ->
 	Pid = spawn_link(?MODULE, loop_connection, []),
 	register(daemon_client, Pid),
-	?MODULE ! {sync,Recipient, Msg},
+	?MODULE ! {args, Args},
 	%%base:ilog(?MODULE,"Pid[~p]~n",[Pid]),
 	{ok, Pid}.
 
@@ -78,44 +78,29 @@ loop_connection() ->
 	receive
 		
 		%% When we need to notify a root proc of our progress
-		{sync, Recipient, Msg} ->
-			put(root_proc, Recipient),
-			base:send_ready_signal(daemon_client, Recipient, Msg);
-			
-
-		%% All modules are ready... let's sync
-		%% to the Reflector
-		mods_ready ->
-			reflector:sync_to_reflector(?SUBS),
-			ok;
+		{args, Args} ->
+			put(args, Args),
+			switch:subscribe(daemon_client, ?SUBS);			
 		
-		%% We are subscribed... final sync to the root proc
-		{from_reflector, subscribed} ->
-			RootProc=get(root_proc),
-			%%base:send_on_count(RootProc, Msg, CountVar, TargetCount)
-			base:send_synced_signal(daemon_client, RootProc),
-			ok;
-		
-		{management_port, Port} ->
-			put(management_port, Port);
-		
+		{switch, subscribed} ->
+			switch:publish(?MODULE, ready, {});			
+				
 		stop ->
 			close_socket(),
 			exit(ok);
 		
 		%% Starts a connection towards the Server
-		{client, doconnect} ->
+		{_From, client, {doconnect, Port}} ->
 			%%io:format("doconnect~n"),
 			close_socket(),
-			Port=get(management_port),
 			{Code, Socket} = gen_tcp:connect("localhost", Port, [binary, {active, true}, {packet, 2}], ?TIMEOUT),
 			case Code of
 				ok ->
 					put(socket, Socket),
-					reflector:send_sync(daemon_client, management, open, ?SUBS);
+					switch:publish(?MODULE, management, open);
 				_ ->
 					put(socket, undefined),
-					reflector:send_sync(daemon_client, management, error, ?SUBS)
+					switch:publish(?MODULE, management, error)					
 			end;
 
 		{to_daemon, {MsgId, Msg}} ->
@@ -125,16 +110,13 @@ loop_connection() ->
 		{tcp, _Sock, Data} ->
 			Message = binary_to_term(Data),
 			%%io:format("received: ~p~n",[Message]),
-			send_to_reflector(Message);
+			switch:publish(?MODULE, from_daemon, Message);
 
 		%% From socket
 		{tcp_closed, _Sock} ->
 			put(socket, undefined),
-			reflector:send_sync(daemon_client, management, closed, ?SUBS)			
-		
-	%%after ?TIMEOUT ->
-			
-		%%reflector:sync_to_reflector(?SUBS)
+			switch:publish(?MODULE, management, closed)
+	
 		
 	end,
 	loop_connection().
@@ -154,13 +136,6 @@ close_socket(Socket) ->
 
 
 
-send_to_reflector({MsgType, Msg}) ->
-	reflector:send_sync(daemon_server, from_daemon, {MsgType, Msg}, ?SUBS);
-
-send_to_reflector(Message) ->
-	base:elog(?MODULE, "INVALID FORMAT: Message[~p]~n", [Message]).
-
-
 
 
 %% Send a message over the socket connection
@@ -172,17 +147,19 @@ send_to_server(MsgId, Msg) ->
 	send_to_server(Socket, MsgId, Msg).
 		
 send_to_server(undefined, MsgId, _Msg) ->
-	reflector:send_sync(daemon_client, management, {txerror, MsgId}, ?SUBS);
+	switch:publish(?MODULE, management, {txerror, MsgId});
 
 
 send_to_server(Socket, MsgId, Msg) ->
 	Coded = term_to_binary(Msg),
 	case gen_tcp:send(Socket, Coded) of
 		ok ->
-			reflector:send_sync(daemon_client, management, {txok, MsgId}, ?SUBS);
+			switch:publish(?MODULE, management, {txok, MsgId});
+
 		{error,Reason} ->
 			base:elog(?MODULE, "send_to_server: ERROR, Reason[~p], MsgId[~p] Msg[~p]~n", [Reason, MsgId, Msg]),
-			reflector:send_sync(daemon_client, management, {txerror, MsgId}, ?SUBS)
+			switch:publish(?MODULE, management, {txerror, MsgId})			
+
 	end.
 
 

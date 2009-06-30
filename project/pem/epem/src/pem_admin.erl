@@ -4,7 +4,7 @@
 %%
 %% USES:
 %% ====
-%% - reflector
+%% - switch
 %% - base
 %% - daemon_client
 %%
@@ -26,7 +26,8 @@
 -define(EUNKNOWN,       10).
 
 
--define(SUBS, [
+-define(SUBS, [ 
+			   ready,
 			   management,
 			   from_daemon
 			   ]).
@@ -46,6 +47,11 @@
 		 gevent/1,
 		 hevent/1,
 		 hcevent/3
+		 ]).
+
+%% Switch duties
+-export([
+		 loop_switch/0
 		 ]).
 
 %% =========================================================================
@@ -81,11 +87,39 @@ stop() ->
 
 run(Cmd) ->
 	
+	%% Register ourselves as message switch
+	SPid = spawn(?MODULE, loop_switch, []),
+	register(switch, SPid),
+
 	Pid = spawn_link(?MODULE, loop, []),
 	register(?MODULE, Pid),
+	
 	?MODULE ! {run, Cmd},
 	{ok, Pid}.
 	
+
+
+%% ====================================================================!
+%% LOCAL functions
+%% ====================================================================!
+loop_switch() ->
+	receive
+		
+		%% SWITCH DUTY: subscribe
+		{From, subscribe, Type} ->
+			%%base:ilog(?MODULE, "switch: subscribe: From[~p] Type[~p]~n", [From, Type]),
+			switch:add_subscriber(From, Type);
+		
+		%% SWITCH DUTY: publish
+		{From, publish, {MsgType, Msg}} ->
+			%%base:ilog(?MODULE, "switch: publish: From[~p] Type[~p] Msg[~p]~n", [From, MsgType, Msg]),
+			switch:do_publish(From, MsgType, Msg);
+	
+		Other ->
+			base:elog(?MODULE, "switch: ERROR, invalid [~p]~n", [Other])
+			
+	end,
+	loop_switch().
 
 
 
@@ -107,50 +141,25 @@ loop() ->
 		
 		%% We don't really need the feedback...
 		%% Just suppress it.
-		{from_reflector, subscribed} ->
-			ok;
+		{switch, subscribed} ->
+			pem_admin_sup:start_link({?MODULE, ready});			
+
 		
 		%% Step #1
 		{run, Cmd} ->
+			switch:subscribe(pem_app, ?SUBS),			
 			put(cmd, Cmd),
-			put(state, run),
-			pem_admin_sup:start_link({?MODULE, ready});
+			put(state, run);
 
-		%% Step #2
-		modules_ready ->
-			%%base:ilog(?MODULE, "modules ready~n",[]),
-			reflector:sync_to_reflector(?SUBS),
-			base:send_to_list(modules_ready, mods_ready),
-			hevent(modules_ready);
-		
-		%% Step #3
-		modules_synced ->
-			%%base:send_to_list(modules_synced, mods_synced),
-			%%base:ilog(?MODULE, "modules sync'ed [~p]~n",[get(modules_synced)]),
-			hevent(modules_synced);
-		
+
 		%% Accumulate modules ready
 		%% In Step #1, a module sends the following message
 		%% once it is ready to process more messages ie.
 		%% its message loop is ready.
-		{ready, From, ready} ->
-			%%base:ilog(?MODULE, "module [~p] is ready~n", [From]),
-			put({ready, From}, true),
+		{daemon_client, ready, _} ->
+			put(state, ready),
+			hevent(ready);
 			
-			%% keep track of modules ready
-			base:add_to_list(modules_ready, From),
-			hevent({ready, From});
-		
-		%% Accumulate modules synced
-		%% In Step #2, a module sends the following message
-		%% once it is synced to the Reflector
-		{synced, From} ->
-			%%base:ilog(?MODULE, "module [~p] is synced~n", [From]),
-			put({synced, From}, true),
-			
-			%% keep track of modules synced
-			base:add_to_list(modules_synced, From),
-			hevent({synced, From});
 		
 		stop ->
 			exit(ok);
@@ -173,68 +182,43 @@ loop() ->
 			io:format("something is wrong... unhandled event[~p]~n", [Other])
 	
 	
-	%%after ?TIMEOUT ->
+	after ?TIMEOUT ->
 			
-		%%reflector:sync_to_reflector(?SUBS)
+		hevent(timeout)
 	
 	end,	
 	loop().
 
 
-hcevent(_, _, {ready, _From}) ->
-	Count = base:pvadd(count_modules_ready, 1),
-	case Count of
-		1 ->
-			ok;
-		2 ->
-			put(state, modules_ready),
-			gevent(modules_ready);
-		_ ->
-			ok
-	end;
-
-hcevent(_, _, {synced, _From}) ->
-	Count = base:pvadd(count_modules_synced, 1),
-	case Count of
-		1 ->
-			put(state, modules_synced),
-			gevent(modules_synced);
-		_ ->
-			 ok
-	end;
-
 
 	
 %% Try to start a daemon
 %%      Cmd, State, Event
-hcevent(_,   _,     modules_ready) ->
-	gevent( modules_ready ),
-	ok;
 
-
-hcevent(_  , _    , modules_synced) ->
-	Port=base:getport(),
-	put(state, synced),
-	%%io:format("Port: ~p~n", [Port]),
-	gevent( {port, Port} );	
-
-%% We've got a valid port... let's try to connect
-hcevent(_, synced, {port, {port, Port}} ) ->
-	put(state, tryconnect),
-	reflector:send(pem_admin, management_port, Port),
-	reflector:send(pem_admin, client, doconnect),
-	ok;
-
-%% Can't get a port... no daemon (probably)
-hcevent(start, run, {port, _} ) ->
-	io:format("no management port found~n"),
-	halt(?CANSTART);
+hcevent(_, _, ready) ->
 	
+	Porte=base:getport(),
+	case Porte of
+		{port, Port} when is_number(Port) ->
+			put(state, tryconnect),
+			switch:publish(?MODULE, client, {doconnect, Port});
+		_ ->
+			halt(?CANSTART)
+	end;
+
+
+hcevent(_, tryconnect, timeout) ->
+	halt(?COMMERROR);
+
+
 %% We've got a port opened ... possibly to the daemon
 hcevent(start, tryconnect, {management, open}) ->
 	put(state, wait_pid),
-	reflector:send(pem_admin, to_daemon, {asked_pid, what_pid}),
+	switch:publish(?MODULE, to_daemon, {asked_pid, what_pid}),	
 	ok;
+
+hcevent(_, wait_pid, timeout) ->
+	halt(?COMMERROR);
 
 hcevent(start, wait_pid, {management, {txerror, _}}) ->
 	%%io:format("communication error to daemon~n"),
@@ -258,16 +242,11 @@ hcevent(start, tryconnect, {management, _Other}) ->
 %% =================== STOP ========================
 
 
-%% Can't get a port... no daemon (probably)
-hcevent(stop, synced, {port, _} ) ->
-	io:format("no management port found~n"),
-	halt(?CANNOTSTOP);
-
 
 %% We've got a port opened ... possibly to the daemon
 hcevent(stop, tryconnect, {management, open}) ->
 	put(state, wait_pid),
-	reflector:send(pem_admin, to_daemon, {asked_exit, do_exit}),
+	switch:publish(?MODULE, to_daemon, {asked_exit, do_exit}),	
 	ok;
 
 hcevent(stop, tryconnect, {management, {txok, _}}) ->
@@ -277,6 +256,9 @@ hcevent(stop, tryconnect, {management, {txok, _}}) ->
 hcevent(stop, tryconnect, {management, _Other}) ->
 	%%io:format("no daemon found~n"),
 	halt(?NODAEMON);
+
+hcevent(_, _, timeout) ->
+	ok;
 
 hcevent(Cmd, State, Event) ->
 	io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
