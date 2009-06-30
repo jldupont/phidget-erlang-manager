@@ -166,7 +166,7 @@ loop() ->
 		
 		%%from daemon_client on behalf of daemon
 		{from_daemon, Msg} ->
-			io:format("from_daemon: ~p~n", [Msg]),
+			%%io:format("from_daemon: ~p~n", [Msg]),
 			hevent({from_daemon, Msg});
 		
 		Other ->

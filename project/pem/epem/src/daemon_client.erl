@@ -124,7 +124,7 @@ loop_connection() ->
 		%% From socket
 		{tcp, _Sock, Data} ->
 			Message = binary_to_term(Data),
-			io:format("received: ~p~n",[Message]),
+			%%io:format("received: ~p~n",[Message]),
 			send_to_reflector(Message);
 
 		%% From socket
