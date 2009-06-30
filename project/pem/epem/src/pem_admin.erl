@@ -161,10 +161,12 @@ loop() ->
 	
 		%%from daemon_client
 		{management, Msg} ->
+			%%io:format("management: ~p~n", [Msg]),
 			hevent({management, Msg});
 		
 		%%from daemon_client on behalf of daemon
 		{from_daemon, Msg} ->
+			io:format("from_daemon: ~p~n", [Msg]),
 			hevent({from_daemon, Msg});
 		
 		Other ->
@@ -213,6 +215,7 @@ hcevent(_,   _,     modules_ready) ->
 hcevent(_  , _    , modules_synced) ->
 	Port=base:getport(),
 	put(state, synced),
+	%%io:format("Port: ~p~n", [Port]),
 	gevent( {port, Port} );	
 
 %% We've got a valid port... let's try to connect
@@ -275,8 +278,8 @@ hcevent(stop, tryconnect, {management, _Other}) ->
 	%%io:format("no daemon found~n"),
 	halt(?NODAEMON);
 
-hcevent(_Cmd, _State, _Event) ->
-	%%io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
+hcevent(Cmd, State, Event) ->
+	io:format(">>> something is wrong... Cmd[~p] State[~p] Event[~p]~n", [Cmd, State, Event]),
 	halt(?EUNKNOWN).
 
 

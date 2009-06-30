@@ -108,6 +108,7 @@ loop_daemon() ->  %%daemon_server loop
 		
 		%% Status of transmission to client side
 		{tx_status, {info, Code, MsgId}} ->
+			%%base:ilog(?MODULE, "tx_status: Code[~p] MsgId[~p]~n",[Code, MsgId]),
 			switch:publish(?MODULE, to_client_tx_status, {MsgId, Code});
 
 		
@@ -123,7 +124,7 @@ loop_daemon() ->  %%daemon_server loop
 		
 		%% message to send down the socket ... if any.
 		%% send to socket process for delivery
-		{to_client, {MsgId, Msg}} ->
+		{_From, to_client, {MsgId, Msg}} ->
 			SocketPid = get(socket_pid),
 			send_for_client(SocketPid, MsgId, Msg);
 		
@@ -160,9 +161,12 @@ loop_daemon() ->  %%daemon_server loop
 			%%base:elog(?MODULE,"LSocket Error[~p]~n", [Reason]);
 		
 		{error, socket, _Reason} ->
-			ok
+			ok;
 			%%base:elog(?MODULE,"Socket Error[~p]~n", [Reason])
 
+		Other ->
+			base:elog(?MODULE, "unhandled message [~p]~n", [Other])
+	
 	%% We always have to sync to the reflector;
 	%% we can't rely on the having to send stuff
 	%% to re-sync.
