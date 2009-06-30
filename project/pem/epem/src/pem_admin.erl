@@ -257,6 +257,15 @@ hcevent(stop, tryconnect, {management, _Other}) ->
 	%%io:format("no daemon found~n"),
 	halt(?NODAEMON);
 
+hcevent(stop, wait_pid, {management, {txok, _}}) ->
+	%%io:format("stop command sent~n"),
+	halt(?STOPSENT);
+
+hcevent(stop, wait_pid, {management, {txerror, _}}) ->
+	%%io:format("stop command sent~n"),
+	halt(?COMMERROR);
+
+
 hcevent(_, _, timeout) ->
 	ok;
 
