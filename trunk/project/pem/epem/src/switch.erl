@@ -1,9 +1,6 @@
 %% Author:      Jean-Lou Dupont
 %% Created:     2009-06-28
 %% Description: Message Switch support functions
-%%
-%%
-%%
 
 -module(switch).
 

@@ -1,6 +1,6 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-19
-%% Description: TODO: Add description to ifk
+%% Description: Phidget InterfaceKit driver
 %%
 %% MESSAGES GENERATED:
 %% ===================
@@ -18,9 +18,6 @@
 %%
 %% MACROS
 %%
--define(ilog(X,Y), error_logger:info_msg("~p:~p: " X,
-                                         [?MODULE, ?LINE | Y])).
-
 -define(DRV_IFK_DEBUG, "pem_drv_ifk_debug").
 -define(DRV_IFK,       "pem_drv_ifk").
 
@@ -275,8 +272,6 @@ send_to_reflector(Decoded) ->
 	{Msgtype, Msg} = Decoded,
 	M = {Msg, {date(), time(), now()}},
 	switch:publish(?MODULE, Msgtype, M).
-
-
 
 
 %% =======================

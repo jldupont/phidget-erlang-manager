@@ -104,7 +104,7 @@ loop_switch() ->
 		
 		%% SWITCH DUTY: subscribe
 		{From, subscribe, Type} ->
-			%%base:ilog(?MODULE, "switch: subscribe: From[~p] Type[~p]~n", [From, Type]),
+			base:ilog(?MODULE, "switch: subscribe: From[~p] Type[~p]~n", [From, Type]),
 			switch:add_subscriber(From, Type);
 		
 		%% SWITCH DUTY: publish
@@ -138,7 +138,7 @@ loop() ->
 			?MODULE ! stop;
 		
 
-		{From, ready, Pid} ->
+		{_From, ready, _Pid} ->
 			ok;
 			%%base:ilog(?MODULE, "ready [~p][~p]~n", [From, Pid]);
 			

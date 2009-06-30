@@ -32,13 +32,11 @@ start_link({Recipient, Msg}) ->
 %% --------------------------------------------------------------------
 init([Params]) ->
 	
-    Child_reflector = {reflector,{reflector,start_link,[Params]},
-	      permanent,2000,worker,[reflector]},
-
     Child_client = {daemon_client,{daemon_client,start_link,[Params]},
 	      permanent,2000,worker,[daemon_client]},
 	
 	
-    {ok,{{one_for_one,5,1}, [Child_reflector,
+    {ok,{{one_for_one,5,1}, [
+							 
 							 Child_client
 							 ]}}.
