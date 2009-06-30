@@ -44,15 +44,15 @@ init(Args) ->
     Child_daemon = {daemon_server,{daemon_server,start_link,[Args]},
 	      permanent,2000,worker,[daemon_server]},
 	
-%%    Child_manager = {manager,{manager,start_link,[Args]},
-%%	      permanent,2000,worker,[manager]},
+    Child_manager = {manager,{manager,start_link,[Args]},
+	      permanent,2000,worker,[manager]},
 
-%%    Child_ifk = {ifk,{ifk,start_link,[Args]},
-%%	      permanent,2000,worker,[ifk]},
+    Child_ifk = {ifk,{ifk,start_link,[Args]},
+	      permanent,2000,worker,[ifk]},
 	
     {ok,{{one_for_one,5,1}, [
-							 %%Child_manager, 
-							 %%Child_ifk,
+							 Child_manager, 
+							 Child_ifk,
 							 
 							 Child_control,
 							 Child_journal,
