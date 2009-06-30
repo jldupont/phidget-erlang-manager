@@ -21,14 +21,15 @@
 -define(DRV_MNG_DEBUG, "pem_drv_mng_debug").
 
 -define(TIMEOUT,       2000).
--define(SUBS,          [daemonized]).
+-define(SUBS,          []).
 
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 start_link/1,
-	 stop/0
+		start_link/0,
+		start_link/1,
+		stop/0
         ]).
 
 %% --------------------------------------------------------------------
@@ -44,11 +45,14 @@
 %% ====================================================================!
 %% API functions
 %% ====================================================================!
+start_link() ->
+	start_link([]).
+
 start_link(Args) ->
 	
 	{debug, Debug}=base:kfind(debug, Args,false),
 	DrvPath = base:pole(Debug, true, false, ?DRV_MNG_DEBUG, ?DRV_MNG),			
-	LD = {driver_path, DrvPath},
+	LD = [{driver_path, DrvPath}],
 	NArgs = lists:append(Args, LD),
 	
 	base:ilog(?MODULE, "start_link: Args[~p]~n",[NArgs]),
@@ -86,25 +90,10 @@ loop() ->
 		%% Send the 'ready' signal
 		{args, Args} ->
 			put(args, Args),
-			{root, Root} = base:kfind(root, Args),
-			{driver_path, DrvPath} = base:kfind(drv_path, Args),
+			{driver_path, DrvPath} = base:kfind(driver_path, Args),
 			put(driver_path, DrvPath),
-			base:send_ready_signal(reflector, Root, {});
-
-		
-		{from_reflector, subscribed} ->
-			ok;
-		
-		%% Only start when we are actually in daemon mode
-		{daemonized, _} ->
-			DrvPath=get(driver_path),
+			switch:publish(manager, ready, self()),
 			start_drv(DrvPath);
-		
-		
-		%% Grab driver's path
-		{driver, canstart, DrvPath} ->
-			put(driver_path, DrvPath);
-			
 		
 		{driver, crashed} ->
 			base:elog(?MODULE, "driver crashed~n", []),
@@ -137,7 +126,7 @@ loop_drv(Port) ->
 			%%            Atom     Tuple
 			{MsgType, Msg} = Decoded,
 			M = {Msg, {date(), time(), now()}},
-			reflector:send(self(), MsgType, M)
+			switch:publish(?MODULE, MsgType, M)
 	
 	end,
 	loop_drv(Port).

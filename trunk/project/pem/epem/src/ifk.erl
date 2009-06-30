@@ -24,12 +24,13 @@
 -define(DRV_IFK_DEBUG, "pem_drv_ifk_debug").
 -define(DRV_IFK,       "pem_drv_ifk").
 
--define(SUBS,          [daemonized]).
+-define(SUBS,          [phidgetdevice]).
 
 %%
 %% Exported Functions
 %%
 -export([
+	 start_link/0,		 
 	 start_link/1,	 
 	 stop/0
         ]).
@@ -37,8 +38,6 @@
 -export([
 		 loop/0,
 		 loop_handler/1,
-		 sync_reflector/0,
-		 sync_reflector/2,
 		 handle_phidgetdevice/2,
 		 filter_device/4,
 		 handle_ifk/3,
@@ -55,17 +54,21 @@
 %% =============
 %% API Functions
 %% =============
+start_link() ->
+	start_link([]).
+
 start_link(Args) ->
 		
 	{debug, Debug}=base:kfind(debug, Args,false),
 	DrvPath = base:pole(Debug, true, false, ?DRV_IFK_DEBUG, ?DRV_IFK),			
-	LD = {driver_path, DrvPath},
+	LD = [{driver_path, DrvPath}],
 	NArgs = lists:append(Args, LD),
 	
 	base:ilog(?MODULE, "start_link: Args[~p]~n",[NArgs]),
 
 	Pid = spawn_link(?MODULE, loop, []),
 	register( ?MODULE, Pid ),
+	
 	?MODULE ! {args, NArgs},
 	{ok, Pid}.
 
@@ -81,29 +84,28 @@ loop() ->
 		%% Send the 'ready' signal
 		{args, Args} ->
 			put(args, Args),
-			{root, Root} = base:kfind(root, Args),
-			{driver_path, DrvPath} = base:kfind(drv_path, Args),
+			{driver_path, DrvPath} = base:kfind(driver_path, Args),
 			put(driver_path, DrvPath),
-			base:send_ready_signal(reflector, Root, {});
+			switch:subscribe(?MODULE, ?SUBS);
 		
+		%% Send the 'ready' signal
+		{switch, subscribed} ->
+			%%base:ilog(?MODULE, "subscribed~n",[]),
+			switch:publish(?MODULE, ready, self());
 		
-		{from_reflector, subscribed} ->
-			ok;
 		
 		stop ->
-			error_logger:warning_msg("~p: exiting", [?MODULE]),
+			base:ilog(?MODULE, "exiting~n", []),
 			exit(ok);
 
-		{reflector, subscribe, ok} ->
-			ok;
 		
 		%%verify that it is an "InterfaceKit" device
-		{phidgetdevice, M, Ts} ->
-			error_logger:info_msg("~p: loop: received 'phidgetdevice'~n", [?MODULE]),
+		{_From, phidgetdevice, {M, Ts}} ->
+			%%base:ilog(?MODULE,"received 'phidgetdevice'~n", []),
 			handle_phidgetdevice(M, Ts);
 		
 		{driver, Serial, Port, Pid} ->
-			error_logger:info_msg("~p: loop: received driver info, Serial[~p] Port[~p] Pid[~p]~n", [?MODULE, Serial, Port, Pid]),
+			base:ilog(?MODULE,"received driver info, Serial[~p] Port[~p] Pid[~p]~n", [Serial, Port, Pid]),
 			put({port,  Serial}, Port),
 			put({pid,   Serial}, Pid),
 			put({serial, Port},  Serial);
@@ -113,44 +115,22 @@ loop() ->
 		
 		%%don't know what todo
 		Other ->
-			error_logger:info_msg("~p: received: [~p]~n", [?MODULE, Other])
-	
-	after 2000 ->
-
-		sync_reflector()
+			base:ilog(?MODULE,"received unknown msg: [~p]~n", [Other])
 	
 	end,
 	?MODULE:loop().
 
 clean_driver(undefined) ->
-	error_logger:warning_msg("~p: clean_driver: received undefined", [?MODULE]);
+	base:ilog(?MODULE, "clean_driver: received undefined", []);
 
 clean_driver(Port) ->
 	Serial = get({serial, Port}),
-	error_logger:info_msg("~p: clean_driver: Serial[~p] Port[~p]~n", [?MODULE, Serial, Port]),
+	base:ilog(?MODULE, "clean_driver: Serial[~p] Port[~p]~n", [Serial, Port]),
 	erase({port, Serial}),
 	erase({pid, Serial}),
 	erase({serial, Port}).
 
 
-%% =====================
-%% Sync to Reflector
-%% =====================
-
-sync_reflector() ->
-	Current = whereis(reflector),
-	Old = get(reflector_pid),
-	sync_reflector(Old, Current).
-
-sync_reflector(Old, Current) when Old == Current ->
-	%%error_logger:info_msg("~p: sync_reflector: unchanged~n", [?MODULE]),
-	Old;
-
-sync_reflector(Old, Current) when Old /= Current ->
-	Response = reflector:subscribe(?MODULE, phidgetdevice),
-	error_logger:info_msg("~p: sync_reflector: subscription response[~p]~n", [?MODULE, Response]),
-	put(reflector_pid, Current),
-	Current.
 
 
 %% =====================
@@ -183,7 +163,7 @@ handle_ifk(Serial, active, Ts) ->
 	ok;
 
 handle_ifk(Serial, State, _) ->
-	error_logger:error_msg("~p: handle_ifk: Serial[~p] INVALID STATE[~p]~n", [?MODULE, Serial, State]),
+	base:elog(?MODULE, "handle_ifk: Serial[~p] INVALID STATE[~p]~n", [Serial, State]),
 	ok.
 
 
@@ -206,7 +186,7 @@ handle_active(Serial, undefined, invalid, _Ts) ->
 	DriverPath = get(driver_path),
 	%%error_logger:info_msg("~p: handle_active: DriverPath[~p]~n", [?MODULE, DriverPath]),
 	Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]),
-	error_logger:info_msg("~p: handle_active: Serial[~p] Pid[~p]~n", [?MODULE, Serial, Pid]),	
+	base:ilog(?MODULE, "handle_active: Serial[~p] Pid[~p]~n", [Serial, Pid]),	
 	ok;
 
 
@@ -275,25 +255,27 @@ loop_handler(Port) ->
 	receive
 			
 		{Port, {exit_status, _}} ->
-			error_logger:error_msg("~p: loop_handler: an ifk driver exited/could not load~n", [?MODULE]),
+			base:elog(?MODULE, "loop_handler: an ifk driver exited/could not load~n", []),
 			handle_crashed_driver(Port),
 			exit(crashed);
 			
 			
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
-			error_logger:info_msg("~p: loop_handler: decoded msg[~p]~n", [?MODULE, Decoded]),
+			%%base:ilog(?MODULE, "loop_handler: decoded msg[~p]~n", [Decoded]),
 			send_to_reflector(Decoded);
 		
 		Msg ->
-			error_logger:info_msg("~p: loop_handler: msg[~p]~n", [?MODULE, Msg])
+			base:ilog(?MODULE,"loop_handler: msg[~p]~n", [Msg])
 	end,
 	loop_handler(Port).
+
 
 send_to_reflector(Decoded) ->
 	{Msgtype, Msg} = Decoded,
 	M = {Msg, {date(), time(), now()}},
-	reflector:send(self(), Msgtype, M).
+	switch:publish(?MODULE, Msgtype, M).
+
 
 
 
