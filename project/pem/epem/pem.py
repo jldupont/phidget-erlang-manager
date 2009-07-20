@@ -42,20 +42,22 @@ class Command(object):
         return proc.wait()
     
     def cmd_start(self):
-        """
+        """ Starts the daemon (if possible)
         """
         ret = self.erladmin("start")
         action = self.lookup("start", ret)
         return ret
         
     def cmd_stop(self):
-        """
+        """ Stops the daemon (if possible)
         """
         ret = self.erladmin("stop")
         action = self.lookup("start", ret)
         return ret
     
     def lookup(self, context, retcode):
+        """
+        """
         state=self.codes.get(retcode, 10)
         return state[context]
         
