@@ -92,6 +92,11 @@ if 'deb' in COMMAND_LINE_TARGETS:
 		print """scons: copying beam files"""
 		shutil.copytree("./epem/ebin", "/tmp/%s_deb/DEBIAN/usr/share/pem/bin" % this_lib)
 
+		print """scons: copying pem.py to pem & setting permissions"""
+		path="/tmp/%s_deb/usr/bin/pem" % this_lib
+		shutil.copy("./epem/pem.py", path)
+		os.chmod(path, 0775)
+
 	except Exception,e:
 		print "*** ERROR [%s] ***" % e
 	
@@ -132,7 +137,7 @@ if 'rel' in COMMAND_LINE_TARGETS:
 	os.system("rm /tmp/%s/%s/.sconsign.dblite" % (this_lib, this_lib))
 	os.system("rm -r /tmp/%s/%s/*.pyc" % (this_lib, this_lib))
 	print "scons: creating ZIP archive"
-	os.system("cd /tmp/%s && zip -r /tmp/%s-sources-%s.zip %s -x *.svn* *.os *.so" % (this_lib, this_lib, version, this_lib))
+	os.system("cd /tmp/%s && zip -r /tmp/%s-sources-%s.zip %s -x *.svn* *.os *.so *.LOG *.DAT *.settings* *.cproject* *.project* *.pydevproject* *old* *.prefs" % (this_lib, this_lib, version, this_lib))
 
 
 if 'up' in COMMAND_LINE_TARGETS:
