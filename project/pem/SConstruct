@@ -68,7 +68,7 @@ if 'deb' in COMMAND_LINE_TARGETS:
 		for one in all:
 			src, dst = one
 			#release
-			print "scons: cloning [%s]" % src
+			print "scons: cloning [%s]" % (src % ('release', ''))
 			shutil.copy(	src % ('release', ''), 
 							dst % ('',        version) )
 			#debug
