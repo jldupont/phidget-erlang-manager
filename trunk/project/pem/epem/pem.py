@@ -22,8 +22,8 @@ usage = \
 class Command(object):
     """ Communicates Command to the PEM daemon
     """
-    erladmincmd  = "erl -noshell -pa ./ebin -s pem_admin start %s"
-    erldaemoncmd = "erl -noshell -detached -boot start_sasl -config elog.config -pa ./ebin -s pem_app"
+    erladmincmd  = "erl -noshell -pa ./ebin /usr/share/pem/bin -s pem_admin start %s"
+    erldaemoncmd = "erl -noshell -detached -boot start_sasl -config elog.config -pa ./ebin /usr/share/pem/bin -s pem_app"
     
     codes = {   0: {"m":"cannot start",         "start":False,   "stop":True     },
                 1: {"m":"stop sent",            "start":False,   "stop":True     },
