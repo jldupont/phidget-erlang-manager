@@ -23,9 +23,10 @@ class Command(object):
     """ Communicates Command to the PEM daemon
     """
     erladmincmd  = "erl -noshell -pa ./ebin /usr/share/pem/bin -s pem_admin start %s"
-    erldaemoncmd = "erl -noshell -detached -boot start_sasl -config elog.config -pa ./ebin /usr/share/pem/bin -s pem_app"
+    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -s pem_app"
+    #erldaemoncmd = "erl -noshell -detached -boot start_sasl -pa ./ebin /usr/share/pem/bin -s pem_app"
     
-    codes = {   0: {"m":"cannot start",         "start":False,   "stop":True     },
+    codes = {   0: {"m":"cannot start",         "start":False,   "stop":False    },
                 1: {"m":"stop sent",            "start":False,   "stop":True     },
                 2: {"m":"unknown command",      "start":False,   "stop":False    },
                 3: {"m":"cannot stop",          "start":True,    "stop":False    },
@@ -35,32 +36,55 @@ class Command(object):
                 10:{"m":"unknown error",        "start":False,   "stop":False    }
              }
     
+    def __init__(self, verbose=False):
+        self.verbose=verbose
+    
     def erladmin(self, cmd):
         """Executes the Erlang administration program for PEM
         """
         proc = subprocess.Popen(self.erladmincmd % cmd, shell=True)
         return proc.wait()
     
+    def erldaemon(self):
+        proc = subprocess.Popen(self.erldaemoncmd, shell=True)
+        return proc
+    
     def cmd_start(self):
         """ Starts the daemon (if possible)
         """
         ret = self.erladmin("start")
-        action = self.lookup("start", ret)
-        return ret
+        proceed = self.lookup("start", ret)
+        if proceed:
+            self.cprint("""pem: attempting to start daemon""")
+            
+            proc = self.erldaemon()
+            
+            not_terminated = (proc.returncode == None)
+            if not_terminated:
+                self.cprint( """pem: daemon started""" )
+                
+        else:
+            self.cprint("""pem: daemon cannot be started/already present""")
+            
         
     def cmd_stop(self):
         """ Stops the daemon (if possible)
         """
         ret = self.erladmin("stop")
-        action = self.lookup("start", ret)
-        return ret
+        proceed = self.lookup("stop", ret)
+        if proceed:
+            self.cprint("""pem: daemon stop issued""")
+        else:
+            self.cprint("""pem: daemon not present/cannot be stopped""")
     
     def lookup(self, context, retcode):
-        """
-        """
         state=self.codes.get(retcode, 10)
         return state[context]
-        
+
+    def cprint(self, msg):
+        if self.verbose:
+            print msg
+            
     
 
 def main():
@@ -76,8 +100,9 @@ def main():
     if len(args) != 1:
         parser.error("incorrect number of arguments")
     
-    fun = "cmd_%s" % args[0]
-    cmd = Command()
+    context = args[0]
+    fun = "cmd_%s" % context
+    cmd = Command(verbose=options.verbose)
     
     try:
         func = getattr(cmd, fun)
@@ -88,10 +113,11 @@ def main():
     try:
         ret = func()
     except Exception,e:
-        print "Error in command [%s]" % (str(e))
+        if not options.quiet:
+            print "Error in command [%s]" % (str(e))
         sys.exit(1)
         
-    print ret
+    
     sys.exit(ret)
     
 
