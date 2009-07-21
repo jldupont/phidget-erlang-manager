@@ -86,7 +86,8 @@ if command == 'configure':
 		bd  = one % "_debug"
 		
 		#remove current version
-		if version:
+		# **ONLY** if it is not the version we are trying to install ;-)
+		if version != this_version:
 			try:	
 				os.remove(cv)
 				print "%s: removed [%s]" % (this_lib, cv)
