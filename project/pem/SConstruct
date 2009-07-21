@@ -89,6 +89,8 @@ if 'deb' in COMMAND_LINE_TARGETS:
 		print """scons: adjusting permissions for `dkpg-deb` command-line"""
 		recursive_chmod("/tmp/%s_deb" % this_lib, mode=0775)
 
+		print """scons: copying beam files"""
+		shutil.copytree("./epem/ebin", "/tmp/%s_deb/DEBIAN/usr/share/pem/bin" % this_lib)
 
 	except Exception,e:
 		print "*** ERROR [%s] ***" % e

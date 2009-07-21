@@ -1,0 +1,8 @@
+DAEMON
+======
+* COPY  pem.py to pem
+* CHMOD pem TO executable
+* COPY pem to /usr/bin
+
+* COPY beam files TO /usr/share/pem/bin
+
