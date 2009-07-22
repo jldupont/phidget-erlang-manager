@@ -2,6 +2,7 @@ Package: pem
 Version: $version
 Priority: optional
 Architecture: i386
+Depends: mysql-server (>=5.0), python (>=2.5)
 Section: Other
 Maintainer: Jean-Lou Dupont <pem@jldupont.com>
 Description: Erlang Port drivers for Phidgets
