@@ -23,7 +23,7 @@ class Command(object):
     """ Communicates Command to the PEM daemon
     """
     erladmincmd  = "erl -noshell -pa ./ebin /usr/share/pem/bin -s pem_admin start %s"
-    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -s pem_app"
+    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -s pem_app start %s %s %s"
     #erldaemoncmd = "erl -noshell -detached -boot start_sasl -pa ./ebin /usr/share/pem/bin -s pem_app"
     
     codes = {   0: {"m":"cannot start",         "start":False,   "stop":False    },
@@ -38,6 +38,9 @@ class Command(object):
     
     def __init__(self, verbose=False):
         self.verbose=verbose
+        self.database=None
+        self.username=None
+        self.password=None
     
     def erladmin(self, cmd):
         """Executes the Erlang administration program for PEM
@@ -46,7 +49,8 @@ class Command(object):
         return proc.wait()
     
     def erldaemon(self):
-        proc = subprocess.Popen(self.erldaemoncmd, shell=True)
+        cmd = self.erldaemoncmd % (self.database, self.username, self.password)
+        proc = subprocess.Popen(cmd, shell=True)
         return proc
     
     def cmd_start(self):
@@ -92,18 +96,38 @@ def main():
     """
     parser=OptionParser(usage)
 
-    parser.add_option("-v", "--verbose", action="store_true",  dest="verbose")
-    parser.add_option("-q", "--quiet",   action="store_false", dest="verbose")
+    parser.add_option("-v", "--verbose",  action="store_true",  dest="verbose")
+    parser.add_option("-q", "--quiet",    action="store_false", dest="verbose")
+    
+    #database related
+    parser.add_option("-d", "--database", action="store",       dest="database")
+    parser.add_option("-u", "--username", action="store",       dest="username")
+    parser.add_option("-p", "--password", action="store",       dest="password")
 
     (options, args) = parser.parse_args()
     
     if len(args) != 1:
         parser.error("incorrect number of arguments")
-    
+      
     context = args[0]
     fun = "cmd_%s" % context
     cmd = Command(verbose=options.verbose)
     
+    # start command? then we need database details
+    if context == "start":
+        cmd.database = getattr(options, "database", None)
+        cmd.username = getattr(options, "username", None)
+        cmd.password = getattr(options, "password", None)
+        
+        if cmd.database is None:
+            parser.error("missing MySQL database name")
+            
+        if cmd.username is None:
+            parser.error("missing username for MySQL database access")
+            
+        if cmd.password is None:
+            parser.error("missing password for MySQL database access")
+        
     try:
         func = getattr(cmd, fun)
     except:

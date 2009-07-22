@@ -379,7 +379,7 @@ kfind(Key, List) ->
 				{value, Value} ->
 					Value;
 				_ ->
-					error
+					false
 			end
 	end.
 	
@@ -389,7 +389,7 @@ kfind(Key, [], Default) ->
 kfind(Key, List, Default) ->
 	Ret=base:kfind(Key, List),
 	case Ret of
-		error ->
+		false ->
 			{Key, Default};
 		{Key, Value} ->
 			{Key, Value}
