@@ -72,6 +72,9 @@ loop() ->
 			%%base:ilog(?MODULE, "subscribed~n",[]),
 			switch:publish(journal, ready, self());
 
+		%% Receive database details
+		{db_details, Db, User, Pass} ->
+			ok;
 			
 		stop ->
 			exit(ok);

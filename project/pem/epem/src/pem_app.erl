@@ -65,6 +65,9 @@ start() ->
 %%	start_daemon(undefined).
 
 %% START
+start([Database, Username, Password]) ->
+	start_daemon([{database, Database}, {username, Username}, {password, Password}]);
+
 start([debug]) ->
 	start_daemon([{debug, true}]).
 
@@ -121,6 +124,7 @@ loop_switch() ->
 
 loop() ->
 	receive
+		%% upon start only
 		{args, Args} ->
 			put(args, Args),
 			switch:subscribe(pem_app, ?SUBS),
@@ -136,7 +140,15 @@ loop() ->
 		{_From, daemon_exit, _} ->
 			?MODULE ! stop;
 		
-
+		%% Journal is ready, send database access details
+		{journal, ready, _Pid} ->
+			List = get(args),
+			{database, Db  } = base:kfind(database, List, undefined),
+			{username, User} = base:kfind(username, List, undefined),
+			{password, Pass} = base:kfind(password, List, undefined),
+			journal ! {db_details, Db, User, Pass},
+			ok;
+		
 		{_From, ready, _Pid} ->
 			ok;
 			%%base:ilog(?MODULE, "ready [~p][~p]~n", [From, Pid]);
