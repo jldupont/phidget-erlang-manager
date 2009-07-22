@@ -23,10 +23,9 @@ class Command(object):
     """ Communicates Command to the PEM daemon
     """
     erladmincmd  = "erl -noshell -pa ./ebin /usr/share/pem/bin -s pem_admin start %s"
-    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -s pem_app start %s %s %s"
-    #erldaemoncmd = "erl -noshell -detached -boot start_sasl -pa ./ebin /usr/share/pem/bin -s pem_app"
+    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -sname pem -run pem_app start %s %s %s"
     
-    codes = {   0: {"m":"cannot start",         "start":False,   "stop":False    },
+    codes = {   0: {"m":"can start",            "start":True,    "stop":False    },
                 1: {"m":"stop sent",            "start":False,   "stop":True     },
                 2: {"m":"unknown command",      "start":False,   "stop":False    },
                 3: {"m":"cannot stop",          "start":True,    "stop":False    },
@@ -58,6 +57,7 @@ class Command(object):
         """
         ret = self.erladmin("start")
         proceed = self.lookup("start", ret)
+        print ret
         if proceed:
             self.cprint("""pem: attempting to start daemon""")
             

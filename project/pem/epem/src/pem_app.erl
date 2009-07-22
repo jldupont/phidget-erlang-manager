@@ -24,7 +24,8 @@
 %% --------------------------------------------------------------------
 -export([
 		 start/0,
-		 start/1
+		 start/1,
+		 start/3
 		 ]).
 
 %% --------------------------------------------------------------------
@@ -61,11 +62,11 @@
 start() ->
 	start_daemon([{debug, false}]).
 	
-%%	base:ilog(?MODULE, "start~n", []),
-%%	start_daemon(undefined).
+start(Database, Username, Password) ->
+	start_daemon([{database, Database}, {username, Username}, {password, Password}]).
 
-%% START
 start([Database, Username, Password]) ->
+	io:format("here~n"),
 	start_daemon([{database, Database}, {username, Username}, {password, Password}]);
 
 start([debug]) ->
