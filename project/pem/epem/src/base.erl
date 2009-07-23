@@ -532,6 +532,9 @@ condexec(Cond, VarName, Param, Fun, Args) ->
 
 and_ret(R1, R2)->
 	case R1 of
+		ok ->
+			R2;
+		
 		{ok, _Ret} ->
 			R2;
 	
