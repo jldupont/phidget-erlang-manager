@@ -67,6 +67,11 @@
 		 getvar/3,
 		 condexec/5
 		 ]).
+
+-export([
+		 and_ret/2
+		 ]).
+
 %%
 %% API Functions
 %%
@@ -525,3 +530,14 @@ condexec(Cond, VarName, Param, Fun, Args) ->
 	Ret.
 
 
+and_ret(R1, R2)->
+	case R1 of
+		{ok, _Ret} ->
+			R2;
+	
+		Other ->
+			Other
+	end.
+
+
+	
