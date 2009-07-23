@@ -25,24 +25,24 @@
 -define(device_table, "CREATE TABLE IF NOT EXISTS `device` ("
 	   "`serial` int(8) NOT NULL, "
 	   "`type` varchar(64) NOT NULL, "
-	   "`version` varchar(255) NOT NULL, "
+	   "`version` varchar(64) NOT NULL, "
 	   "`name` varchar(64) NOT NULL, "
 	   "`label` varchar(64) NOT NULL, "
 	   "`ts` timestamp NOT NULL);").
 
 -define(event_table, "CREATE TABLE IF NOT EXISTS `event` ("
   "`serial` int(8) NOT NULL,"
-  "`index` int(2) NOT NULL,"
+  "`id` int(8) NOT NULL,"
   "`value` int(8) NOT NULL,"
-  "`ts` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP) ").
+  "`ts` timestamp NOT NULL);").
 
 
 -define(insert_device_statement, "INSERT INTO device(serial, type, version, name, label, ts)"
-	   "VALUES(?, ?, ?, ?, ?, ?)").
+	   "VALUES(?, ?, ?, ?, ?, ?);").
 
 
--define(insert_event_statement, "INSERT INTO event(serial, index, value, ts)"
-	   "VALUES(?, ?, ?, ?)").
+-define(insert_event_statement, "INSERT INTO event(serial, id, value, ts)"
+	   "VALUES(?, ?, ?, ?);").
 
 
 %%
