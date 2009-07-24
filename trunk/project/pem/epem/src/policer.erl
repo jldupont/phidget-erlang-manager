@@ -18,14 +18,31 @@
 %% Local functions
 -export([
 		 loop/1,
-		 do_policing/4
+		 do_policing/5
 		 ]).
+
+%% TESTS
+-export([
+		 create_token_policer/0,
+		 test_police/1
+		 ]).
+
+%%
+%% Test API
+%%
+create_token_policer() ->
+	Buckets=[{bucket1, 2, 3*1000*1000}, {bucket2, 5, 10*1000*1000}],
+	create_token_policer(Buckets).
+
+test_police(Policer) ->
+	police(Policer, undefined, passed, dropped).
+
 
 %%
 %% API Functions
 %%
 
-%% Bucket = {id, Tokens, Period}
+%% Bucket = {id, MaxTokens, PeriodDuration}
 %% Buckets = [Bucket...]
 %% `id` should be formatted as atom bucketXX where XX is unique
 %% Period: interval duration in microseconds
@@ -48,7 +65,7 @@ loop(Buckets) ->
 	receive
 
 		{police, ReplyTo, PassMsg, DropMsg} ->
-			do_policing(Buckets, ReplyTo, PassMsg, DropMsg);
+			do_policing(pass, Buckets, ReplyTo, PassMsg, DropMsg);
 
 		
 		stop ->
@@ -59,8 +76,28 @@ loop(Buckets) ->
 
 
 
+%% End of list
+do_policing(pass, [], ReplyTo, PassMsg, _) ->
+	case is_pid(ReplyTo) of
+		true ->
+			ReplyTo ! PassMsg;
+		_ ->
+			io:format("passed~n"),
+			pass
+	end;
 
-do_policing(Bucket, ReplyTo, PassMsg, DropMsg) when is_tuple(Bucket) ->
+
+%% Stop recursion on first 'drop' decision
+do_policing(drop, _, ReplyTo, _, DropMsg) ->
+	case is_pid(ReplyTo) of
+		true ->
+			ReplyTo ! DropMsg;
+		_ ->
+			io:format("dropped~n"),
+			drop
+	end;
+
+do_policing(pass, Bucket, _, _, _) when is_tuple(Bucket) ->
 	
 	{Id, MaxTokens, Period} = Bucket,
 	CurrentTime=now(),
@@ -77,7 +114,6 @@ do_policing(Bucket, ReplyTo, PassMsg, DropMsg) when is_tuple(Bucket) ->
 	if 
 		Diff > Period ->
 			%% end of period... start a new one
-			put({tokens, Id}, 0),
 			put({start_period, Id}, CurrentTime),
 			Tokens2=0,
 			ok;
@@ -95,21 +131,18 @@ do_policing(Bucket, ReplyTo, PassMsg, DropMsg) when is_tuple(Bucket) ->
 	if 
 		NewCount > MaxTokens ->
 			%% Drop
-			ReplyTo ! DropMsg,
 			drop;
 		
 		true ->
-			ReplyTo ! PassMsg,
 			pass
 	end;
 
 
 
 
-do_policing(Buckets, ReplyTo, PassMsg, DropMsg) when is_list(Buckets) ->
+do_policing(PreviousResult, Buckets, ReplyTo, PassMsg, DropMsg) when is_list(Buckets) ->
 	[Head|Tail] = Buckets,
-	do_policing(Head, ReplyTo, PassMsg, DropMsg),
-	do_policing(Tail, ReplyTo, PassMsg, DropMsg).
-
+	Result = do_policing(PreviousResult, Head, ReplyTo, PassMsg, DropMsg),
+	do_policing(Result, Tail, ReplyTo, PassMsg, DropMsg).
 
 
