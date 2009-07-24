@@ -101,6 +101,7 @@ loop() ->
 
 handle_pd(Msg) ->
 	{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
+	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
 	 ok.
 
 %% ===============
