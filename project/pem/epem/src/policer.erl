@@ -28,17 +28,6 @@
 		 ]).
 
 %%
-%% Test API
-%%
-create_token_policer() ->
-	Buckets=[{bucket1, 2, 3*1000*1000}, {bucket2, 5, 10*1000*1000}],
-	create_token_policer(Buckets).
-
-test_police(Policer) ->
-	police(Policer, undefined, passed, dropped).
-
-
-%%
 %% API Functions
 %%
 
@@ -131,9 +120,11 @@ do_policing(pass, Bucket, _, _, _) when is_tuple(Bucket) ->
 	if 
 		NewCount > MaxTokens ->
 			%% Drop
+			io:format("drop: id: ~p, tokens: ~p~n", [Id, NewCount]),
 			drop;
 		
 		true ->
+			io:format("pass: id: ~p, tokens: ~p~n", [Id, NewCount]),
 			pass
 	end;
 
@@ -144,5 +135,21 @@ do_policing(PreviousResult, Buckets, ReplyTo, PassMsg, DropMsg) when is_list(Buc
 	[Head|Tail] = Buckets,
 	Result = do_policing(PreviousResult, Head, ReplyTo, PassMsg, DropMsg),
 	do_policing(Result, Tail, ReplyTo, PassMsg, DropMsg).
+
+
+
+
+%% =========================================
+%% Test API
+%% =========================================
+create_token_policer() ->
+	%% Dual Token
+	%% 2 in the 10 seconds interval
+	%%   up to 5 in 60 seconds interval
+	Buckets=[{bucket1, 2, 10*1000*1000}, {bucket2, 5, 60*1000*1000}],
+	create_token_policer(Buckets).
+
+test_police(Policer) ->
+	police(Policer, undefined, passed, dropped).
 
 
