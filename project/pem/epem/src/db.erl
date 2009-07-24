@@ -158,10 +158,3 @@ insert_event_update(Conn, Serial, Index, Value, Ts) ->
 			Error
 	end.
 
-
-
-
-%%
-%% Local Functions
-%%
-
