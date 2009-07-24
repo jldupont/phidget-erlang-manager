@@ -23,6 +23,7 @@
 -define(conn_string, "DSN=pem;database=~s;user=~s;password=~s;option=3;").
 
 -define(device_table, "CREATE TABLE IF NOT EXISTS `device` ("
+	   "`id` int(11) NOT NULL auto_increment,"
 	   "`serial` int(8) NOT NULL, "
 	   "`type` varchar(64) NOT NULL, "
 	   "`version` varchar(64) NOT NULL, "
@@ -31,8 +32,9 @@
 	   "`ts` timestamp NOT NULL);").
 
 -define(event_table, "CREATE TABLE IF NOT EXISTS `event` ("
+  "`id` int(11) NOT NULL auto_increment,"
   "`serial` int(8) NOT NULL,"
-  "`id` int(8) NOT NULL,"
+  "`idx` int(8) NOT NULL,"
   "`value` int(8) NOT NULL,"
   "`ts` timestamp NOT NULL);").
 
@@ -41,7 +43,7 @@
 	   "VALUES(?, ?, ?, ?, ?, ?);").
 
 
--define(insert_event_statement, "INSERT INTO event(serial, id, value, ts)"
+-define(insert_event_statement, "INSERT INTO event(serial, idx, value, ts)"
 	   "VALUES(?, ?, ?, ?);").
 
 
