@@ -33,7 +33,9 @@
 %% Local Functions
 %%
 -export([
-		 loop/0
+		 loop/0,
+		 open_db/0,
+		 open_db/3
 		 ]).
 
 %%
@@ -74,7 +76,10 @@ loop() ->
 
 		%% Receive database details
 		{db_details, Db, User, Pass} ->
-			ok;
+			put(database, Db),
+			put(username, User),
+			put(password, Pass),
+			try_start_db();
 			
 		stop ->
 			exit(ok);
@@ -82,6 +87,54 @@ loop() ->
 		Other ->
 			base:ilog(?MODULE, "received Msg[~p]~n", [Other])
 
+	after 3000 ->
+			
+			try_start_db()
+	
 	end,
 	loop().
+
+
+%% ===============
+%% LOCAL FUNCTIONS
+%% ===============
+
+try_start_db() ->
+	State=base:getvar(state, not_connected),
+	
+	case State of
+		
+		connected ->
+			ok;
+		
+		not_connected ->
+			open_db()
+	
+	end,
+	ok.
+
+
+open_db() ->
+	Db=  base:getvar(database, undefined),
+	User=base:getvar(username, undefined),
+	Pass=base:getvar(password, undefined),
+	open_db(Db, User, Pass).
+
+open_db(undefined, _, _) ->
+	cant_connect;
+
+open_db(_,undefined, _) ->
+	cant_connect;
+
+open_db(_, _, undefined) ->
+	cant_connect;
+
+open_db(Db, User, Pass) ->
+	case db:open(Db, User, Pass) of
+		{ok, Conn} ->
+			put(db_conn, Conn),
+			put(state, connected);
+		_ ->
+			cant_connect
+	end.
 
