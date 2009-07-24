@@ -84,6 +84,11 @@ loop() ->
 		stop ->
 			exit(ok);
 		
+		%% ------------------------------
+		
+		{_From, phidgetdevice, Msg} ->
+			handle_pd(Msg);
+		
 		Other ->
 			base:ilog(?MODULE, "received Msg[~p]~n", [Other])
 
@@ -94,6 +99,9 @@ loop() ->
 	end,
 	loop().
 
+handle_pd(Msg) ->
+	{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
+	 ok.
 
 %% ===============
 %% LOCAL FUNCTIONS

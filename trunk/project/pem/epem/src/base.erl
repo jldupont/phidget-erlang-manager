@@ -544,7 +544,14 @@ and_ret(R1, R2)->
 	end.
 
 
--define(timestamp_template, "~4P-~2P-~2P ~2P:~2P:~2P").
 
+-define(timestamp_template, "~P-~P-~P ~P:~P:~P").
+
+%% Useful for ODBC database access
 format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
-	io_lib:format(?timestamp_template, [Year, Month, Day, Hour, Min, Sec]).
+	io_lib:format(?timestamp_template, [Year,4, 
+										Month,2, 
+										Day,2,
+										Hour,2,
+										Min,2,
+										Sec,2]).
