@@ -69,7 +69,8 @@
 		 ]).
 
 -export([
-		 and_ret/2
+		 and_ret/2,
+		 format_timestamp/6
 		 ]).
 
 %%
@@ -543,4 +544,7 @@ and_ret(R1, R2)->
 	end.
 
 
-	
+-define(timestamp_template, "~4P-~2P-~2P ~2P:~2P:~2P").
+
+format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
+	io_lib:format(?timestamp_template, [Year, Month, Day, Hour, Min, Sec]).
