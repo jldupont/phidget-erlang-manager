@@ -20,31 +20,35 @@
 %%
 %% Macros
 %%
--define(conn_string, "DSN=pem;database=~s;user=~s;password=~s;option=3;").
+%%-define(conn_string, "DSN=pem;database=~s;user=~s;password=~s;option=3;").
+-define(conn_string, "DSN=pem;").
 
 -define(device_table, "CREATE TABLE IF NOT EXISTS `device` ("
-	   "`id` int(11) NOT NULL auto_increment,"
+	   "`id` int(11) NOT NULL auto_increment, "
+	   "PRIMARY KEY(`id`), "
+	   "`status` tinyint(4) NOT NULL, "
 	   "`serial` int(8) NOT NULL, "
 	   "`type` varchar(64) NOT NULL, "
 	   "`version` varchar(64) NOT NULL, "
 	   "`name` varchar(64) NOT NULL, "
 	   "`label` varchar(64) NOT NULL, "
-	   "`ts` timestamp NOT NULL);").
+	   "`ts` timestamp NOT NULL)").
 
 -define(event_table, "CREATE TABLE IF NOT EXISTS `event` ("
-  "`id` int(11) NOT NULL auto_increment,"
-  "`serial` int(8) NOT NULL,"
-  "`idx` int(8) NOT NULL,"
-  "`value` int(8) NOT NULL,"
-  "`ts` timestamp NOT NULL);").
+  "`id` int(11) NOT NULL auto_increment, "
+  "PRIMARY KEY(`id`), "
+  "`serial` int(8) NOT NULL, "
+  "`idx` int(8) NOT NULL, "
+  "`value` int(8) NOT NULL, "
+  "`ts` timestamp NOT NULL)").
 
 
--define(insert_device_statement, "INSERT INTO device(serial, type, version, name, label, ts)"
-	   "VALUES(?, ?, ?, ?, ?, ?);").
+-define(insert_device_statement, "INSERT INTO device(serial, type, version, name, label, state, ts)"
+	   "VALUES(?, ?, ?, ?, ?, ?, ?)").
 
 
 -define(insert_event_statement, "INSERT INTO event(serial, idx, value, ts)"
-	   "VALUES(?, ?, ?, ?);").
+	   "VALUES(?, ?, ?, ?)").
 
 
 %%
@@ -60,21 +64,26 @@
 
 -export([
 		 insert_device_update/1,  %% for test purposes
-		 insert_device_update/7,
+		 insert_device_update/8,
 		 insert_event_update/1,
 		 insert_event_update/5
+		 ]).
+
+-export([
+		 test/0
 		 ]).
 %%
 %% API Functions
 %%
 
 open() ->
-	open("test", "test", "pass").
+	open("pem_test", "test", "pass").
 
 
 open(Database, User, Password) ->
-	application:start(odbc),
-	ConnString=io_lib:format(?conn_string, [Database, User, Password]),
+	odbc:start(),
+	%%ConnString=io_lib:format(?conn_string, [Database, User, Password]),
+	ConnString=io_lib:format(?conn_string, []),
 	try odbc:connect(ConnString, []) of
 		{ok, Pid} ->
 			{ok, Pid};
@@ -87,8 +96,14 @@ open(Database, User, Password) ->
 
 
 create_tables(Conn) ->
+	io:format("creating device table~n"),
 	Ret1 = create_device_table(Conn),
+	io:format("Result: ~p~n",[Ret1]),
+	
+	io:format("creating event table~n"),
 	Ret2 = create_event_table(Conn),
+	io:format("Result: ~p~n",[Ret2]),
+	
 	base:and_ret(Ret1, Ret2).
 
 
@@ -120,16 +135,22 @@ create_event_table(Conn) ->
 
 
 %% Test only
+test() ->
+	{ok,Conn}=db:open(),
+	db:create_tables(Conn).
+
+
 insert_device_update(Conn) ->
-	insert_device_update(Conn, 666, "ifk", "v1.0", "name", "label", "0000-00-00 00:00:00").
+	insert_device_update(Conn, 666, "ifk", "v1.0", "name", "label", "n/a", "0000-00-00 00:00:00").
 
 
-insert_device_update(Conn, Serial, Type, Version, Name, Label, Ts) ->
+insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
 	try odbc:param_query(Conn, ?insert_device_statement, [{sql_integer, [Serial]}, 
 														  {{sql_varchar,  64}, [Type]},
 														  {{sql_varchar,  64}, [Version]},
 														  {{sql_varchar,  64}, [Name]},
 														  {{sql_varchar,  64}, [Label]},
+														  {sql_integer, [State]},
 														  {{sql_varchar,  20}, [Ts]}]) of
 		{updated, _Nbr}
 		  -> ok;
