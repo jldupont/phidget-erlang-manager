@@ -549,10 +549,14 @@ and_ret(R1, R2)->
 
 %% Useful for ODBC database access
 format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
-	io_lib:format(?timestamp_template, [Year,4, 
+	L=io_lib:format(?timestamp_template, [Year,4, 
 										Month,2, 
 										Day,2,
 										Hour,2,
 										Min,2,
-										Sec,2]).
+										Sec,2]),
+	Ts2=erlang:iolist_to_binary(L),
+	erlang:binary_to_list(Ts2).
+	
+
 
