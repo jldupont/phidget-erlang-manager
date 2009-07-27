@@ -34,8 +34,7 @@
 %%
 -export([
 		 loop/0,
-		 open_db/0,
-		 open_db/3
+		 open_db/0
 		 ]).
 
 %%
@@ -75,10 +74,8 @@ loop() ->
 			switch:publish(journal, ready, self());
 
 		%% Receive database details
-		{db_details, Db, User, Pass} ->
-			put(database, Db),
-			put(username, User),
-			put(password, Pass),
+		{db_details, DSN} ->
+			put(dsn, DSN),
 			try_start_db();
 			
 		stop ->
@@ -124,22 +121,14 @@ try_start_db() ->
 
 
 open_db() ->
-	Db=  base:getvar(database, undefined),
-	User=base:getvar(username, undefined),
-	Pass=base:getvar(password, undefined),
-	open_db(Db, User, Pass).
+	DSN=  base:getvar(dsn, undefined),
+	open_db(DSN).
 
-open_db(undefined, _, _) ->
+open_db(undefined) ->
 	cant_connect;
 
-open_db(_,undefined, _) ->
-	cant_connect;
-
-open_db(_, _, undefined) ->
-	cant_connect;
-
-open_db(Db, User, Pass) ->
-	case db:open(Db, User, Pass) of
+open_db(DSN) ->
+	case db:open(DSN) of
 		{ok, Conn} ->
 			put(db_conn, Conn),
 			put(state, connected);
