@@ -23,7 +23,7 @@ class Command(object):
     """ Communicates Command to the PEM daemon
     """
     erladmincmd  = "erl -noshell -pa ./ebin /usr/share/pem/bin -s pem_admin start %s"
-    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -sname pem -run pem_app start %s %s %s"
+    erldaemoncmd = "erl -noshell -pa ./ebin /usr/share/pem/bin -detached -boot start_sasl -config elog.config -sname pem -run pem_app start %s"
     
     codes = {   0: {"m":"can start",            "start":True,    "stop":False    },
                 1: {"m":"stop sent",            "start":False,   "stop":True     },
@@ -37,9 +37,7 @@ class Command(object):
     
     def __init__(self, verbose=False):
         self.verbose=verbose
-        self.database=None
-        self.username=None
-        self.password=None
+        self.dsn=None
     
     def erladmin(self, cmd):
         """Executes the Erlang administration program for PEM
@@ -48,7 +46,7 @@ class Command(object):
         return proc.wait()
     
     def erldaemon(self):
-        cmd = self.erldaemoncmd % (self.database, self.username, self.password)
+        cmd = self.erldaemoncmd % self.dsn
         proc = subprocess.Popen(cmd, shell=True)
         return proc
     
@@ -100,9 +98,7 @@ def main():
     parser.add_option("-q", "--quiet",    action="store_false", dest="verbose")
     
     #database related
-    parser.add_option("-d", "--database", action="store",       dest="database")
-    parser.add_option("-u", "--username", action="store",       dest="username")
-    parser.add_option("-p", "--password", action="store",       dest="password")
+    parser.add_option("-d", "--dsn",      action="store",       dest="dsn")
 
     (options, args) = parser.parse_args()
     
@@ -115,18 +111,11 @@ def main():
     
     # start command? then we need database details
     if context == "start":
-        cmd.database = getattr(options, "database", None)
-        cmd.username = getattr(options, "username", None)
-        cmd.password = getattr(options, "password", None)
+        cmd.dsn = getattr(options, "dsn", None)
         
-        if cmd.database is None:
-            parser.error("missing MySQL database name")
+        if cmd.dsn is None:
+            parser.error("missing ODBC DSN option")
             
-        if cmd.username is None:
-            parser.error("missing username for MySQL database access")
-            
-        if cmd.password is None:
-            parser.error("missing password for MySQL database access")
         
     try:
         func = getattr(cmd, fun)

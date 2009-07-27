@@ -20,8 +20,7 @@
 %%
 %% Macros
 %%
-%%-define(conn_string, "DSN=pem;database=~s;user=~s;password=~s;option=3;").
--define(conn_string, "DSN=pem;").
+-define(test_conn_string, "DSN=pem;").
 
 -define(device_table, "CREATE TABLE IF NOT EXISTS `device` ("
 	   "`id` int(11) NOT NULL auto_increment, "
@@ -43,12 +42,12 @@
   "`ts` timestamp NOT NULL)").
 
 
--define(insert_device_statement, "INSERT INTO device(serial, type, version, name, label, state, ts)"
-	   "VALUES(?, ?, ?, ?, ?, ?, ?)").
+-define(insert_device_statement, "INSERT INTO device(serial, type, version, name, label, status, ts)"
+	   " VALUES(?, ?, ?, ?, ?, ?, ?)").
 
 
 -define(insert_event_statement, "INSERT INTO event(serial, idx, value, ts)"
-	   "VALUES(?, ?, ?, ?)").
+	   " VALUES(?, ?, ?, ?)").
 
 
 %%
@@ -56,7 +55,7 @@
 %%
 -export([
 		 open/0, %% for test purposes
-		 open/3,
+		 open/1,
 		 create_tables/1,
 		 create_device_table/1,
 		 create_event_table/1
@@ -77,13 +76,12 @@
 %%
 
 open() ->
-	open("pem_test", "test", "pass").
+	open(?test_conn_string).
 
 
-open(Database, User, Password) ->
+open(DSN) ->
 	odbc:start(),
-	%%ConnString=io_lib:format(?conn_string, [Database, User, Password]),
-	ConnString=io_lib:format(?conn_string, []),
+	ConnString=io_lib:format(DSN, []),
 	try odbc:connect(ConnString, []) of
 		{ok, Pid} ->
 			{ok, Pid};
@@ -137,11 +135,15 @@ create_event_table(Conn) ->
 %% Test only
 test() ->
 	{ok,Conn}=db:open(),
-	db:create_tables(Conn).
+	db:create_tables(Conn),
+	io:format("Insert device update~n"),
+	insert_device_update(Conn),
+	io:format("Insert event update~n"),
+	insert_event_update(Conn).
 
 
 insert_device_update(Conn) ->
-	insert_device_update(Conn, 666, "ifk", "v1.0", "name", "label", "n/a", "0000-00-00 00:00:00").
+	insert_device_update(Conn, 666, "ifk", "v1.0", "name", "label", 0, "0000-00-00 00:00:00").
 
 
 insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->

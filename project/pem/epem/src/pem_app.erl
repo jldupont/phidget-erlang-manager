@@ -24,8 +24,7 @@
 %% --------------------------------------------------------------------
 -export([
 		 start/0,
-		 start/1,
-		 start/3
+		 start/1
 		 ]).
 
 %% --------------------------------------------------------------------
@@ -61,16 +60,12 @@
 %% START
 start() ->
 	start_daemon([{debug, false}]).
-	
-start(Database, Username, Password) ->
-	start_daemon([{database, Database}, {username, Username}, {password, Password}]).
-
-start([Database, Username, Password]) ->
-	io:format("here~n"),
-	start_daemon([{database, Database}, {username, Username}, {password, Password}]);
 
 start([debug]) ->
-	start_daemon([{debug, true}]).
+	start_daemon([{debug, true}]);
+
+start(DSN) ->
+	start_daemon([{dsn, DSN}]).
 
 start_daemon(Args) ->
 	base:ilog(?MODULE, "start_daemon~n",[]),
@@ -144,10 +139,8 @@ loop() ->
 		%% Journal is ready, send database access details
 		{journal, ready, _Pid} ->
 			List = get(args),
-			{database, Db  } = base:kfind(database, List, undefined),
-			{username, User} = base:kfind(username, List, undefined),
-			{password, Pass} = base:kfind(password, List, undefined),
-			journal ! {db_details, Db, User, Pass},
+			{dsn, DSN} = base:kfind(dsn, List, undefined),
+			journal ! {db_details, DSN},
 			ok;
 		
 		{_From, ready, _Pid} ->
