@@ -59,6 +59,7 @@
 -export([
 		 open/0, %% for test purposes
 		 open/1,
+		 close/1,
 		 create_tables/1,
 		 create_device_table/1,
 		 create_event_table/1
@@ -94,6 +95,15 @@ open(DSN) ->
 		Error ->
 			Error
 	end.
+
+
+
+close(undefined) ->
+	ok;
+
+close(Conn) ->
+	odbc:disconnect(Conn).
+
 
 
 create_tables(Conn) ->

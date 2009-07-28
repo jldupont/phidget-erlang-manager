@@ -87,11 +87,11 @@ loop() ->
 		{_From, phidgetdevice, Msg} ->
 			handle_pd(Msg);
 
-		%%{_From, din, Msg} ->
-			%%handle_io("din", Msg);
+		{_From, din, Msg} ->
+			handle_io("din", Msg);
 		
-		%%{_From, dout, Msg} ->
-			%%handle_io("dout", Msg);
+		{_From, dout, Msg} ->
+			handle_io("dout", Msg);
 		
 		_Other ->
 			ok
@@ -108,7 +108,7 @@ loop() ->
 handle_pd(Msg) ->
 	{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
 	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
-	base:ilog(?MODULE, "pd: Serial[~p] Type[~p] Status[~p]~n",[Serial, Type, atom_to_list(Status)]),
+	%%base:ilog(?MODULE, "pd: Serial[~p] Type[~p] Status[~p]~n",[Serial, Type, atom_to_list(Status)]),
 	Conn = base:getvar(db_conn, undefined),
 	handle_pd(Conn, Serial, Type, atom_to_list(Status), Ts).
 
@@ -119,9 +119,16 @@ handle_pd(undefined, _Serial, _Type, _Status, _Ts) ->
 	
 	
 handle_pd(Conn, Serial, Type, Status, Ts) when is_pid(Conn) ->
-	base:ilog(?MODULE, "inserting pd: Serial[~p] Type[~p] Status[~p]~n", [Serial, Type, Status]),
+	%%base:ilog(?MODULE, "inserting pd: Serial[~p] Type[~p] Status[~p]~n", [Serial, Type, Status]),
 	%%insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
-	db:insert_device_update(Conn, Serial, Type, " ",     " ",   " ",    Status, Ts);
+	case db:insert_device_update(Conn, Serial, Type, " ",     " ",   " ",    Status, Ts) of
+		ok ->
+			ok;
+		_ ->
+			db:close(Conn),
+			put(db_conn, undefined),
+			error
+	end;
 
 handle_pd(_Conn, _Serial, _Type, _Status, _Ts) ->
 	base:elog(?MODULE, "invalid db connection~n",[]).
@@ -132,7 +139,7 @@ handle_io(IOType, Msg) ->
 	%%io:format("handle_io: msg:  ~p~n", [Msg]),
 	{{Serial, Index, Value}, {{Year, Month, Day}, {Hour, Min, Sec}, _MegaSecs}}=Msg,
 	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
-	base:ilog(?MODULE, "io: Serial[~p] IOType[~p] Index[~p] Value[~p]~n", [Serial, IOType, Index, Value]),
+	%%base:ilog(?MODULE, "io: Serial[~p] IOType[~p] Index[~p] Value[~p]~n", [Serial, IOType, Index, Value]),
 	Conn = base:getvar(db_conn, undefined),
 	handle_io(IOType, Conn, Serial, Index, Value, Ts).
 
@@ -141,8 +148,15 @@ handle_io(_IOType, undefined, _Serial, _Index, _Value, _Ts) ->
 	db_conn_err;
 
 handle_io(IOType, Conn, Serial, Index, Value, Ts) when is_pid(Conn) ->
-	base:ilog(?MODULE, "inserting event~n", []),
-	db:insert_event_update(Conn, Serial, IOType, Index, Value, Ts);
+	%%base:ilog(?MODULE, "inserting event~n", []),
+	case db:insert_event_update(Conn, Serial, IOType, Index, Value, Ts) of
+		ok ->
+			ok;
+		_ ->
+			db:close(Conn),
+			put(db_conn, undefined),
+			error
+	end;
 
 handle_io(_IOType, _Conn, _Serial, _Index, _Value, _Ts) ->
 	base:elog(?MODULE, "invalid db connection~n",[]).
