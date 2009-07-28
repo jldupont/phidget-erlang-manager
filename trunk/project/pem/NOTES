@@ -6,3 +6,9 @@ DAEMON
 
 * COPY beam files TO /usr/share/pem/bin
 
+YAWS
+====
+
+* /etc/yaws/conf.avail/pem.conf
+* symlink /etc/yaws/conf.d/pem.conf to ^
+
