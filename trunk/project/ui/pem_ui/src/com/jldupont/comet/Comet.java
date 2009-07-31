@@ -23,28 +23,29 @@ import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.http.client.RequestBuilder;
 
 
-public class Comet {
+public class Comet implements CometErrorHandler<CometErrorHandler>{
 
 	// Current 
 	protected RequestBuilder  rb;
 	protected CometCallback   cb;
 	protected HandlerManager hm;
 	protected String url;
-	private CometFactory cf;
+	protected CometFactory cf;
 	
 	/**
-	 * @param rb
-	 * @param cb
+	 * COMET connection manager
+	 * 
+	 * @param hm
+	 * @param cf
 	 */
-	public Comet(HandlerManager hm, CometFactory factory) {
+	public Comet(HandlerManager hm, CometFactory cf) {
 		this.hm = hm;
-		this.cf = factory;
+		this.cf = cf;
 		
 		this.url = null;
 		this.rb = null;
 		this.cb = null;
 		this.rb = null;
-
 	}
 	
 	/**
@@ -57,6 +58,8 @@ public class Comet {
 	}
 	
 	/**
+	 * Can only be called once
+	 * 
 	 * 1) parameter errors
 	 * 2) already started
 	 */
@@ -69,6 +72,12 @@ public class Comet {
 		if (null==this.url){
 			throw new RuntimeException("url not specified");
 		}
+		
+		/*
+		 *  Subscribe to the events in order to
+		 *  re-establish the connection upon error/completion 
+		 */
+		this.hm.addHandler(CometEvent<CometError> this, CometEventHandler<CometErrorHandler> this);
 		
 		this.rb = this.cf.getRequestBuilder(RequestBuilder.GET, this.url);
 		

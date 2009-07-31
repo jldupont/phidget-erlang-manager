@@ -3,10 +3,16 @@
  */
 package com.jldupont.comet;
 
+import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.http.client.RequestBuilder;
 import com.google.gwt.http.client.RequestCallback;
 
-
+/**
+ * Factory for easier testing 
+ * 
+ * @author Jean-Lou Dupont
+ *
+ */
 public class CometFactory {
 
 	public RequestBuilder getRequestBuilder(RequestBuilder.Method method, String url) {
@@ -14,8 +20,8 @@ public class CometFactory {
 		return new RequestBuilder(method, url); 
 	}
 	
-	public RequestCallback getRequestCallback() {
-		return new CometCallback();
+	public RequestCallback getRequestCallback(HandlerManager hm) {
+		return new CometCallback(hm);
 	}
 	
 }//

@@ -5,22 +5,22 @@ package com.jldupont.comet;
 
 import com.google.gwt.event.shared.GwtEvent;
 
-public class CometEvent<T> extends GwtEvent<CometEventHandler<T>> {
+public class CometError extends GwtEvent<CometErrorHandler> {
 
 	/**
 	 * Handler type.
 	 */
-	private static Type<CometEventHandler<?>> TYPE;
+	private static Type<CometErrorHandler> TYPE;
 	
 	@Override
-	protected void dispatch(CometEventHandler<T> handler) {
+	protected void dispatch(CometErrorHandler handler) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public com.google.gwt.event.shared.GwtEvent.Type<CometEventHandler<T>> getAssociatedType() {
+	public com.google.gwt.event.shared.GwtEvent.Type<CometErrorHandler> getAssociatedType() {
 		return (Type) TYPE;
 	}
 	
