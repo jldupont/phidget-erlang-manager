@@ -20,8 +20,5 @@ public class CometFactory {
 		return new RequestBuilder(method, url); 
 	}
 	
-	public RequestCallback getRequestCallback(HandlerManager hm) {
-		return new CometCallback(hm);
-	}
 	
 }//
