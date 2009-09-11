@@ -11,8 +11,8 @@ import subprocess
 from optparse import OptionParser
 
 ###< CUSTOMIZE BELOW
-bridge="erl +d -pa ebin -sname epem_py -s epem_bridge cmd %s"
-daemon="erl +d -pa ebin -sname epem -detached -run epem_app start"
+bridge="erl +d -pa ebin -noshell -sname epem_py -s epem_bridge cmd %s"
+daemon="erl +d -pa ebin -noshell -sname epem -detached -run epem_app start"
 
 usage = """epem [-q] command"""
 ###>
@@ -21,7 +21,7 @@ usage = """epem [-q] command"""
 
 def exec_cmd(cmd, args):
     try:
-        proc = subprocess.Popen(cmd % args, shell=True, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd % args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         status=proc.returncode
         out=proc.communicate()
@@ -40,12 +40,12 @@ def do_cmd(cmds):
     @returns (exit_code, "ok"|"error", Result)
     """
     [resp_tuple, status]= exec_cmd(bridge, cmds)
-    (resp, rest)=resp_tuple
+    (resp, stderrout)=resp_tuple
     
     if status==127:
         return (status, "error", "Erlang 'erl' command not found.")
     
-    #print "resp: %s\n" % str(resp)
+    print "resp: %s\n" % str(resp)
     
     try:
         rj=json.loads(resp)
@@ -75,7 +75,7 @@ def get_daemon_pid():
     """
     Attempts to retrieve the daemon's pid
     """
-    response=do_cmd("status")
+    (status, cmd, response)=do_cmd("status")
     return extract_integer(response)
 
 def do_start(quiet):
@@ -83,7 +83,7 @@ def do_start(quiet):
     Attempts to start the daemon
     """
     Pid=get_daemon_pid()
-    #print "pid: %s\n" % str(Pid)
+    print "pid: %s\n" % str(Pid)
     if Pid is None:
         proc=subprocess.Popen(daemon, shell=True)
         proc.wait()
@@ -121,7 +121,6 @@ def main():
         cmds=cmds + " " + cmd  
     
     quiet=options.quiet
-    
        
     if cmd=="start":
         exit_code=do_start(quiet)

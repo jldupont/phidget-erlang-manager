@@ -25,7 +25,9 @@ getcmds() ->
 %% Retrieves the Pid of the daemon
 %%
 handle_rpc(ReplyTo, _FromNode, RC, status) ->
-	rpc_reply(ReplyTo, {RC, os:getpid()});
+	%io:format("epem_rpc: status~n~n"),
+	{Pid, _}=string:to_integer(os:getpid()),
+	rpc_reply(ReplyTo, {RC, Pid});
 
 %% Retrieves the supported commands through the RPC interface
 %%
@@ -85,7 +87,7 @@ rpc_reply(ReplyTo, Message) ->
 rpc(ReplyContext, Q) ->
 	FromNode=node(),
 	%%io:format("call: from[~p] Q[~p]~n", [FromNode, Q]),
-	%%?TOOLS:msg("rpc: From[~p] Message[~p]", [FromNode, Q]),
+	%%io:format("rpc: From[~p] Message[~p]", [FromNode, Q]),
 	try 
 		?SERVER ! {rpc, self(), {FromNode, ReplyContext, Q}},
 		receive
