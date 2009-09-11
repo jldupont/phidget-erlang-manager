@@ -5,12 +5,16 @@
 -module(epem_bridge).
 
 -define(RPC, epem_rpc).
+-define(JSON, epem_json).
+
 
 %%
 %% API functions
 %%
 -export([
 		 cmd/1
+		
+		,encode/1
 		 ]).
 
 
@@ -43,10 +47,14 @@ cmd(Cmd) ->
 handle_reply(Reply) ->
 	case Reply of
 		{error, Reason} ->
-			io:format("{error, ~p}", [Reason]),
+			%io:format("~p", [{error, Reason}]),
+			J=json({error, Reason}),
+			io:format("~s", [J]),
 			halt(1);
 		Response ->
-			io:format("{response, ~p}", [Response]),
+			%io:format("~p", [{"response", Response}]),
+			J=json({response, Response}),
+			io:format("~s", [J]),
 			halt(0)
 	end.
 	
@@ -85,3 +93,44 @@ send(ReplyContext, Command, Params) ->
 			{error, invalid_command}
 	end.
 
+
+%% --------------------------------------------------------------------------------------
+%% --------------------------------------------------------------------------------------
+
+json(Term) ->
+	E=encode(Term),
+	%J=?JSON:obj_to_list(E),
+	?JSON:encode({array, E}).
+
+
+	
+encode(Tuple) when is_tuple(Tuple) ->
+	encode(erlang:tuple_to_list(Tuple));
+
+encode(List) when is_list(List) ->
+	encode(List, []);
+
+encode(What) ->
+	{error, not_list}.
+
+encode([], Acc) ->
+	Acc;
+
+encode([H|T], Acc) when is_tuple(H) ->
+	L=erlang:tuple_to_list(H),
+	encode([L|T], Acc);
+
+encode([H|T], Acc) when is_atom(H) ->
+	encode(T, Acc++[erlang:atom_to_list(H)]);
+
+encode([H|T], Acc) when is_list(H) ->
+	L=encode(H, []),
+	encode(T, Acc++[L]);
+
+encode([H|T], Acc) when is_float(H) ->
+	encode(T, Acc++[erlang:float_to_list(H)]);
+
+encode([H|T], Acc) when is_integer(H) ->
+	encode(T, Acc++[erlang:integer_to_list(H)]).
+
+	

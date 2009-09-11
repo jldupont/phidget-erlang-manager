@@ -4,12 +4,13 @@
     
     @author: Jean-Lou Dupont
 """
+import json
 import os
 import sys
 import subprocess
 from optparse import OptionParser
 
-bridge="erl -pa ebin -sname epem_py -s epem_bridge cmd %s"
+bridge="erl +d -pa ebin -sname epem_py -s epem_bridge cmd %s"
 
 usage = """epem [-v] [-q] command
 """
@@ -51,12 +52,25 @@ def main():
         cmds=cmds + " " + cmd  
         
     try:
-        [resp, status]= exec_cmd(bridge, cmds)
+        [resp_tuple, status]= exec_cmd(bridge, cmds)
+        (resp, rest)=resp_tuple
         print "Response <%s> Status<%s>\n" % (resp, status)
+        rj=json.loads(resp)
+        print "json: "+str(rj)
+                
         
     except Exception, e:
         print "Exception <%s>\n" % str(e)
 
+
+
+
+def erlang_to_python(str):
+    """
+    Parses a string representation of an Erlang term to a Python object
+    """
+    
+    
     
 # execute
 main()
