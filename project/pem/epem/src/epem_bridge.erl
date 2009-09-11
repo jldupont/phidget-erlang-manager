@@ -14,16 +14,17 @@
 -export([
 		 cmd/1
 		
+		,json/1
 		,encode/1
 		 ]).
 
 
 %% For Testing...
 cmd([ping]) ->
-	handle_reply(pong);
+	handle_reply(ping, pong);
 
 cmd([getcmds]) ->
-	handle_reply(?RPC:getcmds());
+	handle_reply(getcmds, ?RPC:getcmds());
 
 
 %% @doc Send a command to the daemon
@@ -31,7 +32,7 @@ cmd([getcmds]) ->
 %%
 cmd([Command|Params]) ->
 	Reply=send(cmd, Command, Params),
-	handle_reply(Reply);
+	handle_reply(Command, Reply);
 	
 
 %% @doc Send a command to the daemon
@@ -40,22 +41,34 @@ cmd([Command|Params]) ->
 %%
 cmd(Cmd) ->
 	Reply=send(cmd, Cmd),
-	handle_reply(Reply).
+	handle_reply(Cmd, Reply).
 
 
 
-handle_reply(Reply) ->
+handle_reply(Cmd, Reply) ->
 	case Reply of
 		{error, Reason} ->
 			%io:format("~p", [{error, Reason}]),
-			J=json({error, Reason}),
-			io:format("~s", [J]),
-			halt(1);
+			JR=json({error, Reason}),
+			case JR of
+				{error, Reason} ->
+					io:format("{error, ~p}", [Reason]),
+					halt(1);
+				{ok, J} ->
+					io:format("~s", [J]),
+					halt(1)
+			end;
 		Response ->
 			%io:format("~p", [{"response", Response}]),
-			J=json({response, Response}),
-			io:format("~s", [J]),
-			halt(0)
+			JR=json({{command, Cmd}, {response, Response}}),
+			case JR of
+				{error, _Reason} ->
+					io:format("{error, ~p}", [Response]),
+					halt(1);
+				{ok, J} ->
+					io:format("~s", [J]),
+					halt(0)
+			end
 	end.
 	
 			
@@ -97,21 +110,44 @@ send(ReplyContext, Command, Params) ->
 %% --------------------------------------------------------------------------------------
 %% --------------------------------------------------------------------------------------
 
+%% @doc JSON encodes an Erlang term
+%%
+%%
 json(Term) ->
-	E=encode(Term),
-	%J=?JSON:obj_to_list(E),
-	?JSON:encode({array, E}).
+	try
+		E=encode(Term),
+		{ok, ?JSON:encode({array, E})}
+	catch 
+		_:_ ->
+		{error, json_encoding_failed}
+	end.
 
 
-	
+
+%% @doc Encodes an Erlang term to a
+%%		form compatible with the JSON encoder.
+%%
+%%		Tuple() -> List()
+%%		Atom()  -> String()
+%%		List()  -> {array, List()}
+%%		
 encode(Tuple) when is_tuple(Tuple) ->
 	encode(erlang:tuple_to_list(Tuple));
 
 encode(List) when is_list(List) ->
 	encode(List, []);
 
+encode(Atom) when is_atom(Atom) ->
+	erlang:atom_to_list(Atom);
+	
+encode(Int) when is_integer(Int) ->
+	Int;
+
+encode(Float) when is_float(Float) ->
+	Float;
+
 encode(What) ->
-	{error, not_list}.
+	{error, {unsupported_term, What}}.
 
 encode([], Acc) ->
 	Acc;
@@ -128,9 +164,9 @@ encode([H|T], Acc) when is_list(H) ->
 	encode(T, Acc++[{array, L}]);
 
 encode([H|T], Acc) when is_float(H) ->
-	encode(T, Acc++[erlang:float_to_list(H)]);
+	encode(T, Acc++[H]);
 
 encode([H|T], Acc) when is_integer(H) ->
-	encode(T, Acc++[erlang:integer_to_list(H)]).
+	encode(T, Acc++[H]).
 
 	

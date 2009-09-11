@@ -10,10 +10,13 @@ import sys
 import subprocess
 from optparse import OptionParser
 
+###< CUSTOMIZE BELOW
 bridge="erl +d -pa ebin -sname epem_py -s epem_bridge cmd %s"
 
-usage = """epem [-v] [-q] command
-"""
+usage = """epem [-q] command"""
+###>
+
+
 
 def exec_cmd(cmd, args):
     try:
@@ -24,11 +27,32 @@ def exec_cmd(cmd, args):
                 
     except Exception,e:
         print "Exception: "+str(e)
-        status = 1 # general error
-        out = "bridge command not found"
+        status = 127 # command not found
+        out = "'erl' command not found... Erlang is required."
         
     return [out, status]
 
+def do_cmd(cmds):
+    """
+    Executes a command and returns the result as a Python object
+    """
+    [resp_tuple, status]= exec_cmd(bridge, cmds)
+    (resp, rest)=resp_tuple
+    
+    if status==127:
+        return (127, "error", "Erlang 'erl' command not found.")
+    
+    try:
+        rj=json.loads(resp)
+        if status==0:
+            reply=(0, "ok", rj)
+        else:
+            reply=(1, "error", rj)
+    except:
+        rj=None
+        reply=(1, "error", "error: maybe the installation is broken?")
+        
+    return reply
 
 
 def main():
@@ -36,41 +60,21 @@ def main():
     """
     parser=OptionParser(usage)
 
-    parser.add_option("-v", "--verbose",  action="store_true",  dest="verbose")
-    parser.add_option("-q", "--quiet",    action="store_false", dest="verbose")
+    parser.add_option("-q", "--quiet",  action="store_true",  dest="quiet", help="disable output to stdout")
     
-    #database related
-    parser.add_option("-d", "--dsn",      action="store",       dest="dsn")
-
     (options, args) = parser.parse_args()
     
     if len(args) < 1:
-        parser.error("incorrect number of arguments")
+        parser.error("! incorrect number of arguments")
       
     cmds=""
     for cmd in args:
         cmds=cmds + " " + cmd  
         
-    try:
-        [resp_tuple, status]= exec_cmd(bridge, cmds)
-        (resp, rest)=resp_tuple
-        print "Response <%s> Status<%s>\n" % (resp, status)
-        rj=json.loads(resp)
-        print "json: "+str(rj)
-                
-        
-    except Exception, e:
-        print "Exception <%s>\n" % str(e)
-
-
-
-
-def erlang_to_python(str):
-    """
-    Parses a string representation of an Erlang term to a Python object
-    """
-    
-    
+    (exit_code, state, message)=do_cmd(cmds)
+    if not options.quiet:
+        print "> %s\n" % str( message )
+    sys.exit(exit_code)
     
 # execute
 main()
