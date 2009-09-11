@@ -16,6 +16,8 @@
 -export([
 		 start_link/0
 		,stop/0
+		,get_server/0
+		,get_busses/0
 		
 		 ,loop/0
 		 ]).
@@ -34,6 +36,14 @@
 		 blacklist/0
 		 ]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ADMIN API Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+get_server() ->	?SERVER.
+get_busses() -> ?BUSSES.
+
+
+
 %% ----------------------              ------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%  MANAGEMENT  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------              ------------------------------
@@ -41,7 +51,6 @@
 start_link() ->
 	Pid=spawn_link(?MODULE, loop, []),
 	register(?SERVER, Pid),
-	%io:format("~p: erl pid[~p] os pid[~p]~n", [?MODULE, Pid, os:getpid()]),
 	{ok, Pid}.
 
 
@@ -121,9 +130,7 @@ handle({hwswitch, _From, sys, {mod.config, Module, Version}}) ->
 
 
 handle({hwswitch, _From, sys, _Msg}) ->
-	%io:format("app: rx sys msg[~p]~n", [Msg]);
 	not_supported;
-
 
 
 handle(Other) ->
