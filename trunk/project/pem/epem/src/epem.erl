@@ -4,7 +4,7 @@
 -module(epem).
 
 -define(SERVER, epem).
--define(BUSSES, [log, clock, sys]).
+-define(BUSSES, [clock, sys]).
 -define(RPC,    epem_rpc).
 -define(CTOOLS, mswitch_ctools).
 -define(SWITCH, epem_hwswitch).

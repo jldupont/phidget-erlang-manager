@@ -4,6 +4,8 @@
 %%
 -module(epem_bridge).
 
+-define(DAEMON_RPC,  epem_rpc).
+-define(DAEMON_NODE, epem).
 -define(RPC, epem_rpc).
 -define(JSON, epem_json).
 
@@ -32,12 +34,11 @@ cmd([tstatus]) ->
 	handle_reply(tstatus, Pid );
 
 
-
 %% @doc Send a command to the daemon
 %%		along with some parameters.
 %%
 cmd([Command|Params]) ->
-	Reply=send(cmd, Command, Params),
+	Reply=send(Command, Command, Params),
 	handle_reply(Command, Reply);
 	
 
@@ -46,7 +47,7 @@ cmd([Command|Params]) ->
 %%		the process exit status code is set.
 %%
 cmd(Cmd) ->
-	Reply=send(cmd, Cmd),
+	Reply=send(Cmd, Cmd),
 	handle_reply(Cmd, Reply).
 
 
@@ -104,14 +105,50 @@ send(ReplyContext, Command) ->
 %%	Msg = term()
 %%	Params = term()
 %%
+send(ReplyContext, Command, []) ->
+	case ?RPC:rpc_validate_command(Command) of
+		true ->
+			dorpc(ReplyContext, Command);
+		_ ->
+			{error, invalid_command}
+	end;
+
+%% @doc Send a message to the daemon along with some parameters
+%%
+%% @spec send(ReplyContext, Command, Params) -> {error, Reason} | {ReplyContext, Msg}
+%% where
+%%	Reason = term()
+%%	ReplyContext = atom()
+%%	Msg = term()
+%%	Params = term()
+%%
 send(ReplyContext, Command, Params) ->
 	case ?RPC:rpc_validate_command(Command) of
 		true ->
-			?RPC:rpc(ReplyContext, {Command, Params});
+			dorpc(ReplyContext, {Command, Params});
 		_ ->
 			{error, invalid_command}
 	end.
 
+
+
+
+
+dorpc(ReplyContext, Message) ->
+	Node=make_node(?DAEMON_NODE),
+	
+	case rpc:call(Node, ?DAEMON_RPC, rpc, [ReplyContext, Message], 2000) of
+		{badrpc, _Reason} ->
+			rpcerror;
+		
+		{ReplyContext, Response}->
+			Response;
+		
+		Other ->
+			{error, {unexpected_msg, Other}}
+	end.
+
+	
 
 %% --------------------------------------------------------------------------------------
 %% --------------------------------------------------------------------------------------
@@ -176,3 +213,25 @@ encode([H|T], Acc) when is_integer(H) ->
 	encode(T, Acc++[H]).
 
 	
+
+extract_host(Node) when is_atom(Node) -> 
+	extract_host(atom_to_list(Node));
+
+extract_host(Node) when is_list(Node) ->
+	Tokens = string:tokens(Node, "@"),
+	lists:last(Tokens).
+	
+
+
+make_node(Name) ->
+	make_node(Name, node()).
+
+make_node(Name, Node) when is_atom(Name) ->
+	make_node(erlang:atom_to_list(Name), Node);
+
+make_node(Name , Node) when is_list(Name) ->
+	Host=extract_host(Node),
+	PartialName=string:concat(Name, "@"),
+	CompleteName=string:concat(PartialName, Host),
+	erlang:list_to_atom(CompleteName).
+
