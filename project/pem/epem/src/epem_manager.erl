@@ -1,19 +1,16 @@
 %% Author: Jean-Lou Dupont
 %% Created: 2009-06-18
-%% Description: TODO: Add description to manager
+%% Description: Phidget Manager
 %%
-%% MESSAGES GENERATED on the Reflector:
-%% ====================================
+%% @doc
+%%
+%% = Messages on HWSWITCH =
+%% phidgets.{phidgetdevice, {{Serial, Type, state}, {date(), time(), now()}}},
 %% 
-%% {phidgetdevice, {{Serial, Type, state}, {date(), time(), now()}}},
-%%
-%% SUBSCRIPTIONS:
-%%
-%%  none
-%%
 
 -module(epem_manager).
 
+-define(SERVER_DRV, manager_driver).
 -define(SERVER, manager).
 -define(BUSSES, [log, sys, clock]).
 -define(CTOOLS, mswitch_ctools).
@@ -34,7 +31,7 @@
 %% --------------------------------------------------------------------
 -export([
 		start_link/0,
-		start_link/1,
+		%start_link/1,
 		stop/0
 		
 		,get_server/0
@@ -65,36 +62,13 @@
 %% API functions
 %% ====================================================================!
 start_link() ->
-	start_link([]).
-
-start_link(Args) ->
-	
-	{debug, Debug}=base:kfind(debug, Args,false),
-	DrvPath = base:pole(Debug, true, false, ?DRV_MNG_DEBUG, ?DRV_MNG),			
-	LD = [{driver_path, DrvPath}],
-	NArgs = lists:append(Args, LD),
-	
-
 	Pid = spawn_link(?MODULE, loop, []),
-	register( ?MODULE, Pid ),
-	?MODULE ! {args, NArgs},
+	register( ?SERVER, Pid ),
 	{ok, Pid}.
 
 
 stop() ->
     ?MODULE ! stop.
-
-
-start_drv(DrvPath) ->
-	Pid = spawn(?MODULE, mng_drv, [DrvPath]),
-	register(mng_drv, Pid),
-	ok.
-
-
-mng_drv(ExtPrg) ->
-    process_flag(trap_exit, true),
-    Port = open_port({spawn, ExtPrg}, [{packet, 2}, binary, exit_status]),
-    loop_drv(Port).
 
 
 
@@ -107,7 +81,9 @@ loop() ->
 		
 		%%%% CONFIGURATION MANAGEMENT
 		{config, Version, Config} ->
-			?CTOOLS:put_config(Version, Config);
+			?CTOOLS:put_config(Version, Config),
+			log(info, "manager: restarting driver"),
+			restart_drv();
 		
 		stop ->
 			exit(normal);
@@ -117,26 +93,14 @@ loop() ->
 		{hwswitch, From, Bus, Msg} ->
 			handle({hwswitch, From, Bus, Msg});
 		
-		
-		%% Send the 'ready' signal
-		{args, Args} ->
-			put(args, Args),
-			{driver_path, DrvPath} = base:kfind(driver_path, Args),
-			put(driver_path, DrvPath),
-			switch:publish(manager, ready, self()),
-			start_drv(DrvPath);
-		
-		{driver, crashed} ->
-			log(warning, "manager: driver crashed~n"),
-			DriverPath = get(driver_path),
-			start_drv(DriverPath);
 
-		stop ->
-			exit(normal);
-		
+		{driver, crashed} ->
+			log(warning, "manager: driver crashed... restarting~n"),
+			restart_drv();
+
 		Error ->
-			base:elog(?MODULE, "unsupported message [~p]~n",[Error]),
-			Error
+			log(error, "manager: unsupported message: ", Error)
+
 	end,
 	loop().
 
@@ -157,7 +121,7 @@ handle({hwswitch, _From, clock, _}) ->
 	not_supported;
 
 handle({hwswitch, _From, sys, app.ready}) ->
-	do_app_ready();
+	start_drv();
 
 
 handle({hwswitch, _From, sys, suspend}) ->
@@ -181,7 +145,53 @@ handle({hwswitch, _From, sys, _Msg}) ->
 
 
 handle(Other) ->
-	log(warning, "app: Unexpected message: ", [Other]).
+	log(warning, "manager: Unexpected message: ", [Other]).
+
+
+%% ====================================================================
+%% Driver API
+%% ====================================================================
+
+%% @doc Starts the port driver iff not already started.
+%%
+start_drv() ->
+	Port=get(driver.port),
+	start_drv(Port).
+
+start_drv(undefined) ->	real_drv_start();
+start_drv(_) ->	already_started.			
+
+
+real_drv_start() ->
+	Pid = spawn(?MODULE, mng_drv, [get_drv_path()]),
+	register(?SERVER_DRV, Pid),
+	put(driver.port, Pid),
+	{ok, Pid}.
+	
+
+stop_drv() ->
+	Port=get(driver.port),
+	stop_drv(Port).
+
+stop_drv(undefined) -> noop;
+stop_drv(Port) ->
+	put(driver.port, undefined),
+	try		port_close(Port)
+	catch	_:_ -> noop
+	end.
+
+restart_drv() ->
+	stop_drv(),
+	start_drv().
+
+
+
+
+mng_drv(ExtPrg) ->
+    process_flag(trap_exit, true),
+    Port = open_port({spawn, ExtPrg}, [{packet, 2}, binary, exit_status]),
+	log(info, "manager: driver started on port: ", [Port]),
+    loop_drv(Port).
 
 
 
@@ -204,8 +214,11 @@ loop_drv(Port) ->
 			%%            Atom     Tuple
 			{MsgType, Msg} = Decoded,
 			M = {Msg, {date(), time(), now()}},
-			?SWITCH:publish(phidgets, {MsgType, M})
+			?SWITCH:publish(phidgets, {MsgType, M});
 	
+		%% /dev/null
+		_ ->
+			noop
 	end,
 	loop_drv(Port).
 
@@ -215,6 +228,22 @@ loop_drv(Port) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_server() ->	?SERVER.
 get_busses() -> ?BUSSES.
+
+
+%% ----------------------           ------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%  HELPERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ----------------------           ------------------------------
+get_drv_path() ->
+	Home= get(manager.driver.home.path),
+	Debug=get(manager.driver.debug),
+	get_drv_path(Home, Debug).
+
+get_drv_path(Home, true) ->
+	Home++get(manager.driver.debug.name);
+
+get_drv_path(Home, _) ->
+	Home++get(manager.driver.normal.name).
+
 
 
 %% ----------------------          ------------------------------
@@ -230,8 +259,8 @@ log(Severity, Msg, Params) ->
 %clog(Ctx, Sev, Msg) ->
 %	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
-clog(Ctx, Sev, Msg, Ps) ->
-	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+%clog(Ctx, Sev, Msg, Ps) ->
+%	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
 
 
 %% ----------------------          ------------------------------
@@ -254,7 +283,7 @@ defaults() ->
 	 %% Debug mode for external driver
 	 {manager.driver.debug, optional, atom, false}
 	
-	,{manager.driver.home.path,   optional, string, "/usr/bin"}
+	,{manager.driver.home.path,   optional, string, "/usr/bin/"}
 	,{manager.driver.normal.name, optional, string, "pem_drv_mng"}
 	,{manager.driver.debug.name,  optional, string, "pem_drv_mng_debug"}
 	 ].
@@ -264,7 +293,7 @@ defaults() ->
 descriptions() ->
 	[
 	 {manager.driver.debug,       "Debug flag (true|false) for drv_mng driver"}
-	,{manager.driver.home.path,   "Home path for drv_mng driver"}
+	,{manager.driver.home.path,   "Home path for drv_mng driver with trailing slash (e.g. /usr/bin/)"}
 	,{manager.driver.normal.name, "Filename of normal (default) drv_mng driver"}
 	,{manager.driver.debug.name,  "Filename of debug version of drv_mng driver"}
 	 ].
