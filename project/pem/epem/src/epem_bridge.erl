@@ -125,7 +125,7 @@ encode([H|T], Acc) when is_atom(H) ->
 
 encode([H|T], Acc) when is_list(H) ->
 	L=encode(H, []),
-	encode(T, Acc++[L]);
+	encode(T, Acc++[{array, L}]);
 
 encode([H|T], Acc) when is_float(H) ->
 	encode(T, Acc++[erlang:float_to_list(H)]);
