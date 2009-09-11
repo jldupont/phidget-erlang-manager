@@ -51,7 +51,8 @@ handle_rpc(ReplyTo, _FromNode, RC, getapiversion) ->
 
 %% CATCH-ALL
 %%
-handle_rpc(ReplyTo, _, _, _) ->
+handle_rpc(ReplyTo, _, _, RQ) ->
+	io:format("rpc: invalid request: ~p~n~n", [RQ]),
 	rpc_reply(ReplyTo, {error, invalid_request}).
 
 
@@ -62,7 +63,8 @@ handle_rpc(ReplyTo, _, _, _) ->
 rpc_validate_command(Command) when is_atom(Command) ->
 	lists:member(Command, ?SUPPORTED_CMDS);
 
-rpc_validate_command(_) ->
+rpc_validate_command(Inv) ->
+	io:format("invalid <~p>~n", [Inv]),
 	invalid.
 
 
