@@ -1,0 +1,11 @@
+@author: Jean-Lou Dupont
+
+This sub-directory contains the C/C++ drivers for the Phidget devices of the project.
+These drivers serve as bridge to Erlang nodes.
+ 
+ 
+= Dependencies =
+
+- The drivers depend on the EPAPI library found at http://epapi.googlecode.com/
+- The 'scons' build system is also required to build from source
+
