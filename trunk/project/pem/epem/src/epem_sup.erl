@@ -50,7 +50,7 @@ start_link(Args) ->
 %% --------------------------------------------------------------------
 init(_Args) ->
 
-	Child_base   = mc(?NAME),
+	Child_base   = mcd(?NAME),
     Child_logger = mc(log, {logfilename, "/var/log/transmission.log"} ),
     Child_switch = mc(hwswitch, {mods, hsmods()}),
     Child_clock =  mc(clock),
@@ -109,6 +109,10 @@ mm(Name) ->
 	make_atom([?NAME, '_', Name]).
 
 
+mcd(M) ->
+	{M,{M, start_link,[]},
+	 	permanent,2000,worker,[M]}.
+	
 
 mc(Mod) ->
 	M=mm(Mod),

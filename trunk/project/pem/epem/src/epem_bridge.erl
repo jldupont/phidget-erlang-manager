@@ -7,6 +7,7 @@
 -define(RPC, epem_rpc).
 -define(JSON, epem_json).
 
+-define(DAEMON, "erl +d -pa ebin -mode embedded -sname epem -detached -run epem_app start").
 
 %%
 %% API functions
@@ -25,6 +26,11 @@ cmd([ping]) ->
 
 cmd([getcmds]) ->
 	handle_reply(getcmds, ?RPC:getcmds());
+
+cmd([tstatus]) ->
+	{Pid, _}=string:to_integer(os:getpid()),
+	handle_reply(tstatus, Pid );
+
 
 
 %% @doc Send a command to the daemon
