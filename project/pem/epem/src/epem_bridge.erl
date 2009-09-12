@@ -9,17 +9,36 @@
 -define(RPC, epem_rpc).
 -define(JSON, epem_json).
 
--define(DAEMON, "erl +d -pa ebin -mode embedded -sname epem -detached -run epem_app start").
+-define(DAEMON, "erl +d -pa ebin -sname epem -detached -run epem_app start").
 
 %%
 %% API functions
 %%
 -export([
 		 cmd/1
-		
-		,json/1
-		,encode/1
 		 ]).
+
+cmd([stop]) ->
+	Reply=send(pid, pid),
+	case Reply of
+		{pid, Pid} ->
+			StrPid=erlang:integer_to_list(Pid),
+			os:cmd("kill -9 "++StrPid),
+			handle_reply(stop, stop_sent);
+		Other ->
+			handle_reply(stop, Other)
+	end;
+
+cmd([start]) ->
+	Reply=send(pid, pid),
+	case Reply of
+		{pid, _Pid} ->
+			handle_reply(start, daemon_running);
+		_ ->
+			os:cmd(?DAEMON),
+			handle_reply(start, start_issued)
+	end;
+	
 
 
 %% For Testing...
@@ -89,12 +108,8 @@ handle_reply(Cmd, Reply) ->
 %%	Msg = term()
 %%
 send(ReplyContext, Command) ->
-	case ?RPC:rpc_validate_command(Command) of
-		true ->
-			?RPC:rpc(ReplyContext, Command);
-		_ ->
-			{error, invalid_command}
-	end.
+	send(ReplyContext, Command, []).
+
 
 %% @doc Send a message to the daemon along with some parameters
 %%
@@ -132,17 +147,22 @@ send(ReplyContext, Command, Params) ->
 
 
 
-
-
+%% @doc Function that actually performs the RPC call
+%%		to the daemon node... assuming it is running.
+%%
 dorpc(ReplyContext, Message) ->
 	Node=make_node(?DAEMON_NODE),
 	
+	%io:format("dorpc: command: ~p~n", [Message]),
 	case rpc:call(Node, ?DAEMON_RPC, rpc, [ReplyContext, Message], 2000) of
 		{badrpc, _Reason} ->
-			rpcerror;
+			{error, daemon_not_found};
 		
 		{ReplyContext, Response}->
-			Response;
+			{ReplyContext, Response};
+		
+		{error, Reason} ->
+			{error, Reason};
 		
 		Other ->
 			{error, {unexpected_msg, Other}}
