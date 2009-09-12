@@ -9,7 +9,7 @@
 %%
 -define(API_VERSION, {1,0}).
 
--define(SUPPORTED_CMDS, [getapiversion, reload, status, getcmds]).
+-define(SUPPORTED_CMDS, [getapiversion, reload, getcmds, pid]).
 -define(SERVER,     epem).
 -define(TIMEOUT,    1000).
 -define(SWITCH,     epem_hwswitch).
@@ -22,12 +22,13 @@ getcmds() ->
 %%%%%%%%%%%%%%%%%%%%%%%%% RPC handling %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------              ------------------------------
 
+
 %% Retrieves the Pid of the daemon
 %%
-handle_rpc(ReplyTo, _FromNode, RC, status) ->
-	%io:format("epem_rpc: status~n~n"),
+handle_rpc(ReplyTo, _FromNode, RC, pid) ->
 	{Pid, _}=string:to_integer(os:getpid()),
 	rpc_reply(ReplyTo, {RC, Pid});
+
 
 %% Retrieves the supported commands through the RPC interface
 %%
