@@ -17,7 +17,7 @@
 
 -define(SERVER_DRV, ifk_driver).
 -define(SERVER,     ifk).
--define(BUSSES,     [log, sys, clock, phidgets]).
+-define(BUSSES,     [sys, clock, phidgets]).
 -define(CTOOLS,     mswitch_ctools).
 -define(SWITCH,     epem_hwswitch).
 
@@ -41,15 +41,7 @@
 -export([
 		 loop/0,
 		 loop_handler/1,
-		 handle_phidgetdevice/2,
-		 filter_device/4,
-		 handle_ifk/3,
-		 handle_active/2,
-		 handle_active/4,
-		 handle_inactive/2,
-		 handle_inactive/4,
 		 ifk_drv/2,
-		 send_to_reflector/1,
 		 handle_crashed_driver/1,
 		 clean_driver/1
 		 ]).
@@ -86,13 +78,7 @@ loop() ->
 		{hwswitch, From, Bus, Msg} ->
 			handle({hwswitch, From, Bus, Msg});
 
-		
-		
-		%%verify that it is an "InterfaceKit" device
-		{_From, phidgetdevice, {M, Ts}} ->
-			%%base:ilog(?MODULE,"received 'phidgetdevice'~n", []),
-			handle_phidgetdevice(M, Ts);
-
+			
 		%% Message from the ifk_driver
 		%%
 		{driver, Serial, Port, Pid} ->
@@ -159,9 +145,11 @@ handle({hwswitch, _From, sys, _Msg}) ->
 	not_supported;
 
 
-handle({hwswitch, _From, phidgets, _Msg}) ->
-	todo;
+handle({hwswitch, _From, phidgets, {phidgetdevice, {Serial, Type, State} } }) ->
+	handle_phidgetdevice(Serial, Type, State);
 	
+handle({hwswitch, _From, phidgets, _}) ->
+	noop;
 
 handle(Other) ->
 	log(warning, "ifk: Unexpected message: ", [Other]).
@@ -172,16 +160,15 @@ handle(Other) ->
 %% =====================
 %% HANDLER
 %% =====================
-handle_phidgetdevice(Msg, Ts) ->
-	%error_logger:info_msg("~p: handle_phidgetdevice, Msg[~p]~n", [?MODULE, Msg]),
-	{Serial, Type, State} = Msg,
-	filter_device(Serial, Type, State, Ts).
+handle_phidgetdevice(Serial, Type, State) ->
+	io:format("ifk: handle_phidgetdevice, Serial[~p]~n", [Serial]),
+	filter_device(Serial, Type, State).
 
 % we just want the InterfaceKit devices!
-filter_device(Serial, Type, State, Ts) ->
+filter_device(Serial, Type, State) ->
 	case Type of
 		"PhidgetInterfaceKit" ->
-			handle_ifk(Serial, State,Ts);
+			handle_ifk(Serial, State);
 	
 		_ ->
 			notifk
@@ -189,40 +176,39 @@ filter_device(Serial, Type, State, Ts) ->
 
 %% Spawn 1 driver for each InterfaceKit device in "active" state
 %%  and get rid of detached device(s)
-handle_ifk(Serial, inactive, Ts) ->
-	handle_inactive(Serial, Ts);
+handle_ifk(Serial, inactive) ->
+	handle_inactive(Serial);
 
-handle_ifk(Serial, active, Ts) ->
-	%error_logger:info_msg("~p: handle_ifk: Serial[~p] active~n", [?MODULE, Serial]),
-	handle_active(Serial, Ts);
+handle_ifk(Serial, active) ->
+	handle_active(Serial);
 
-handle_ifk(Serial, State, _) ->
-	log(debug, "ifk: invalid state {Serial, State}: ", [[Serial, State]]);
+handle_ifk(Serial, State) ->
+	log(debug, "ifk: invalid state {Serial, State}: ", [[Serial, State]]).
 
 
 %% Open the driver if not already done
-handle_active(Serial, Ts) ->
+handle_active(Serial) ->
 	Port = get({port, Serial}),
 	Pid  = get({pid,  Serial}),
-	handle_active(Serial, Port, Pid, Ts).
+	handle_active(Serial, Port, Pid).
 
-handle_active(Serial, _, undefined, Ts) ->
-	handle_active(Serial, undefined, invalid, Ts);
+handle_active(Serial, _, undefined) ->
+	handle_active(Serial, undefined, invalid);
 
 % not sure this one is required
-handle_active(Serial, undefined, undefined, Ts) ->
-	handle_active(Serial, undefined, invalid, Ts);
+handle_active(Serial, undefined, undefined) ->
+	handle_active(Serial, undefined, invalid);
 
 
 % Not active... yet
-handle_active(Serial, undefined, invalid, _Ts) ->
+handle_active(Serial, undefined, invalid) ->
 	DriverPath = get(driver_path),
 	Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]),
 	log(debug, "ifk: handle active {Serial, Pid}: ", [[Serial, Pid]]);
 
 
 % Is it really active?
-handle_active(Serial, _Port, Pid, Ts) ->
+handle_active(Serial, _Port, Pid) ->
 	Active = is_process_alive(Pid),
 	case Active of
 		true  -> ok;
@@ -230,21 +216,21 @@ handle_active(Serial, _Port, Pid, Ts) ->
 			% clean-up required!
 			erase({pid, Serial}),
 			erase({port, Serial}),
-			handle_active(Serial, undefined, undefined, Ts)
+			handle_active(Serial, undefined, undefined)
 	end.
 
 
 %% Close the driver if still active
-handle_inactive(Serial, Ts) ->
+handle_inactive(Serial) ->
 	Port = get({port, Serial}),
 	Pid  = get({pid, Serial}),
-	handle_inactive(Serial, Port, Pid, Ts);
+	handle_inactive(Serial, Port, Pid).
 
 %not even defined it seems... nothing much to do
-handle_inactive(_Serial, undefined, _, _) -> ok;
-handle_inactive(_Serial, _, undefined, _) -> ok;
+handle_inactive(_Serial, undefined, _) -> ok;
+handle_inactive(_Serial, _, undefined) -> ok;
 
-handle_inactive(Serial, Port, Pid, _Ts) ->
+handle_inactive(Serial, Port, Pid) ->
 	Active = is_process_alive(Pid),
 	case Active of
 		true ->
@@ -290,7 +276,7 @@ loop_handler(Port) ->
 			publish(Decoded);
 		
 		Msg ->
-			log(debug, "ifk_driver: unknown msg: ", [Other])
+			log(debug, "ifk_driver: unknown msg: ", [Msg])
 	end,
 	loop_handler(Port).
 
