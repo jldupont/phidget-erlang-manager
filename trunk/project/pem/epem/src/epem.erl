@@ -146,13 +146,13 @@ handle(Other) ->
 set_state(State) ->
 	put(state, State).
 
-get_state() ->
-	State=get(state),
-	case State of
-		undefined -> working;   %start in 'working' state
-		working   -> working;
-		_         -> suspended
-	end.
+%get_state() ->
+%	State=get(state),
+%	case State of
+%		undefined -> working;   %start in 'working' state
+%		working   -> working;
+%		_         -> suspended
+%	end.
 
 
 
