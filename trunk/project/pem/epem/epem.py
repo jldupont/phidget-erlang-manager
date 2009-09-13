@@ -4,7 +4,6 @@
     
     @author: Jean-Lou Dupont
 """
-import json
 import sys
 import subprocess
 from optparse import OptionParser
@@ -14,6 +13,16 @@ bridge="erl +d -pa ebin -noshell -sname epem_py -s epem_bridge cmd %s"
 usage = """epem [-q] command"""
 ###>
 
+
+try:
+    import json
+except:
+    try:
+        import simplejson as json
+    except:
+        print "This script requires module 'json' or 'simplejson'"
+        sys.exit(1)
+        
 
 
 def exec_cmd(cmd, args):
