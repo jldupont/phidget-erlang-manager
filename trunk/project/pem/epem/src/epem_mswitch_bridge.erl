@@ -34,7 +34,6 @@
 %%
 -export([
 		 loop/0
-		,inbox/1
 		 ]).
 
 %%
@@ -97,16 +96,8 @@ loop() ->
 	loop().
 
 subscribe() ->
-	?MSWITCH:subscribe({?MODULE, inbox, ?SERVER}, ?MSWITCH_BUSSES).	
+	?MSWITCH:subscribe(?SERVER, ?MSWITCH_BUSSES).	
 
-
-%% ----------------------           ------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%  MSWITCH  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% ----------------------           ------------------------------
-
-inbox({FromNode, Server, Bus, Message}) ->
-	%%io:format("inbox, bus[~p] message[~p]~n",[Bus, Message]),
-	Server ! {mswitch, FromNode, Bus, Message}.
 
 
 %% ----------------------            ------------------------------
