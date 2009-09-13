@@ -3,8 +3,8 @@ Phidget Erlang Manager
 
 For more information, please visit: http://phidget-erlang-manager.googlecode.com/ .
 
-Building from sources archive
-=============================
+=Building from sources archive=
+
 Python 'scons' building system is required. This tool is available at http://www.scons.org/ .
 
   1. Download sources ZIP archive
@@ -13,3 +13,10 @@ Python 'scons' building system is required. This tool is available at http://www
   4. scons
   5. scons install
   
+=Daemon=
+
+The script file for management 'epem' daemon requires:
+- Python >=2.5
+- module 'json' (included in Python >=2.6)
+  or
+- module 'simplejson' for Python = 2.5x
