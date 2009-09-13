@@ -12,7 +12,7 @@
 -define(CTOOLS,  mswitch_ctools).
 -define(MSWITCH, mswitch).
 
--define(MSGS, [{phidgets, phidgetdevice}, 
+-define(MSGS, [{phidgets, phidgetdevice} 
 			   ,{phidgets, din}
 			   ,{phidgets, dout}
 			  ]
@@ -79,6 +79,7 @@ loop() ->
 	
 		%%% LOCAL SWITCH RELATED %%%
 		{hwswitch, From, Bus, Msg} ->
+			maybe_bridge(From, Bus, Msg),
 			handle({hwswitch, From, Bus, Msg});
 	
 		Other ->
@@ -90,6 +91,7 @@ loop() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%  HANDLERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------            ------------------------------
 
+ 
 handle({hwswitch, _From, clock, {tick.min, _Count}}) ->
 	?CTOOLS:do_publish_config_version(?SWITCH, ?SERVER);
 
@@ -119,7 +121,30 @@ handle({hwswitch, _From, sys, _Msg}) ->
 
 
 handle(Other) ->
-	log(warning, "app: Unexpected message: ", [Other]).
+	log(warning, "mswitch_bridge: Unexpected message: ", [Other]).
+
+
+%% @doc Bridge, if required, the HWSWITCH messages
+%%		to the MSWITCH busses.
+%%
+maybe_bridge(_From, Bus, Msg) when is_tuple(Msg) ->
+	Type=erlang:hd(erlang:tuple_to_list(Msg)),
+	Target={Bus, Type},
+	case lists:member(Target, ?MSGS) of
+		true ->	?MSWITCH:publish(Bus, Msg);
+		_    -> noop
+	end;
+
+maybe_bridge(_From, Bus, Msg) when is_atom(Msg) ->
+	Target={Bus, Msg},
+	case lists:member(Target, ?MSGS) of
+		true ->	?MSWITCH:publish(Bus, Msg);
+		_    -> noop
+	end;
+
+maybe_bridge(_From, _Bus, _Msg) ->
+	unsupported.
+
 
 
 %% ----------------------          ------------------------------
@@ -133,7 +158,7 @@ do_app_ready() ->
 
 
 maybe_do_app_ready(working) ->
-	Pid=os:getpid(),
+	{Pid, _}=string:to_integer(os:getpid()),
 	?MSWITCH:publish(sys, {app.ready, ?APPNAME, Pid});
 	
 maybe_do_app_ready(_) ->
