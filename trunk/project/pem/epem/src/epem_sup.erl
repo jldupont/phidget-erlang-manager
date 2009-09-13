@@ -5,13 +5,13 @@
 -define(NAME, epem).
 
 %% ALL MODULES
--define(MODS,   [hwswitch, log, clock, config, appctl]).
+-define(MODS,   [hwswitch, log, clock, config, appctl, manager]).
 
 %% MODULES which require HWSWITCH access
--define(HSMODS, [log, clock, config, appctl]).
+-define(HSMODS, [log, clock, config, appctl, manager]).
 
 %% MODULES part of the configuration process
--define(CFGMODS, [log, appctl]).
+-define(CFGMODS, [log, appctl, manager]).
 
 
 -behavior(supervisor).
@@ -56,9 +56,11 @@ init(_Args) ->
     Child_clock =  mc(clock),
 	Child_appctl = mc(appctl, cfgmods()),
 	Child_config = mc(config, cfgmods()),
+	Child_manager= mc(manager),
 
 	
-	Children = [Child_base, Child_logger, Child_switch, Child_clock, Child_appctl, Child_config 
+	Children = [Child_base, Child_logger, Child_switch, Child_clock, Child_appctl, Child_config
+			   ,Child_manager
 				],
 	
 	
@@ -104,25 +106,20 @@ make_atom([H|T], Acc) when is_list(H) ->
 	make_atom(T, Acc++H).
 
 
-
 mm(Name) ->
 	make_atom([?NAME, '_', Name]).
 
 
 mcd(M) ->
-	{M,{M, start_link,[]},
-	 	permanent,2000,worker,[M]}.
-	
+	{M,{M, start_link,[]},permanent,2000,worker,[M]}.
+
 
 mc(Mod) ->
 	M=mm(Mod),
-	{M,{M, start_link,[]},
-	 	permanent,2000,worker,[M]}.
-
+	{M,{M, start_link,[]},permanent,2000,worker,[M]}.
 
 mc(Mod, Params) ->
 	M=mm(Mod),
-	{M,{M, start_link, [Params]},
-	 	permanent,2000,worker,[M]}.
+	{M,{M, start_link, [Params]},permanent,2000,worker,[M]}.
 
 	

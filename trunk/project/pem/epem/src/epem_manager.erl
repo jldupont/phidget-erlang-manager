@@ -12,7 +12,7 @@
 
 -define(SERVER_DRV, manager_driver).
 -define(SERVER, manager).
--define(BUSSES, [log, sys, clock]).
+-define(BUSSES, [sys, clock]).
 -define(CTOOLS, mswitch_ctools).
 -define(SWITCH, epem_hwswitch).
 
@@ -31,7 +31,6 @@
 %% --------------------------------------------------------------------
 -export([
 		start_link/0,
-		%start_link/1,
 		stop/0
 		
 		,get_server/0
@@ -213,8 +212,8 @@ loop_drv(Port) ->
 			%% Decoded:  {Msgtype, Msg}
 			%%            Atom     Tuple
 			{MsgType, Msg} = Decoded,
-			M = {Msg, {date(), time(), now()}},
-			?SWITCH:publish(phidgets, {MsgType, M});
+			%%M = {Msg, {date(), time(), now()}},
+			?SWITCH:publish(phidgets, {MsgType, Msg});
 	
 		%% /dev/null
 		_ ->
