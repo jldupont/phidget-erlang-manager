@@ -20,7 +20,7 @@ except:
     try:
         import simplejson as json
     except:
-        print "This script requires module 'json' or 'simplejson'"
+        print "This script requires module 'json' or 'simplejson'\n"
         sys.exit(1)
         
 
