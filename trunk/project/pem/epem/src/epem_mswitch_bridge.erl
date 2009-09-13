@@ -12,6 +12,7 @@
 -define(CTOOLS,  mswitch_ctools).
 -define(MSWITCH, mswitch).
 
+-define(MSWITCH_BUSSES, [sys]).
 -define(MSGS, [{phidgets, phidgetdevice} 
 			   ,{phidgets, din}
 			   ,{phidgets, dout}
@@ -33,6 +34,7 @@
 %%
 -export([
 		 loop/0
+		,inbox/1
 		 ]).
 
 %%
@@ -71,12 +73,19 @@ stop() ->
 loop() ->
 	receive
 		
+		start ->
+			subscribe();
+		
 		{config, Version, Config} ->
 			?CTOOLS:put_config(Version, Config);
 		
 		stop ->
 			exit(normal);
 	
+		{mswitch, From, notif, Payload} ->
+			handle({mswitch, From, notif, Payload});
+
+		
 		%%% LOCAL SWITCH RELATED %%%
 		{hwswitch, From, Bus, Msg} ->
 			maybe_bridge(From, Bus, Msg),
@@ -87,11 +96,29 @@ loop() ->
 	end,
 	loop().
 
+subscribe() ->
+	?MSWITCH:subscribe({?MODULE, inbox, ?SERVER}, ?MSWITCH_BUSSES).	
+
+
+%% ----------------------           ------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%  MSWITCH  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ----------------------           ------------------------------
+
+inbox({FromNode, Server, Bus, Message}) ->
+	%%io:format("inbox, bus[~p] message[~p]~n",[Bus, Message]),
+	Server ! {mswitch, FromNode, Bus, Message}.
+
+
 %% ----------------------            ------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%  HANDLERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------            ------------------------------
 
+handle({mswitch, _From, sys, apps.hello}) ->
+	do_app_ready();
  
+handle({mswitch, _From, sys, _}) ->
+	noop;
+
 handle({hwswitch, _From, clock, {tick.min, _Count}}) ->
 	?CTOOLS:do_publish_config_version(?SWITCH, ?SERVER);
 
