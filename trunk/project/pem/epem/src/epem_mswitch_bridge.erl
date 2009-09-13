@@ -83,7 +83,7 @@ loop() ->
 			handle({hwswitch, From, Bus, Msg});
 	
 		Other ->
-			log(warning, "mswitch_bridge: unexpected message: ", [Other])
+			log(warning, "mswitch_bridge server: unexpected message: ", [Other])
 	end,
 	loop().
 
@@ -118,7 +118,8 @@ handle({hwswitch, _From, sys, app.ready}) ->
 handle({hwswitch, _From, sys, _Msg}) ->
 	not_supported;
 
-
+handle({hwswitch, _From, phidgets, _}) ->
+	noop;
 
 handle(Other) ->
 	log(warning, "mswitch_bridge: Unexpected message: ", [Other]).
