@@ -174,7 +174,7 @@ handle(Other) ->
 %% HANDLER
 %% =====================
 handle_phidgetdevice(Serial, Type, State) ->
-	io:format("ifk: handle_phidgetdevice, Serial[~p]~n", [Serial]),
+	%io:format("ifk: handle_phidgetdevice, Serial[~p]~n", [Serial]),
 	filter_device(Serial, Type, State).
 
 % we just want the InterfaceKit devices!
