@@ -36,6 +36,9 @@
 -export([
 	 start_link/0,		 
 	 stop/0
+		
+	,get_server/0
+	,get_busses/0
         ]).
 
 -export([
@@ -45,6 +48,16 @@
 		 handle_crashed_driver/1,
 		 clean_driver/1
 		 ]).
+
+%% --------------------------------------------------------------------
+%% Config Functions
+%% --------------------------------------------------------------------
+-export([
+		 defaults/0,
+		 blacklist/0
+		,descriptions/0
+		 ]).
+
 
 %% =============
 %% API Functions
@@ -82,7 +95,7 @@ loop() ->
 		%% Message from the ifk_driver
 		%%
 		{driver, Serial, Port, Pid} ->
-			log(debug, "driver info {Serial, Port, Pid}: ", [[Serial, Port, Pid]]),
+			%log(debug, "driver info {Serial, Port, Pid}: ", [[{Serial, Port, Pid}]]),
 			put({port,  Serial}, Port),
 			put({pid,   Serial}, Pid),
 			put({serial, Port},  Serial);
@@ -202,9 +215,9 @@ handle_active(Serial, undefined, undefined) ->
 
 % Not active... yet
 handle_active(Serial, undefined, invalid) ->
-	DriverPath = get(driver_path),
-	Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]),
-	log(debug, "ifk: handle active {Serial, Pid}: ", [[Serial, Pid]]);
+	DriverPath = get_drv_path(),
+	_Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]);
+	%log(debug, "ifk: handle active {Serial, Pid}: ", [[Serial, Pid]]);
 
 
 % Is it really active?
@@ -247,7 +260,7 @@ ifk_drv(ExtPrg, Serial) ->
     process_flag(trap_exit, true),
 	Param = erlang:integer_to_list(Serial),
 	Port = open_port({spawn, ExtPrg++" "++Param}, [{packet, 2}, binary, exit_status]),
-	error_logger:info_msg("~p: ifk_drv: Serial[~p] Port[~p] Pid[~p]~n",[?MODULE, Serial, Port, self()]),
+	%%error_logger:info_msg("~p: ifk_drv: Serial[~p] Port[~p] Pid[~p]~n",[?MODULE, Serial, Port, self()]),
 	put({port,   Serial}, Port),
 	put({serial, Port},   Serial),
 	
@@ -315,6 +328,27 @@ log(Severity, Msg, Params) ->
 
 %clog(Ctx, Sev, Msg, Ps) ->
 %	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ADMIN API Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+get_server() ->	?SERVER.
+get_busses() -> ?BUSSES.
+
+
+get_drv_path() ->
+	Debug=get(ifk.driver.debug),
+	Home=get(ifk.driver.home.path),
+	get_drv_path(Debug, Home).
+
+get_drv_path(false, Home) ->
+	Path=get(ifk.driver.normal.name),
+	Home++Path;
+
+get_drv_path(_, Home) ->
+	Path=get(ifk.driver.debug.name),
+	Home++Path.
 
 
 %% ----------------------          ------------------------------
