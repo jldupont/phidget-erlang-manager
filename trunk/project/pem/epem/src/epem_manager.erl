@@ -18,6 +18,12 @@
 %% 1) Reload: log attempt/success/failure every time
 %% 2) Retry (or start): log success
 %%
+%% = Contextual Log =
+%% > manager.driver.open_attempt
+%% > manager.drv.crashed
+%% > manager.driver.rxerror
+%% > manager.driver.pathcheck
+%%
 -module(epem_manager).
 
 -include_lib("kernel/include/file.hrl").
@@ -94,7 +100,6 @@ loop() ->
 		%%%% CONFIGURATION MANAGEMENT
 		{config, Version, Config} ->
 			?CTOOLS:put_config(Version, Config),
-			log(info, "manager: restarting driver"),
 			maybe_restart();
 		
 		stop ->
@@ -334,8 +339,8 @@ get_drv_path(Home, _) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%  LOGGER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------          ------------------------------
 
-log(Severity, Msg) ->
-	log(Severity, Msg, []).
+%log(Severity, Msg) ->
+%	log(Severity, Msg, []).
 
 log(Severity, Msg, Params) ->
 	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).

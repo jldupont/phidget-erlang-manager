@@ -178,3 +178,12 @@ defaults() ->
 	  ,{logpolicer.info,     optional, atom, true}	
 	 ].
 
+
+%% Contextual log messages
+%% =======================
+%%
+%% > manager.driver.open_attempt
+%% > manager.drv.crashed
+%% > manager.driver.rxerror
+%% > manager.driver.pathcheck
+
