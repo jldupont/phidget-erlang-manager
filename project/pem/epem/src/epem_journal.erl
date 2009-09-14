@@ -120,8 +120,15 @@ handle({hwswitch, _From, sys, {config, VersionInForce}}) ->
 handle({hwswitch, _From, sys, _Msg}) ->
 	not_supported;
 
-handle({hwswitch, _From, phidgets, _}) ->
-	noop;
+handle({hwswitch, _From, phidgets, {phidgetdevice, Msg}}) ->
+	handle_pd(Msg);
+
+handle({hwswitch, _From, phidgets, {din, Msg}}) ->
+	handle_io(din, Msg);
+
+handle({hwswitch, _From, phidgets, {dout, Msg}}) ->
+	handle_io(dout, Msg);
+
 
 handle(Other) ->
 	log(warning, "mswitch_bridge: Unexpected message: ", [Other]).
@@ -145,8 +152,12 @@ get_dsn() ->
 
 
 handle_pd(Msg) ->
-	{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
+	{Year, Month, Day}=date(),
+	{Hour, Min, Sec}=time(),
+	{Serial, Type, Status}=Msg,
 	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
+	
+	%{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
 	%%base:ilog(?MODULE, "pd: Serial[~p] Type[~p] Status[~p]~n",[Serial, Type, atom_to_list(Status)]),
 	Conn = base:getvar(db_conn, undefined),
 	handle_pd(Conn, Serial, Type, atom_to_list(Status), Ts).
@@ -174,8 +185,12 @@ handle_pd(_Conn, _Serial, _Type, _Status, _Ts) ->
 
 handle_io(IOType, Msg) ->
 	%%io:format("handle_io: msg:  ~p~n", [Msg]),
-	{{Serial, Index, Value}, {{Year, Month, Day}, {Hour, Min, Sec}, _MegaSecs}}=Msg,
-	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
+	%M = {Msg, {date(), time(), now()}},
+	{Year, Month, Day}=date(),
+	{Hour, Min, Sec}=time(),
+	{Serial, Index, Value}=Msg,
+	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),	
+	%{{Serial, Index, Value}, {{Year, Month, Day}, {Hour, Min, Sec}, _MegaSecs}}=Msg,
 	%%base:ilog(?MODULE, "io: Serial[~p] IOType[~p] Index[~p] Value[~p]~n", [Serial, IOType, Index, Value]),
 	Conn = base:getvar(db_conn, undefined),
 	handle_io(IOType, Conn, Serial, Index, Value, Ts).
