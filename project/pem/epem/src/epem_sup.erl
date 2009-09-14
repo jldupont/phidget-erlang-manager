@@ -51,7 +51,7 @@ start_link(Args) ->
 init(_Args) ->
 
 	Child_base   = mcd(?NAME),
-    Child_logger = mc(log, {logfilename, "/var/log/transmission.log"} ),
+    Child_logger = mc(log, {logfilename, "/var/log/epem.log"} ),
     Child_switch = mc(hwswitch, {mods, hsmods()}),
     Child_clock =  mc(clock),
 	Child_appctl = mc(appctl, cfgmods()),

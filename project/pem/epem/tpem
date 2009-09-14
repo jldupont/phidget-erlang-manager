@@ -1,0 +1,3 @@
+#!/bin/bash
+
+erl +d -pa ebin -sname epem -boot start_sasl -run epem_app start
