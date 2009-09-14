@@ -11,6 +11,7 @@ from optparse import OptionParser
 ###< CUSTOMIZE BELOW
 bridge="erl +d -pa ebin -noshell -sname epem_py -s epem_bridge cmd %s"
 usage = """epem [-q] command"""
+environ = {"HOME":"/root", "PATH":"/sbin:/usr/sbin:/bin:/usr/bin" }
 ###>
 
 
@@ -32,7 +33,7 @@ def exec_cmd(cmd, args):
     @returns: (stdout, stderr, exit_code)
     """
     try:
-        proc = subprocess.Popen(cmd % args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd % args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
         proc.wait()
         exit_code=proc.returncode
         (stdout, stderr)=proc.communicate()

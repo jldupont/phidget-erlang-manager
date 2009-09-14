@@ -5,10 +5,23 @@
 %% @doc
 %%
 %% = Messages on HWSWITCH =
-%% phidgets.{phidgetdevice, {{Serial, Type, state}, {date(), time(), now()}}},
+%% phidgets.{phidgetdevice, {Serial, Type, state}},
 %% 
-
+%%
+%% = Failure Modes =
+%%
+%% 1) Driver not installed  ==> no use logging every attempt
+%% 2) Driver crashing       ==> rate limit?
+%% 3) Intermittent crash    ==>
+%%
+%% Two events:
+%% 1) Reload: log attempt/success/failure every time
+%% 2) Retry (or start): log success
+%%
 -module(epem_manager).
+
+-include_lib("kernel/include/file.hrl").
+
 
 -define(SERVER_DRV, manager_driver).
 -define(SERVER, manager).
@@ -82,7 +95,7 @@ loop() ->
 		{config, Version, Config} ->
 			?CTOOLS:put_config(Version, Config),
 			log(info, "manager: restarting driver"),
-			restart_drv();
+			maybe_restart();
 		
 		stop ->
 			exit(normal);
@@ -92,10 +105,11 @@ loop() ->
 		{hwswitch, From, Bus, Msg} ->
 			handle({hwswitch, From, Bus, Msg});
 		
+		{driver, {phidgets, {MsgType, Msg}}} ->
+			handle_driver_msg(MsgType, Msg);
 
 		{driver, crashed} ->
-			log(warning, "manager: driver crashed... restarting~n"),
-			restart_drv();
+			handle_crashed_drv();
 
 		Error ->
 			log(error, "manager: unsupported message: ", Error)
@@ -111,6 +125,7 @@ loop() ->
 
 handle({hwswitch, _From, clock, {tick.min, Count}}) ->
 	put(clock.min, Count),
+	maybe_restart(),
 	?CTOOLS:do_publish_config_version(?SWITCH, ?SERVER);
 
 handle({hwswitch, _From, clock, {tick.sync, _Count}}) ->
@@ -151,6 +166,46 @@ handle(Other) ->
 %% Driver API
 %% ====================================================================
 
+handle_driver_msg(_MsgType, _Msg) ->
+	MinCount=get(clock.min),
+	put(driver.state, {working, MinCount}).
+
+
+handle_crashed_drv() ->
+	clog(manager.drv.crashed, error, "manager: driver crashed"),
+	MinCount=get(clock.min),
+	put(driver.state, {crashed, MinCount}).
+
+
+
+maybe_restart() ->
+	stop_drv(),
+	State=get(driver.state),
+	maybe_restart(State).
+
+maybe_restart({working, _MT}) ->
+	already_working;
+
+maybe_restart({crashed, _MT}) ->
+	PathCheck=check_drv_path(),
+	attempt_restart(PathCheck);
+
+maybe_restart(undefined) ->
+	PathCheck=check_drv_path(),
+	attempt_restart(PathCheck).
+
+
+
+attempt_restart({ok, _}) ->
+	start_drv();
+
+attempt_restart({error, Reason}) ->
+	clog(manager.driver.pathcheck, error, "manager: driver path check error, reason: ", [Reason]);
+
+attempt_restart(_) ->
+	improbable.
+
+
 %% @doc Starts the port driver iff not already started.
 %%
 start_drv() ->
@@ -179,17 +234,31 @@ stop_drv(Port) ->
 	catch	_:_ -> noop
 	end.
 
-restart_drv() ->
-	stop_drv(),
-	start_drv().
 
 
+check_drv_path() ->
+	Filename=get_drv_path(),
+	file:read_file_info(Filename).
+
+			
 
 
 mng_drv(ExtPrg) ->
     process_flag(trap_exit, true),
     Port = open_port({spawn, ExtPrg}, [{packet, 2}, binary, exit_status]),
-	log(info, "manager: driver started on port: ", [Port]),
+	clog(manager.driver.open_attempt, info, "manager: attempting driver open on port: ", [Port]),
+	
+	%% IMPORTANT: The following has been commented out because
+	%% erlang:open_port returns a valid "port" term *even* if the specified driver
+	%% isn't available!
+	%
+	%case is_port(Port) of
+	%	true ->
+	%		clog(manager.driver.opened, info, "manager: driver started on port: ", [Port]);
+	%	false ->
+	%		clog(manager.driver.open_error, error, "manager: cannot start driver")
+	%end,
+	
     loop_drv(Port).
 
 
@@ -208,12 +277,7 @@ loop_drv(Port) ->
 
 		
 		{Port, {data, Data}} ->
-			Decoded = binary_to_term(Data),
-			%% Decoded:  {Msgtype, Msg}
-			%%            Atom     Tuple
-			{MsgType, Msg} = Decoded,
-			%%M = {Msg, {date(), time(), now()}},
-			?SWITCH:publish(phidgets, {MsgType, Msg});
+			handle_rx_drv(Data);
 	
 		%% /dev/null
 		_ ->
@@ -222,6 +286,27 @@ loop_drv(Port) ->
 	loop_drv(Port).
 
 
+handle_rx_drv(Data) ->
+	try
+		Decoded = binary_to_term(Data),
+		{MsgType, Msg} = Decoded,
+		publish_drv_msg(MsgType, Msg)
+	catch
+		_:_ ->
+			clog(manager.driver.rxerror, error, "manager: decode error, data: ", [Data])
+	end.
+
+
+publish_drv_msg(MsgType, Msg) ->
+	?SWITCH:publish(phidgets, {MsgType, Msg}),
+			
+	%% We need to get some feedback to the main Server thread of this module
+	?SERVER ! {driver, {phidgets, {MsgType, Msg}}}.
+
+	
+		
+		
+		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ADMIN API Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -255,11 +340,11 @@ log(Severity, Msg) ->
 log(Severity, Msg, Params) ->
 	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).
 
-%clog(Ctx, Sev, Msg) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
+clog(Ctx, Sev, Msg) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
-%clog(Ctx, Sev, Msg, Ps) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+clog(Ctx, Sev, Msg, Ps) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
 
 
 %% ----------------------          ------------------------------
