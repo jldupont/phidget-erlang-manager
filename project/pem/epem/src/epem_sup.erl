@@ -5,13 +5,13 @@
 -define(NAME, epem).
 
 %% ALL MODULES
--define(MODS,   [hwswitch, log, clock, config, appctl, manager, ifk, mswitch_bridge, logpolicer]).
+-define(MODS,   [hwswitch, log, clock, config, appctl, manager, ifk, mswitch_bridge, logpolicer, journal]).
 
 %% MODULES which require HWSWITCH access
--define(HSMODS, [log, clock, config, appctl, manager, ifk, mswitch_bridge, logpolicer]).
+-define(HSMODS, [log, clock, config, appctl, manager, ifk, mswitch_bridge, logpolicer, journal]).
 
 %% MODULES part of the configuration process
--define(CFGMODS, [log, appctl, manager, ifk, mswitch_bridge, logpolicer]).
+-define(CFGMODS, [log, appctl, manager, ifk, mswitch_bridge, logpolicer, journal]).
 
 
 -behavior(supervisor).
@@ -60,12 +60,14 @@ init(_Args) ->
 	Child_ifk    = mc(ifk),
 	Child_mb     = mc(mswitch_bridge),
 	Child_lp     = mc(logpolicer),
+	Child_journal= mc(journal),
 
 	
 	Children = [Child_base, Child_logger, Child_switch, Child_clock, Child_appctl, Child_config
 			   ,Child_manager, Child_ifk
 			   ,Child_mb
 			   ,Child_lp
+			   ,Child_journal
 				],
 	
 	

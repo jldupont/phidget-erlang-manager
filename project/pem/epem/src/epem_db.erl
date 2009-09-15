@@ -61,6 +61,8 @@
 		 create_tables/1,
 		 create_device_table/1,
 		 create_event_table/1
+		
+		,format_timestamp/6
 		 ]).
 
 %%
@@ -115,4 +117,21 @@ create_event_table(Conn) ->
 		Ret                -> Ret
 	catch X:Y -> {X,Y}
 	end.
+
+
+
+-define(timestamp_template, "~P-~P-~P ~P:~P:~P").
+
+%% Useful for ODBC database access
+format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
+	L=io_lib:format(?timestamp_template, [Year,4, 
+										Month,2, 
+										Day,2,
+										Hour,2,
+										Min,2,
+										Sec,2]),
+	Ts2=erlang:iolist_to_binary(L),
+	erlang:binary_to_list(Ts2).
+	
+
 
