@@ -54,6 +54,8 @@ print "%s: postinst: command[%s] configured version [%s] this version[%s]" % (th
 	pem_drv_ifk_debug
 	pem_drv_ifk
 	
+	epem
+	
 """
 
 libs  = ['/usr/lib/libpem_common%s.so',]

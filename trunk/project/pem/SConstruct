@@ -53,8 +53,9 @@ execs = [('./pem/drv_ifk/%s/pem_drv_ifk%s', '../packages/debian/usr/bin/pem_drv_
 all = libs + execs
 
 epem = [
-		{'src': './epem/src',     'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/src'},	   
-		{'src': './epem/ebin',    'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/ebin'},
+		{'params':True,  'dir': True,  'src': './epem/src',     'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/src'},	   
+		{'params':True,  'dir': True,  'src': './epem/ebin',    'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/ebin'},
+		{'params':False, 'dir': False, 'src': './epem/epem.py', 'dst':'../../project/packages/debian/usr/bin/epem'},
 		]
 
 
@@ -82,11 +83,19 @@ if 'deb' in COMMAND_LINE_TARGETS:
 							dst % ('_debug',  version) )
 		
 		for one in epem:
-			src = one['src']
-			dst = one['dst']
+			src   = one['src']
+			dst   = one['dst']
+			isdir = one['dir']
+			params= one['params']
 
 			print "> cloning [%s]" % src
-			safe_copytree(	src , dst % version, skip_dirs=[".svn" ] )#, "_old", "_old2"] )
+			if isdir:
+				safe_copytree(	src , dst % version, skip_dirs=[".svn" ] )#, "_old", "_old2"] )
+			else:
+				if params:
+					shutil.copy(src, dst % version)
+				else:
+					shutil.copy(src, dst)
 			
 		
 		
@@ -111,10 +120,6 @@ if 'deb' in COMMAND_LINE_TARGETS:
 		print """scons: copying beam files"""
 		safe_copytree("./epem/ebin", "/tmp/%s_deb/usr/share/pem/bin" % this_lib)
 
-		print """scons: copying pem.py to pem & setting permissions"""
-		path="/tmp/%s_deb/usr/bin/pem" % this_lib
-		shutil.copy("./epem/pem.py", path)
-		os.chmod(path, 0775)
 
 	except Exception,e:
 		print "*** ERROR [%s] ***" % e
@@ -141,10 +146,18 @@ if 'rel' in COMMAND_LINE_TARGETS:
 
 	print "scons: copying [%s] to repo in dists/main/binary-i386" % path
 	shutil.copy(path, "../../../dists/stable/main/binary-i386")
+
+	print "scons: copying [%s] to repo in dists/main/binary-amd64" % path
+	shutil.copy(path, "../../../dists/stable/main/binary-amd64")
 	
 	debian_path = "../../../dists/stable/main/binary-i386/%s" % name
 	print "scons: running dpkg-scanpackages  [%s]" % debian_path
 	os.system("cd ../../.. && dpkg-scanpackages -m dists/stable/main/binary-i386 /dev/null | gzip -9c > dists/stable/main/binary-i386/Packages.gz")
+
+	debian_path = "../../../dists/stable/main/binary-amd64/%s" % name
+	print "scons: running dpkg-scanpackages  [%s]" % debian_path
+	os.system("cd ../../.. && dpkg-scanpackages -m dists/stable/main/binary-amd64 /dev/null | gzip -9c > dists/stable/main/binary-amd64/Packages.gz")
+
 	
 	print "scons: removing sources archive build directory"
 	try:    shutil.rmtree("/tmp/%s/%s" % (this_lib, this_lib))
