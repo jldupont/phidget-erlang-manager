@@ -1,11 +1,11 @@
-Package: phidget_erlang_manager
-Version: 0.1
+Package: pem
+Version: $version
 Priority: optional
 Architecture: i386
-Depends: python (>= 2.5)
+Depends: mysql-server (>=5.0), python (>=2.5), libmyodbc (>=3.51), erlang-mswitch (>=2.8)
 Section: Other
-Maintainer: Jean-Lou Dupont <jl@jldupont.com>
-Description: Phidget Erlang Manager
- Linux daemon which enables control of Phidget devices
- through distributed Erlang nodes.
+Maintainer: Jean-Lou Dupont <pem@jldupont.com>
+Description: Erlang Port drivers for Phidgets
+ PEM is a collection of librairies & executables for interfacing
+ Phidget devices (http://www.phidgets.com/) to Erlang.
  .
