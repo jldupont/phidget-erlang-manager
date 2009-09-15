@@ -2,6 +2,18 @@
 %% Created: 2009-09-13
 %% Description: Database journaling
 %%
+%% = Failure Modes =
+%% 1) No db access  (bad DSN, no ODBC database etc.)
+%%    log-police    
+%%
+%% 2) No Update right
+%%    log-police 
+%% 
+%% = Contextual Log =
+%% > journal.db.open
+%% > journal.db.error
+%%
+%%
 -module(epem_journal).
 
 -define(DB, epem_db).
@@ -69,7 +81,7 @@ loop() ->
 	receive
 			
 		{config, Version, Config} ->
-			maybe_start_db(),
+			try_start_db(),
 			?CTOOLS:put_config(Version, Config);
 		
 		stop ->
@@ -99,6 +111,7 @@ handle({mswitch, _From, sys, _}) ->
 	noop;
 
 handle({hwswitch, _From, clock, {tick.min, _Count}}) ->
+	try_start_db(),
 	?CTOOLS:do_publish_config_version(?SWITCH, ?SERVER);
 
 handle({hwswitch, _From, clock, {tick.sync, _Count}}) ->
@@ -121,17 +134,17 @@ handle({hwswitch, _From, sys, _Msg}) ->
 	not_supported;
 
 handle({hwswitch, _From, phidgets, {phidgetdevice, Msg}}) ->
-	handle_pd(Msg);
+	maybe_handle_pd(Msg);
 
 handle({hwswitch, _From, phidgets, {din, Msg}}) ->
-	handle_io(din, Msg);
+	maybe_handle_io(din, Msg);
 
 handle({hwswitch, _From, phidgets, {dout, Msg}}) ->
-	handle_io(dout, Msg);
+	maybe_handle_io(dout, Msg);
 
 
 handle(Other) ->
-	log(warning, "mswitch_bridge: Unexpected message: ", [Other]).
+	log(warning, "journal: Unexpected message: ", [Other]).
 
 
 
@@ -141,10 +154,23 @@ handle(Other) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%  LOCALS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------          ------------------------------
 
-
-maybe_start_db() ->
+maybe_handle_pd(Msg) ->
 	State=get_state(),
-	todo.
+	case State of
+		working ->
+			handle_pd(Msg);
+		_ -> noop
+	end.
+
+maybe_handle_io(IOType, Msg) ->
+	State=get_state(),
+	case State of
+		working ->
+			handle_io(IOType, Msg);
+		_ -> noop
+	end.
+
+
 
 get_dsn() ->
 	get(journal.dsn).
@@ -155,16 +181,16 @@ handle_pd(Msg) ->
 	{Year, Month, Day}=date(),
 	{Hour, Min, Sec}=time(),
 	{Serial, Type, Status}=Msg,
-	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),
+	Ts=?DB:format_timestamp(Year, Month, Day, Hour, Min, Sec),
 	
 	%{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
 	%%base:ilog(?MODULE, "pd: Serial[~p] Type[~p] Status[~p]~n",[Serial, Type, atom_to_list(Status)]),
-	Conn = base:getvar(db_conn, undefined),
+	Conn = ?TOOLS:getvar(db_conn, undefined),
 	handle_pd(Conn, Serial, Type, atom_to_list(Status), Ts).
 
 
 handle_pd(undefined, _Serial, _Type, _Status, _Ts) ->
-	log(error, "no db connection"),
+	%log(error, "no db connection"),
 	db_conn_err;
 	
 	
@@ -180,7 +206,7 @@ handle_pd(Conn, Serial, Type, Status, Ts) when is_pid(Conn) ->
 	end;
 
 handle_pd(_Conn, _Serial, _Type, _Status, _Ts) ->
-	log(error, "invalid db connection").
+	clog(journal.db.error, error, "invalid db connection").
 
 
 handle_io(IOType, Msg) ->
@@ -189,10 +215,10 @@ handle_io(IOType, Msg) ->
 	{Year, Month, Day}=date(),
 	{Hour, Min, Sec}=time(),
 	{Serial, Index, Value}=Msg,
-	Ts=base:format_timestamp(Year, Month, Day, Hour, Min, Sec),	
+	Ts=?DB:format_timestamp(Year, Month, Day, Hour, Min, Sec),	
 	%{{Serial, Index, Value}, {{Year, Month, Day}, {Hour, Min, Sec}, _MegaSecs}}=Msg,
 	%%base:ilog(?MODULE, "io: Serial[~p] IOType[~p] Index[~p] Value[~p]~n", [Serial, IOType, Index, Value]),
-	Conn = base:getvar(db_conn, undefined),
+	Conn = ?TOOLS:getvar(db_conn, undefined),
 	handle_io(IOType, Conn, Serial, Index, Value, Ts).
 
 handle_io(_IOType, undefined, _Serial, _Index, _Value, _Ts) ->
@@ -211,7 +237,7 @@ handle_io(IOType, Conn, Serial, Index, Value, Ts) when is_pid(Conn) ->
 	end;
 
 handle_io(_IOType, _Conn, _Serial, _Index, _Value, _Ts) ->
-	log(error, "invalid db connection").
+	clog(journal.db.error, error, "invalid db connection").
 
 
 
@@ -226,10 +252,11 @@ try_start_db() ->
 		undefined ->
 			case open_db() of
 				connected ->
-					log(debug, "journal: db connected"),
+					clog(journal.db.open, debug, "journal: db connected"),
 					connected;
 				_ ->
-					log(debug, "journal: cannot connect to db"),
+					put(db_conn, undefined),
+					clog(journal.db.error,error, "journal: cannot connect to db"),
 					not_connected
 			end;
 		_ -> ok
@@ -280,8 +307,8 @@ log(Severity, Msg) ->
 log(Severity, Msg, Params) ->
 	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).
 
-%clog(Ctx, Sev, Msg) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
+clog(Ctx, Sev, Msg) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
 %clog(Ctx, Sev, Msg, Ps) ->
 %	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
