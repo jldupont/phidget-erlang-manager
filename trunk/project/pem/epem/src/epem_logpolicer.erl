@@ -2,6 +2,11 @@
 %% Created: 2009-09-03
 %% Description: Log policer
 %%
+%% = Policies =
+%%
+%% {acc, day} ==> Accumulate on a daily basis
+%%
+%%
 -module(epem_logpolicer).
 
 -define(APP,    epem).
@@ -11,6 +16,9 @@
 -define(CTOOLS, mswitch_ctools).
 -define(TOOLS,  mswitch_tools).
 -define(LOG,    epem_log).
+
+-define(DAY,    24*60*60*1000).  % in ms
+-define(HOUR,   60*60*1000).     % in ms
 
 %%
 %% API Exported Functions
@@ -30,6 +38,7 @@
 -export([
 		 defaults/0,
 		 blacklist/0
+		,descriptions/0
 		 ]).
 
 %% ----------------------              ------------------------------
@@ -97,7 +106,7 @@ handle({hwswitch, _From, sys, _Msg}) ->
 
 
 handle({hwswitch, _From, log, {Context, {Severity, Msg, Params}}}) ->
-	filter(Context, Severity, Msg, Params);
+	'l1.filter'(Context, Severity, Msg, Params);
 	
 
 handle(Other) ->
@@ -109,41 +118,106 @@ handle(Other) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%  FILTERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------           ------------------------------
 
-filter(app.ready, Severity, Msg, Params) ->
-	'log.once.per.run'(Severity, Msg, Params);
 
-filter(_Context, Severity, Msg, Params) ->
-	maybe_dolog(Severity, Msg, Params).
+%%%% L1
+%%%%
 
 
-'log.once.per.run'(Sev, Msg, Ps) ->
-	CurrentPid=os:getpid(),
-	SavedPid=get(pid),
-	case CurrentPid==SavedPid of
-		true  -> 'dont.log.again';
-		false ->
-			put(pid, CurrentPid),
-			maybe_dolog(Sev, Msg, Ps)
+%'l1.filter'(app.ready, Severity, Msg, Params) ->
+%	'log.once.per.run'(Severity, Msg, Params);
+
+'l1.filter'(Context, Severity, Msg, Params) ->
+	'l2.filter'(Context, Severity, Msg, Params).
+
+%%%% L2
+%%%%
+
+'l2.filter'(Context, Severity, Msg, Params) ->
+	FlagVarName=?TOOLS:make_atom_from_list([logpolicer,'.',Severity]),
+	Flag=get(FlagVarName),
+	%io:format("maybe_dolog: fn [~p] f[~p] s[~p] m[~p]~n", [FlagVarName, Flag, Severity, Msg]),
+	'l2.filter'(Flag, Context, Severity, Msg, Params).
+
+'l2.filter'(false, _Context, _Severity, _Msg, _Params) -> blocked;
+'l2.filter'(true, Context, Severity, Msg, Params) ->
+	'l3.filter'(Context, Severity, Msg, Params);
+'l2.filter'(undefined, Context, Severity, Msg, Params) ->
+	'l3.filter'(Context, Severity, Msg, Params).
+
+
+%%%% L3
+%%%%
+
+
+'l3.filter'(Context, Sev, Msg, Params) ->
+	PolicyVarName=?TOOLS:make_atom_from_list([logpolicer,'.',Context]),
+	Policy=get(PolicyVarName),
+	%io:format("Policy {Context:~p, Policy:~p}~n", [Context, Policy]),
+	'l3.filter'(Policy, Context, Sev, Msg, Params).
+
+
+%% No policy then log.
+'l3.filter'(undefined, _Context, Severity, Msg, Params) ->
+	log(Severity, Msg, Params);
+
+
+'l3.filter'({acc, day}, Context, Sev, Msg, Params) ->
+	CC=get({context, Context}),
+	filter_acc(?DAY, CC, Context, Sev, Msg, Params);
+
+'l3.filter'({acc, hour}, Context, Sev, Msg, Params) ->
+	CC=get({context, Context}),
+	filter_acc(?HOUR, CC, Context, Sev, Msg, Params);
+
+
+%% Log only once per application run (reload constitutes a new 'run')
+'l3.filter'({run, once}, Context, Sev, Msg, Params) ->
+	CC=get({context, Context}),
+	CurrentPid=os:getpid(),	
+	case CC of
+		undefined ->
+			put({context, Context}, {pid, CurrentPid}),
+			log(Sev, Msg, Params);
+		{pid, SavedPid} -> 
+				case CurrentPid==SavedPid of
+					true  -> 'dont.log.again';
+					false ->
+						put({context, Context}, {pid, CurrentPid}),
+						log(Sev, Msg, Params)
+				end
+	end;
+
+
+'l3.filter'(_, _Context, Sev, Msg, Params) ->
+	log(Sev, Msg, Params).
+
+
+%% First time around... setup a context
+filter_acc(Ms, undefined, Context, Sev, Msg, Params) ->
+	put({context, Context}, {Ms, now(), 1}),
+	log(Sev, Msg, Params);
+
+filter_acc(_, CC, Context, Sev, Msg, Params) ->
+	{Ms, PeriodStart, Count} = CC,
+	%io:format("{Msg:~p, PeriodStart:~p, Count:~p}~n~n", [Ms, PeriodStart, Count]),
+	TimeDiff=timer:now_diff(now(), PeriodStart),
+	case TimeDiff > Ms of
+		true ->
+			% start new period
+			put({context, Context}, {Ms, now(), 1}),
+			log(Sev, "Accumulated count {Context, Count}", [[Context, Count]]),
+			log(Sev, Msg, Params);
+		_    ->
+			% in period, just accumulate hit
+			put({context, Context}, {Msg, PeriodStart, Count+1})
 	end.
+	
 
+	
 
 %% ----------------------          ------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%  LOGGER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------          ------------------------------
-
-
-maybe_dolog(Severity, Msg, Params) ->
-	FlagVarName=?TOOLS:make_atom_from_list([logpolicer,'.',Severity]),
-	Flag=get(FlagVarName),
-	%io:format("maybe_dolog: fn [~p] f[~p] s[~p] m[~p]~n", [FlagVarName, Flag, Severity, Msg]),
-	maybe_dolog(Flag, Severity, Msg, Params).
-
-
-maybe_dolog(false, _Severity, _Msg, _Params) -> blocked;
-maybe_dolog(true, Severity, Msg, Params) ->
-	log(Severity, Msg, Params);
-maybe_dolog(undefined, Severity, Msg, Params) ->
-	log(Severity, Msg, Params).
 
 
 
@@ -175,9 +249,22 @@ defaults() ->
 	[
 	   {logpolicer.debug,    optional, atom, false}	 
 	  ,{logpolicer.critical, optional, atom, true}
-	  ,{logpolicer.info,     optional, atom, true}	
+	  ,{logpolicer.info,     optional, atom, true}
+	
+	 ,{logpolicer.app.ready, optional, taa, {run, once}}
+	 ,{logpolicer.manager.driver.pathcheck, optional, taa, {acc, hour}}
 	 ].
 
+
+descriptions() ->
+	[
+	   {logpolicer.debug,    "Allow 'debug' log entries (true|false)"}	 
+	  ,{logpolicer.critical, "Allow 'critical' log entries (true|false)"}
+	  ,{logpolicer.info,     "Allow 'info' log entries (true|false)"}
+	
+	 ,{logpolicer.app.ready, "Policy for 'sys.app.ready' message"} 
+	 ,{logpolicer.manager.driver.pathcheck, "Policy for 'manager.driver.patchcheck' message"}
+	 ].
 
 %% Contextual log messages
 %% =======================
