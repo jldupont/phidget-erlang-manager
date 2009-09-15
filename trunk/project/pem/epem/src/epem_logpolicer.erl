@@ -17,8 +17,10 @@
 -define(TOOLS,  mswitch_tools).
 -define(LOG,    epem_log).
 
--define(DAY,    24*60*60*1000).  % in ms
--define(HOUR,   60*60*1000).     % in ms
+-define(DAY,    24*60*60*1000*1000).  % in microseconds
+-define(HOUR,   60*60*1000*1000).     % in microseconds
+-define(MIN,    60*1000*1000).        % in microseconds
+-define(MIN5,   5*60*1000*1000).      % in microseconds
 
 %%
 %% API Exported Functions
@@ -160,6 +162,14 @@ handle(Other) ->
 'l3.filter'(undefined, _Context, Severity, Msg, Params) ->
 	log(Severity, Msg, Params);
 
+'l3.filter'({acc, min5}, Context, Sev, Msg, Params) ->
+	CC=get({context, Context}),
+	filter_acc(?MIN5, CC, Context, Sev, Msg, Params);
+
+
+'l3.filter'({acc, min}, Context, Sev, Msg, Params) ->
+	CC=get({context, Context}),
+	filter_acc(?MIN, CC, Context, Sev, Msg, Params);
 
 'l3.filter'({acc, day}, Context, Sev, Msg, Params) ->
 	CC=get({context, Context}),
@@ -199,8 +209,8 @@ filter_acc(Ms, undefined, Context, Sev, Msg, Params) ->
 
 filter_acc(_, CC, Context, Sev, Msg, Params) ->
 	{Ms, PeriodStart, Count} = CC,
-	%io:format("{Msg:~p, PeriodStart:~p, Count:~p}~n~n", [Ms, PeriodStart, Count]),
 	TimeDiff=timer:now_diff(now(), PeriodStart),
+	io:format("{Ms: ~p, Context: ~p, Msg:~p, PeriodStart:~p, Count:~p, TimeDiff:~p}~n~n", [Ms, Context, Msg, PeriodStart, Count, TimeDiff]),
 	case TimeDiff > Ms of
 		true ->
 			% start new period
@@ -209,7 +219,7 @@ filter_acc(_, CC, Context, Sev, Msg, Params) ->
 			log(Sev, Msg, Params);
 		_    ->
 			% in period, just accumulate hit
-			put({context, Context}, {Msg, PeriodStart, Count+1})
+			put({context, Context}, {Ms, PeriodStart, Count+1})
 	end.
 	
 
@@ -247,12 +257,14 @@ blacklist() ->
 %%
 defaults() ->
 	[
-	   {logpolicer.debug,    optional, atom, false}	 
+	   {logpolicer.debug,    optional, atom, true}	 
 	  ,{logpolicer.critical, optional, atom, true}
 	  ,{logpolicer.info,     optional, atom, true}
 	
-	 ,{logpolicer.app.ready, optional, taa, {run, once}}
+	 ,{logpolicer.app.ready,                optional, taa, {run, once}}
+	
 	 ,{logpolicer.manager.driver.pathcheck, optional, taa, {acc, hour}}
+	 ,{logpolicer.ifk.driver.crashed,       optional, taa, {acc, hour}}
 	 ].
 
 
@@ -264,6 +276,7 @@ descriptions() ->
 	
 	 ,{logpolicer.app.ready, "Policy for 'sys.app.ready' message"} 
 	 ,{logpolicer.manager.driver.pathcheck, "Policy for 'manager.driver.patchcheck' message"}
+	 ,{logpolicer.ifk.driver.crashed, "Policy for 'ifk.driver.crashed' message"}
 	 ].
 
 %% Contextual log messages

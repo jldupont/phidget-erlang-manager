@@ -103,7 +103,6 @@ loop() ->
 		%% From ifk_driver
 		%%
 		{crashed, Port} ->
-			log(warning, "ifk: driver crashed on port: ", [Port]),
 			clean_driver(Port);
 		
 		%%don't know what todo
@@ -165,7 +164,7 @@ handle({hwswitch, _From, phidgets, _}) ->
 	noop;
 
 handle(Other) ->
-	log(warning, "ifk: Unexpected message: ", [Other]).
+	log(debug, "ifk: Unexpected message: ", [Other]).
 
 
 
@@ -196,7 +195,7 @@ handle_ifk(Serial, active) ->
 	handle_active(Serial);
 
 handle_ifk(Serial, State) ->
-	log(debug, "ifk: invalid state {Serial, State}: ", [[Serial, State]]).
+	log(error, "ifk: invalid state {Serial, State}: ", [[Serial, State]]).
 
 
 %% Open the driver if not already done
@@ -217,7 +216,6 @@ handle_active(Serial, undefined, undefined) ->
 handle_active(Serial, undefined, invalid) ->
 	DriverPath = get_drv_path(),
 	_Pid = spawn(?MODULE, ifk_drv, [DriverPath, Serial]);
-	%log(debug, "ifk: handle active {Serial, Pid}: ", [[Serial, Pid]]);
 
 
 % Is it really active?
@@ -279,13 +277,12 @@ ifk_drv(ExtPrg, Serial) ->
 loop_handler(Port) ->
 	receive
 		{Port, {exit_status, _}} ->
-			log(warning, "ifk_driver: driver crashed/could not load"),
+			clog(ifk.driver.crashed, warning, "ifk_driver: driver crashed/could not load"),
 			handle_crashed_driver(Port),
 			exit(crashed);
 			
 		{Port, {data, Data}} ->
 			Decoded = binary_to_term(Data),
-			%%base:ilog(?MODULE, "loop_handler: decoded msg[~p]~n", [Decoded]),
 			publish(Decoded);
 		
 		Msg ->
@@ -323,11 +320,11 @@ log(Severity, Msg) ->
 log(Severity, Msg, Params) ->
 	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).
 
-%clog(Ctx, Sev, Msg) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
+clog(Ctx, Sev, Msg) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
-%clog(Ctx, Sev, Msg, Ps) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+clog(Ctx, Sev, Msg, Ps) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
