@@ -548,6 +548,7 @@ defaults() ->
 	[
 	 {log.policer.bypass, optional, atom, false}
 	
-	 ,{log.debug, optional, atom, false}
+	%% Should let logpolicer take care of everything
+	 ,{log.debug, optional, atom, true}
 	 ].
 
