@@ -55,7 +55,7 @@ all = libs + execs
 epem = [
 		{'params':True,  'dir': True,  'src': './epem/src',     'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/src'},	   
 		{'params':True,  'dir': True,  'src': './epem/ebin',    'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/ebin'},
-		{'params':False, 'dir': False, 'src': './epem/epem.py', 'dst':'../../project/packages/debian/usr/bin/epem'},
+		{'params':False, 'dir': False, 'src': './epem/epem.py', 'dst':'../../project/packages/debian/etc/init.d/epem'},
 		]
 
 

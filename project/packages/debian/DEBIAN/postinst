@@ -29,6 +29,7 @@
 
 import os
 import sys
+import subprocess
 
 this_lib     = "pem"
 this_version = "$version"
@@ -110,29 +111,41 @@ if command == 'configure':
 			print "%s: removed [%s]" % (this_lib, b)
 			os.remove(bd)
 			print "%s: removed [%s]" % (this_lib, bd)
+			
+			os.remove("/usr/bin/epem")
 		except: pass
 
 		code = 0
 		try:
 			#creating symlinks
 			
-			os.symlink( nv,  b)
+			os.symlink( nv,  b )
 			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nv, b)
 			
-			os.symlink( nvd, bd)
+			os.symlink( nvd, bd )
 			print "%s: created symlink, src[%s] => dst[%s]" % (this_lib, nvd, bd)
 
 			os.chmod(nv,  0700)
 			os.chmod(nvd, 0700)
 			os.chmod(b,   0700)
 			os.chmod(bd,  0700)
+
+			os.symlink( "/etc/init.d/epem" , "/usr/bin/epem")
+			os.chmod("/usr/bin/epem",  0700)
 			
 		except Exception,e:
 			print "Exception [%s]" % e
 			code = 1
+
+	if code==0:
+		# Update the rcX.d directories
+		# ============================
+		upd="update-rc.d epem start 20 2 3 4 5 . stop 0 1 6 ."
+	
+		proc = subprocess.Popen(upd,shell=True)
+		code = proc.wait()  # "new" code
+	
 	
 	os.system("ldconfig")
 	sys.exit( code )
 	
-
-## TODO EPEM:  create /var/log/pem directory for sasl
