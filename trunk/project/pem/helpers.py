@@ -10,6 +10,10 @@ import sys
 from string import Template
 from types import *
 
+class WindowsError(Exception):
+    pass
+
+
 def read_version():
     file = open('./VERSION')
     version = file.read()
