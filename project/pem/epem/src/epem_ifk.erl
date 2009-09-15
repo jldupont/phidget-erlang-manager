@@ -314,8 +314,8 @@ handle_crashed_driver(Port) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%  LOGGER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ----------------------          ------------------------------
 
-log(Severity, Msg) ->
-	log(Severity, Msg, []).
+%log(Severity, Msg) ->
+%	log(Severity, Msg, []).
 
 log(Severity, Msg, Params) ->
 	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).
@@ -323,8 +323,8 @@ log(Severity, Msg, Params) ->
 clog(Ctx, Sev, Msg) ->
 	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
-clog(Ctx, Sev, Msg, Ps) ->
-	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+%clog(Ctx, Sev, Msg, Ps) ->
+%	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

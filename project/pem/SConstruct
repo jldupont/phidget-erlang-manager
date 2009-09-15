@@ -51,7 +51,13 @@ execs = [('./pem/drv_ifk/%s/pem_drv_ifk%s', '../packages/debian/usr/bin/pem_drv_
 		] 
 		
 all = libs + execs
-	
+
+epem = [
+		{'src': './epem/src',     'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/src'},	   
+		{'src': './epem/ebin',    'dst':'../../project/packages/debian/usr/lib/erlang/lib/epem-%s/ebin'},
+		]
+
+
 env = Environment()
 
 
@@ -74,6 +80,19 @@ if 'deb' in COMMAND_LINE_TARGETS:
 			#debug
 			shutil.copy(	src % ('debug',  '_debug'), 
 							dst % ('_debug',  version) )
+		
+		for one in epem:
+			src = one['src']
+			dst = one['dst']
+
+			print "> cloning [%s]" % src
+			safe_copytree(	src , dst % version, skip_dirs=[".svn" ] )#, "_old", "_old2"] )
+			
+		
+		
+		## AT THIS POINT, ALL THE FILES SHOULD BE UNDER THE /packages/debian
+		## HIERARCHY READY FOR PACKAGING
+		## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 		
 		print """scons: removing /tmp directory"""
 		shutil.rmtree('/tmp/%s_deb' % this_lib, ignore_errors=True)

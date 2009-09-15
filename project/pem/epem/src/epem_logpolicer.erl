@@ -210,7 +210,7 @@ filter_acc(Ms, undefined, Context, Sev, Msg, Params) ->
 filter_acc(_, CC, Context, Sev, Msg, Params) ->
 	{Ms, PeriodStart, Count} = CC,
 	TimeDiff=timer:now_diff(now(), PeriodStart),
-	io:format("{Ms: ~p, Context: ~p, Msg:~p, PeriodStart:~p, Count:~p, TimeDiff:~p}~n~n", [Ms, Context, Msg, PeriodStart, Count, TimeDiff]),
+	%io:format("{Ms: ~p, Context: ~p, Msg:~p, PeriodStart:~p, Count:~p, TimeDiff:~p}~n~n", [Ms, Context, Msg, PeriodStart, Count, TimeDiff]),
 	case TimeDiff > Ms of
 		true ->
 			% start new period
