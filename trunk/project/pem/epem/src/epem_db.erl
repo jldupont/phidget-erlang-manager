@@ -16,10 +16,15 @@
 %%
 
 -module(epem_db).
-
+-export([
+		 insert_device_update/8
+		,insert_event_update/6
+		 ]).
 %%
 %% Macros
 %%
+-define(SWITCH, epem_hwswitch).
+
 -define(conn_string, "DSN=~s;").
 
 -define(device_table, "CREATE TABLE IF NOT EXISTS `device` ("
@@ -71,7 +76,6 @@
 
 
 open(DSN) ->
-	odbc:start(),
 	ConnString=io_lib:format(?conn_string, [DSN]),
 	try odbc:connect(ConnString, []) of
 		{ok, Pid} -> {ok, Pid};
@@ -99,13 +103,16 @@ create_tables(Conn) ->
 	%%io:format("creating event table~n"),
 	Ret2 = create_event_table(Conn),
 	%%io:format("Result: ~p~n",[Ret2]),
-	Ret1 and Ret2.
+	%et(Ret1, Ret2).
+	{Ret1, Ret2}.
 
 
 
 create_device_table(Conn) ->
 	try odbc:sql_query(Conn, ?device_table) of
-		{updated, _Result} -> ok;
+		{updated, Result} ->
+			clog(journal.db.create_device_table, debug, "create_device_table, result: ", [Result]),
+			ok;
 		Ret                -> Ret
 	catch X:Y -> {X,Y}
 	end.
@@ -113,7 +120,9 @@ create_device_table(Conn) ->
 
 create_event_table(Conn) ->
 	try odbc:sql_query(Conn, ?event_table) of
-		{updated, _Result} -> ok;
+		{updated, Result} -> 
+			clog(journal.db.create_event_table, debug, "create_event_table, result: ", [Result]),			
+			ok;
 		Ret                -> Ret
 	catch X:Y -> {X,Y}
 	end.
@@ -135,3 +144,61 @@ format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
 	
 
 
+et(ok, ok) -> true;
+et(_,  _)  -> false.
+
+
+
+%% @spec(Ref, Serial, Type, Version, Name, Label, State, Ts)
+%% INSERT INTO device(serial, type, version, name, label, status, ts)
+insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
+	%%base:ilog(?MODULE, "Serial[~p] Type[~p] Version[~p], Name[~p] Label[~p] State[~p] Ts[~p~n]",[Serial, Type, Version, Name, Label, State, Ts]),
+	try odbc:param_query(Conn, ?insert_device_statement, [{sql_integer, [Serial]}, 
+														  {{sql_varchar,  64}, [Type]},
+														  {{sql_varchar,  64}, [Version]},
+														  {{sql_varchar,  64}, [Name]},
+														  {{sql_varchar,  64}, [Label]},
+														  {{sql_varchar,  16}, [State]},
+														  {{sql_varchar,  20}, [Ts]}]) of
+		{updated, _Nbr} -> 
+			ok;
+		Other ->
+			Other
+	catch
+		X:Y ->
+			{X,Y}
+	end.
+
+
+
+insert_event_update(Conn, Serial, IOType, Index, Value, Ts) ->
+	try odbc:param_query(Conn, ?insert_event_statement, [{sql_integer, [Serial]},
+														 {{sql_varchar, 8}, [IOType]},
+														 {sql_integer, [Index]},
+														 {sql_integer, [Value]}, 
+														 {{sql_varchar,  20}, [Ts]}]) of
+		{updated, _Nbr} -> 
+			ok;
+		Other ->
+			Other
+	catch
+		X:Y ->
+			{X,Y}
+	end.
+
+
+%% ----------------------          ------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%  LOGGER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ----------------------          ------------------------------
+
+%log(Severity, Msg) ->
+%	log(Severity, Msg, []).
+
+%log(Severity, Msg, Params) ->
+%	?SWITCH:publish(log, {?SERVER, {Severity, Msg, Params}}).
+
+%clog(Ctx, Sev, Msg) ->
+%	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
+
+clog(Ctx, Sev, Msg, Ps) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
