@@ -197,10 +197,10 @@ handle_pd(undefined, _Serial, _Type, _Status, _Ts) ->
 handle_pd(Conn, Serial, Type, Status, Ts) when is_pid(Conn) ->
 	%%base:ilog(?MODULE, "inserting pd: Serial[~p] Type[~p] Status[~p]~n", [Serial, Type, Status]),
 	%%insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
-	case db:insert_device_update(Conn, Serial, Type, " ",     " ",   " ",    Status, Ts) of
+	case ?DB:insert_device_update(Conn, Serial, Type, " ",     " ",   " ",    Status, Ts) of
 		ok -> ok;
 		_ ->
-			db:close(Conn),
+			?DB:close(Conn),
 			put(db_conn, undefined),
 			error
 	end;
@@ -227,11 +227,11 @@ handle_io(_IOType, undefined, _Serial, _Index, _Value, _Ts) ->
 
 handle_io(IOType, Conn, Serial, Index, Value, Ts) when is_pid(Conn) ->
 	log(debug, "inserting event~n"),
-	case db:insert_event_update(Conn, Serial, IOType, Index, Value, Ts) of
+	case ?DB:insert_event_update(Conn, Serial, IOType, Index, Value, Ts) of
 		ok ->
 			ok;
 		_ ->
-			db:close(Conn),
+			?DB:close(Conn),
 			put(db_conn, undefined),
 			error
 	end;
@@ -270,10 +270,10 @@ open_db(undefined) ->
 	cant_connect;
 
 open_db(DSN) ->
-	case db:open(DSN) of
+	case ?DB:open(DSN) of
 		{ok, Conn} ->
 			put(db_conn, Conn),
-			db:create_tables(Conn),
+			?DB:create_tables(Conn),
 			connected;
 		_ ->
 			put(db_conn, undefined),
@@ -330,7 +330,7 @@ blacklist() ->
 %%
 defaults() ->
 	[
-	 {journal.dsn,   optional, nstring, "epem"}
+	 {journal.dsn,   optional, nstring, "pem"}
 	,{journal.state, optional, atom,    working}
 	,{journal.debug, optional, atom,    true}
 	 ].
