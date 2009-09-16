@@ -192,7 +192,13 @@ handle_pd(Msg) ->
 	
 	%{{Serial, Type, Status}, {{Year, Month, Day}, {Hour, Min, Sec}, _}} = Msg,
 	%%base:ilog(?MODULE, "pd: Serial[~p] Type[~p] Status[~p]~n",[Serial, Type, atom_to_list(Status)]),
-	Conn = ?TOOLS:getvar(db_conn, undefined),
+	Conn = case ?TOOLS:getvar(db_conn, undefined) of
+			   undefined ->
+					try_start_db(),
+					?TOOLS:getvar(db_conn, undefined);
+				CId ->
+					CId
+	end,
 	handle_pd(Conn, Serial, Type, atom_to_list(Status), Ts).
 
 
@@ -218,15 +224,19 @@ handle_pd(_Conn, _Serial, _Type, _Status, _Ts) ->
 
 
 handle_io(IOType, Msg) ->
-	%%io:format("handle_io: msg:  ~p~n", [Msg]),
-	%M = {Msg, {date(), time(), now()}},
 	{Year, Month, Day}=date(),
 	{Hour, Min, Sec}=time(),
 	{Serial, Index, Value}=Msg,
 	Ts=?DB:format_timestamp(Year, Month, Day, Hour, Min, Sec),	
 	%{{Serial, Index, Value}, {{Year, Month, Day}, {Hour, Min, Sec}, _MegaSecs}}=Msg,
 	%%base:ilog(?MODULE, "io: Serial[~p] IOType[~p] Index[~p] Value[~p]~n", [Serial, IOType, Index, Value]),
-	Conn = ?TOOLS:getvar(db_conn, undefined),
+	Conn=case ?TOOLS:getvar(db_conn, undefined) of
+		undefined ->
+			try_start_db(),
+			?TOOLS:getvar(db_conn, undefined);
+		CId ->
+			CId
+	end,
 	handle_io(IOType, Conn, Serial, Index, Value, Ts).
 
 handle_io(_IOType, undefined, _Serial, _Index, _Value, _Ts) ->
@@ -239,7 +249,7 @@ handle_io(IOType, Conn, Serial, Index, Value, Ts) when is_pid(Conn) ->
 		ok ->
 			ok;
 		E ->
-			clog(journal.db.error, "insert_device_update failed, Error: ", [E]),
+			clog(journal.db.error, error, "insert_device_update failed, Error: ", [E]),
 			?DB:close(Conn),
 			put(db_conn, undefined),
 			error
@@ -320,8 +330,8 @@ log(Severity, Msg, Params) ->
 clog(Ctx, Sev, Msg) ->
 	?SWITCH:publish(log, {Ctx, {Sev, Msg, []}}).
 
-%clog(Ctx, Sev, Msg, Ps) ->
-%	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
+clog(Ctx, Sev, Msg, Ps) ->
+	?SWITCH:publish(log, {Ctx, {Sev, Msg, Ps}}).
 
 %% ----------------------          ------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%  CONFIG  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

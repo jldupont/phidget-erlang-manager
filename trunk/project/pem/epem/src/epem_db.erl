@@ -14,6 +14,10 @@
 %%  serial  index  value  timestamp
 %%  INT     INT    INT    TIMESTAMP
 %%
+%%
+%% =Notes=
+%% 1) odbc:param_query:  atom() is not a valid sql_varchar
+%%
 
 -module(epem_db).
 -export([
@@ -96,14 +100,8 @@ close(Conn) ->
 
 
 create_tables(Conn) ->
-	%%io:format("creating device table~n"),
 	Ret1 = create_device_table(Conn),
-	%%io:format("Result: ~p~n",[Ret1]),
-	
-	%%io:format("creating event table~n"),
 	Ret2 = create_event_table(Conn),
-	%%io:format("Result: ~p~n",[Ret2]),
-	%et(Ret1, Ret2).
 	{Ret1, Ret2}.
 
 
@@ -144,15 +142,9 @@ format_timestamp(Year, Month, Day, Hour, Min, Sec) ->
 	
 
 
-et(ok, ok) -> true;
-et(_,  _)  -> false.
 
 
-
-%% @spec(Ref, Serial, Type, Version, Name, Label, State, Ts)
-%% INSERT INTO device(serial, type, version, name, label, status, ts)
 insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
-	%%base:ilog(?MODULE, "Serial[~p] Type[~p] Version[~p], Name[~p] Label[~p] State[~p] Ts[~p~n]",[Serial, Type, Version, Name, Label, State, Ts]),
 	try odbc:param_query(Conn, ?insert_device_statement, [{sql_integer, [Serial]}, 
 														  {{sql_varchar,  64}, [Type]},
 														  {{sql_varchar,  64}, [Version]},
@@ -170,10 +162,12 @@ insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
 	end.
 
 
-
 insert_event_update(Conn, Serial, IOType, Index, Value, Ts) ->
+	%io:format("insert_event_update {Serial:~p, IOType:~p, Index:~p, Value:~p, Ts:~p}~n", [Serial, IOType, Index, Value, Ts]),
+	
+	Type=make_string(IOType),
 	try odbc:param_query(Conn, ?insert_event_statement, [{sql_integer, [Serial]},
-														 {{sql_varchar, 8}, [IOType]},
+														 {{sql_varchar, 8}, [Type]},
 														 {sql_integer, [Index]},
 														 {sql_integer, [Value]}, 
 														 {{sql_varchar,  20}, [Ts]}]) of
@@ -185,6 +179,13 @@ insert_event_update(Conn, Serial, IOType, Index, Value, Ts) ->
 		X:Y ->
 			{X,Y}
 	end.
+
+make_string(Str)   when is_list(Str)    -> Str;
+make_string(Atom)  when is_atom(Atom)   -> erlang:atom_to_list(Atom);
+make_string(Int)   when is_integer(Int) -> erlang:integer_to_list(Int);
+make_string(Float) when is_float(Float) -> erlang:float_to_list(Float);
+make_string(U) -> U.
+
 
 
 %% ----------------------          ------------------------------
