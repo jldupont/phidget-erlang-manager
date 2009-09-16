@@ -63,6 +63,7 @@ get_busses() -> ?BUSSES.
 start_link()->
 	Pid=spawn_link(?MODULE, loop, []),
 	register(?SERVER, Pid),
+	?SERVER ! start,
 	{ok, Pid}.
 
 stop() ->
@@ -80,9 +81,12 @@ stop() ->
 loop() ->
 	receive
 			
+		start ->
+			odbc:start();
+		
 		{config, Version, Config} ->
-			try_start_db(),
-			?CTOOLS:put_config(Version, Config);
+			?CTOOLS:put_config(Version, Config),
+			try_start_db();
 		
 		stop ->
 			exit(normal);
@@ -142,6 +146,9 @@ handle({hwswitch, _From, phidgets, {din, Msg}}) ->
 handle({hwswitch, _From, phidgets, {dout, Msg}}) ->
 	maybe_handle_io(dout, Msg);
 
+handle({hwswitch, _From, phidgets, _}) ->
+	noop;
+
 
 handle(Other) ->
 	log(warning, "journal: Unexpected message: ", [Other]).
@@ -199,7 +206,8 @@ handle_pd(Conn, Serial, Type, Status, Ts) when is_pid(Conn) ->
 	%%insert_device_update(Conn, Serial, Type, Version, Name, Label, State, Ts) ->
 	case ?DB:insert_device_update(Conn, Serial, Type, " ",     " ",   " ",    Status, Ts) of
 		ok -> ok;
-		_ ->
+		E ->
+			clog(journal.db.error, "insert_device_update failed, Error: ", [E]),
 			?DB:close(Conn),
 			put(db_conn, undefined),
 			error
@@ -226,11 +234,12 @@ handle_io(_IOType, undefined, _Serial, _Index, _Value, _Ts) ->
 	db_conn_err;
 
 handle_io(IOType, Conn, Serial, Index, Value, Ts) when is_pid(Conn) ->
-	log(debug, "inserting event~n"),
+	log(debug, "inserting event {IOType, Serial, Index, Value, Ts}: ", [[IOType, Serial, Index, Value, Ts]]),
 	case ?DB:insert_event_update(Conn, Serial, IOType, Index, Value, Ts) of
 		ok ->
 			ok;
-		_ ->
+		E ->
+			clog(journal.db.error, "insert_device_update failed, Error: ", [E]),
 			?DB:close(Conn),
 			put(db_conn, undefined),
 			error
@@ -273,7 +282,8 @@ open_db(DSN) ->
 	case ?DB:open(DSN) of
 		{ok, Conn} ->
 			put(db_conn, Conn),
-			?DB:create_tables(Conn),
+			Ret=?DB:create_tables(Conn),
+			log(debug, "create_tables: ", [Ret]),
 			connected;
 		_ ->
 			put(db_conn, undefined),

@@ -6,6 +6,7 @@
 %%
 %% = Messages on HWSWITCH =
 %% phidgets.{phidgetdevice, {Serial, Type, state}},
+%% phidgets.{device, {Serial, Type, Status, Version, Name, Label}}
 %% 
 %%
 %% = Failure Modes =
