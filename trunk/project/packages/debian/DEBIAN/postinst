@@ -112,8 +112,8 @@ if command == 'configure':
 			os.remove(bd)
 			print "%s: removed [%s]" % (this_lib, bd)
 			
-			os.remove("/usr/bin/epem")
-		except: pass
+		except: 
+			pass
 
 		code = 0
 		try:
@@ -130,12 +130,18 @@ if command == 'configure':
 			os.chmod(b,   0700)
 			os.chmod(bd,  0700)
 
-			os.symlink( "/etc/init.d/epem" , "/usr/bin/epem")
-			os.chmod("/usr/bin/epem",  0700)
 			
 		except Exception,e:
 			print "Exception [%s]" % e
 			code = 1
+
+	try:
+		os.remove("/usr/bin/epem")
+		os.symlink( "/etc/init.d/epem" , "/usr/bin/epem")
+		os.chmod("/usr/bin/epem",  0700)
+	except:
+		pass
+			
 
 	if code==0:
 		# Update the rcX.d directories
